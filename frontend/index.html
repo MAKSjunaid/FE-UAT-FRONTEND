@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<script>
+  /* iPhone/iPad Safari re-fits the page (zooms a little) when its toolbar is hidden or shown, most visibly while a
+     pop-up page is open. Pinning the scale to 1 stops that. Only for Apple devices, so Android keeps pinch-zoom. */
+  (function () {
+    var ua = navigator.userAgent || "";
+    var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!ios) return;
+    var m = document.querySelector('meta[name="viewport"]');
+    if (m) m.setAttribute("content", "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover");
+  })();
+</script>
+<script>
+  /* The account button reads "Account" for a signed-in customer and "Sign in" otherwise (the words come from CSS, keyed on this class).
+     Decided here in the head, before anything is painted, so it never shows the wrong word for a moment while the page loads. */
+  try {
+    if (localStorage.getItem("freshcutz_profile_phone")) document.documentElement.classList.add("signed-in");
+  } catch (e) {}
+  /* Opened from the phone's home screen (like an app, no browser bar)? The header then trims the extra space above it. */
+  try {
+    if (window.navigator.standalone === true || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)) document.documentElement.classList.add("standalone-app");
+  } catch (e) {}
+</script>
+<script>
+  /* The opening animation (js/splash.js) covers the page from its very first moment: until that script has run, paint the
+     background in its colour so there is no white flash. Skipped when the last visit saw it switched off, and in the admin's
+     preview. A safety timer removes it in any case. */
+  try {
+    var __fc = JSON.parse(localStorage.getItem("freshcutz_site_v2") || "null");
+    var __cfg = __fc && __fc.site && __fc.site.config;
+    var __pv = window.parent !== window && /[?&]preview=1(&|$)/.test(location.search);
+    if (!__pv && !(__cfg && __cfg.showSplash === false)) {
+      document.documentElement.classList.add("fc-splash-pre");
+      setTimeout(function () { document.documentElement.classList.remove("fc-splash-pre"); }, 3000);
+    }
+  } catch (e) {}
+</script>
+<title>FreshCutz — Freshly Cut. Naturally Juicy.</title>
+<meta name="description" content="Order fresh, hygienically packed chicken and farm eggs online. Freshly cut to order, delivered to your door." />
+<link rel="icon" href="images/logo.jpg" />
+<link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32.png" />
+<!-- "Add to Home Screen": opens like an app (no address bar) on Android, iPhone and iPad -->
+<link rel="manifest" href="manifest-store.webmanifest" />
+<link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png?v=3" />
+<meta name="theme-color" content="#17140f" />
+<meta name="application-name" content="FreshCutz" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="FreshCutz" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="css/variables.css" />
+<link rel="stylesheet" href="css/splash.css?v=1" />
+<link rel="stylesheet" href="css/base.css?v=2" />
+<link rel="stylesheet" href="css/animations.css?v=2" />
+<link rel="stylesheet" href="css/components.css?v=10" />
+<link rel="stylesheet" href="css/storefront-header.css?v=23" />
+<link rel="stylesheet" href="css/storefront-grid.css?v=11" />
+<link rel="stylesheet" href="css/storefront-compact.css?v=6" />
+<link rel="stylesheet" href="css/cart.css?v=37" />
+<link rel="stylesheet" href="css/cart-fx.css?v=2" />
+<link rel="stylesheet" href="css/customer-push.css?v=6" />
+<link rel="stylesheet" href="css/site-banners.css?v=19" />
+<link rel="stylesheet" href="css/site-specials.css?v=29" />
+<link rel="stylesheet" href="css/bottom-nav.css?v=57" />
+<link rel="stylesheet" href="css/delivery-map.css?v=18" />
+</head>
+<body class="storefront">
+  <script src="js/splash.js?v=1"></script>
+  <div class="net-bar" id="netBar" role="status" aria-live="polite" hidden><span id="netBarText"></span></div>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="brand">
+        <span class="brand-logo" id="brandLogo"><img id="brandLogoImg" src="images/logo.jpg" alt="FreshCutz logo" /></span>
+        <div class="brand-text">
+          <div class="name" id="brandName">FRESHCUTZ</div>
+          <div class="tag" id="brandTag">Freshly Cut. Naturally Juicy.</div>
+        </div>
+      </div>
+      <button type="button" class="area-btn" id="areaBtn" hidden aria-label="Select Location"><span class="area-ico" aria-hidden="true">📍</span><span class="area-txt">Select Location</span></button>
+      <div class="header-actions">
+        <a class="icon-btn wa-btn" id="whatsappLink" href="#" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>
+        <button class="icon-btn acct-btn" id="profileIconBtn" aria-label="Sign in"></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="announce-bar" id="announceBar" hidden></div>
+
+  <div class="store-offline-banner" id="storeOfflineBanner" hidden>
+    🔴 We're currently offline and not accepting new orders right now.
+  </div>
+
+  <section class="hero" id="heroSection">
+    <div class="container">
+      <h1 class="anim-fade-up" id="heroHeading">Fresh Chicken, <span id="heroHighlight">Cut to Order</span></h1>
+      <p class="anim-fade-up" id="heroText">No frozen stock, no shortcuts — order before 10 PM for next morning delivery.</p>
+      <div class="hero-badges anim-fade-up" id="heroBadges">
+        <span class="chip">✅ Halal Certified</span>
+        <span class="chip">🧊 Never Frozen</span>
+        <span class="chip">🚚 Free Delivery</span>
+        <span class="chip">🧼 Hygienic Packaging</span>
+      </div>
+      <a class="btn btn-gold hero-cta anim-fade-up" id="heroCta" href="#catalog" hidden>Order now</a>
+    </div>
+  </section>
+
+  <!-- Applies what the admin set in the Customize tab (logo, name, hero text,
+       badges, colors). Runs right here, straight after the header/hero it
+       changes, so a saved copy from the last visit shows before first paint. -->
+  <script src="js/site-elements.js?v=15"></script>
+  <script src="js/site-customize.js?v=28"></script>
+
+  <nav class="category-bar" id="categoryBar">
+    <div class="category-scroll" id="categoryScroll"></div>
+  </nav>
+
+  <div class="search-bar-wrap container" id="searchWrap">
+    <div class="search-bar" id="searchBar">
+      <span class="search-bar-icon" aria-hidden="true">🔍</span>
+      <input
+        type="text"
+        id="searchInput"
+        class="search-bar-input"
+        placeholder="Search chicken, eggs…"
+        autocomplete="off"
+        aria-label="Search products"
+      />
+      <button type="button" class="search-clear-x" id="searchClearX" aria-label="Clear search" hidden>✕</button>
+    </div>
+  </div>
+
+  <main class="catalog container" id="catalog">
+    <div id="productGrid" class="product-grid" aria-live="polite"></div>
+    <div id="emptyState" class="empty-state" hidden>
+      <div class="icon">🐔</div>
+      <p id="emptyStateText">No products available right now. Please check back soon.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="siteFooter" hidden></footer>
+
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-bar-info">
+      <span class="count" id="cartBarCount">0 items</span>
+      <span class="total" id="cartBarTotal">₹0</span>
+    </div>
+    <button class="btn btn-gold" id="viewCartBtn">View Cart →</button>
+  </div>
+
+  <div id="sheetRoot"></div>
+  <div id="toastHost"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js?v=3"></script>
+  <script src="js/toast.js?v=2"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/cart-fx.js?v=3"></script>
+  <script src="js/site-banners.js?v=10"></script>
+  <script src="js/site-specials.js?v=47"></script>
+  <script src="js/storefront.js?v=24"></script>
+  <script src="js/storefront-header.js?v=6"></script>
+  <script src="js/net-status.js?v=2"></script>
+  <script src="js/scroll-memory.js?v=4"></script>
+  <script src="js/storefront-sync.js?v=13"></script>
+  <script src="js/store-status.js?v=2"></script>
+  <script src="js/customer-push.js?v=6"></script>
+  <script src="js/upi-pay.js?v=27"></script>
+  <script src="js/slot-time.js?v=3"></script>
+  <script src="js/checkout.js?v=24"></script>
+  <script src="js/checkout-form.js?v=29"></script>
+  <script src="js/order-status.js?v=3"></script>
+  <script src="js/profile.js?v=59"></script>
+  <script src="js/delivery-map.js?v=26"></script>
+  <script src="js/bottom-nav.js?v=38"></script>
+</body>
+</html>

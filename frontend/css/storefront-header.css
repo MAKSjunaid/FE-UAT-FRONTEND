@@ -1,0 +1,490 @@
+/* ==========================================================================
+   Customer storefront: sticky header, hero banner, category chip bar.
+   Mobile-first — see storefront-grid.css for the product grid itself.
+   ========================================================================== */
+
+/* Space the header keeps above its content for the phone's status bar (clock, battery).
+   In a browser it is 0. Opened from the home screen on an iPhone the page runs under the status bar, so the header is padded by
+   the safe area - minus a few px, because the clock sits in the upper part of that area and the rest is only empty space.
+   While the "No internet" strip is showing, the strip itself covers that area, so the header needs none. */
+:root {
+  --hdr-top-base: var(--safe-top);
+  --hdr-top: var(--hdr-top-base);
+  --net-line: 22px;
+  --net-h: 0px;
+}
+html.standalone-app { --hdr-top-base: max(0px, calc(var(--safe-top) - 14px)); }
+html.net-on {
+  --hdr-top: 0px;
+  --net-h: calc(var(--hdr-top-base) + var(--net-line));
+}
+
+body.storefront {
+  padding-bottom: var(--safe-bottom);
+}
+/* Only reserve room for the fixed cart bar while it is actually showing. */
+html.has-cart-bar body.storefront {
+  padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom) + 10px);
+}
+
+/* ---- Header --------------------------------------------------------- */
+/* On iOS/Android PWAs the status bar can sit on top of a plain sticky
+   header and crop the logo/icons when the page scrolls under it — padding
+   the header by the safe-area inset (0 on ordinary browsers) fixes that. */
+.site-header {
+  position: sticky;
+  top: var(--net-h, 0px);
+  z-index: 500;
+  background: var(--site-header-bg, var(--ink));
+  color: var(--text-on-dark);
+  height: calc(var(--header-h) + var(--hdr-top));
+  padding-top: var(--hdr-top);
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.25);
+}
+
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+/* ---- Store offline banner --------------------------------------------- */
+.store-offline-banner {
+  position: sticky;
+  top: calc(var(--header-h) + var(--hdr-top) + var(--net-h, 0px));
+  z-index: 490;
+  background: #fdecea;
+  color: #a83229;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 9px var(--sp-4);
+  border-bottom: 1px solid #f3c5bd;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-text { min-width: 0; line-height: 1.15; }
+
+.brand-logo {
+  display: inline-flex;
+  width: calc(34px * var(--sz-logo, 1));
+  height: calc(34px * var(--sz-logo, 1));
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.35);
+}
+
+.brand-text .name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(15.5px * var(--sz-brand, 1));
+  color: var(--site-brand-color, var(--gold-light));
+  letter-spacing: 0.02em;
+}
+
+.brand-text .tag {
+  font-size: calc(9.5px * var(--sz-tagline, 1));
+  color: var(--site-tagline-color, var(--text-on-dark-muted));
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The brand text keeps one size at every scroll position (it used to ease down to a smaller size). */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.icon-btn {
+  position: relative;
+  width: calc(34px * var(--sz-hicon, 1));
+  height: calc(34px * var(--sz-hicon, 1));
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-on-dark);
+  font-size: calc(15px * var(--sz-hicon, 1));
+  transition: background var(--dur-fast);
+}
+
+.icon-btn:active { transform: scale(0.92); }
+
+/* WhatsApp: the real logo, in WhatsApp green */
+.icon-btn.wa-btn {
+  width: calc(24px * var(--sz-hicon, 1));
+  height: calc(24px * var(--sz-hicon, 1));
+  background: #25d366;
+  color: #fff;
+}
+.icon-btn.wa-btn svg {
+  width: calc(14px * var(--sz-hicon, 1));
+  height: calc(14px * var(--sz-hicon, 1));
+  display: block;
+  /* The logo's tail hangs at the bottom-left, so its weight sits a little left and low inside the circle: nudge it back to look centered */
+  transform: translate(calc(0.5px * var(--sz-hicon, 1)), calc(-0.3px * var(--sz-hicon, 1)));
+}
+
+/* The word on the account button ("Sign in", or "Account" once signed in): from CSS, so it is right from the very first paint */
+.icon-btn.acct-btn::before { content: "Sign in"; }
+html.signed-in .icon-btn.acct-btn::before { content: "Account"; }
+
+/* Account: the word "Sign in" (or "Account" once signed in) instead of a picture */
+.icon-btn.acct-btn {
+  width: auto;
+  height: calc(24px * var(--sz-hicon, 1));
+  padding: 0 calc(10px * var(--sz-hicon, 1));
+  border-radius: 999px;
+  font-size: calc(11px * var(--sz-hicon, 1));
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  background: var(--gold, #d4a24c);
+  color: var(--ink);
+}
+
+.cart-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  animation: bounceIn 400ms var(--ease-out);
+}
+
+/* ---- Hero ------------------------------------------------------------ */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, var(--site-hero-start, #2a2114) 0%, var(--site-hero-end, var(--ink)) 60%);
+  color: var(--text-on-dark);
+  padding: 20px 0 var(--sp-5); /* (the heading's own line-height adds ~3px on top, so the space above it looks the same as the space under the badges) */
+  text-align: center;
+  /* Only the bottom edge is rounded — it sits flush under the header and
+     flush to the screen edges, just curving where it meets the page below. */
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.35);
+}
+
+.hero h1 {
+  font-size: calc(26px * var(--sz-heroh, 1));
+  color: var(--site-hero-heading, #fff);
+}
+
+.hero h1 span { color: var(--site-hero-highlight, var(--gold-light)); }
+
+.hero p {
+  margin-top: var(--sp-2);
+  color: var(--site-hero-text, var(--text-on-dark-muted));
+  font-size: calc(13.5px * var(--sz-herop, 1));
+  max-width: 460px;
+  margin-inline: auto;
+}
+
+.hero-badges {
+  margin-top: var(--sp-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.hero-badges .chip {
+  background: var(--site-badge-bg, rgba(201, 161, 59, 0.14));
+  border: 1px solid var(--site-badge-border, rgba(201, 161, 59, 0.4));
+  color: var(--site-badge-text, var(--gold-light));
+  font-size: calc(11.5px * var(--sz-badges, 1));
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+}
+
+/* ---- Admin "Customize" switches ---------------------------------------
+   Parts the admin can switch off (site-customize.js sets [hidden]); these
+   rules all set their own display, which would otherwise beat [hidden]. */
+.brand-logo[hidden],
+.brand-text .tag[hidden],
+.hero[hidden],
+.hero p[hidden],
+.hero-badges[hidden],
+.icon-btn[hidden] {
+  display: none !important;
+}
+
+/* An uploaded logo is shown whole; the built-in one is deliberately
+   zoomed in a little (see .brand-logo img above). */
+.brand-logo.custom-logo img {
+  transform: none;
+  object-fit: contain;
+  background: #fff;
+}
+
+/* ---- Category chips ---------------------------------------------------- */
+/* iOS-style frosted glass: translucent background + blur, so the page
+   scrolling underneath is faintly visible through it, with a rounded
+   bottom edge instead of a hard-edged bar. */
+.category-bar {
+  position: sticky;
+  top: calc(var(--header-h) + var(--hdr-top) + var(--net-h, 0px));
+  z-index: 400;
+  background: rgba(250, 247, 240, 0.42);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 1px 0 rgba(23, 20, 15, 0.06);
+  padding: 7px 0;
+}
+
+.category-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 var(--sp-4);
+  scrollbar-width: none;
+}
+
+.category-scroll::-webkit-scrollbar { display: none; }
+
+.cat-chip {
+  flex: 0 0 auto;
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  border: 1.5px solid #e6dcc0;
+  font-size: calc(12px * var(--sz-cats, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.cat-chip.active {
+  background: var(--site-cat-active, var(--ink));
+  color: var(--gold-light);
+  border-color: var(--site-cat-active, var(--ink));
+}
+
+/* ---- Responsive scale-up ---------------------------------------------- */
+@media (min-width: 640px) {
+  .hero h1 { font-size: calc(32px * var(--sz-heroh, 1)); }
+  .hero p { font-size: calc(14.5px * var(--sz-herop, 1)); }
+}
+
+@media (min-width: 860px) {
+  .hero { padding: var(--sp-6) 0 var(--sp-6); }
+}
+
+/* ---- Set from the admin's Customize tab (see js/site-customize.js) ------- */
+
+/* Announcement strip under the header */
+.announce-bar {
+  background: var(--site-announce-bg, var(--gold));
+  color: var(--site-announce-color, var(--ink));
+  text-align: center;
+  font-size: calc(12px * var(--sz-announce, 1));
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 5px var(--sp-4);
+}
+
+/* Optional button in the hero banner */
+.hero-cta {
+  margin-top: var(--sp-4);
+  display: inline-flex;
+  width: auto;
+  padding-inline: 26px;
+}
+
+/* Left-aligned hero */
+.hero.hero-left { text-align: left; }
+.hero.hero-left p { margin-inline: 0; }
+.hero.hero-left .hero-badges { justify-content: flex-start; }
+
+/* Footer */
+.site-footer {
+  margin-top: var(--sp-6);
+  padding: var(--sp-6) 0 var(--sp-5);
+  background: var(--site-footer-bg, var(--ink));
+  color: var(--site-footer-text, var(--text-on-dark-muted));
+  font-size: calc(13px * var(--sz-footer, 1));
+  line-height: 1.55;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  text-align: center;
+}
+.site-footer .footer-inner { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.site-footer .footer-brand { font-weight: 800; letter-spacing: .08em; color: var(--site-brand-color, var(--gold-light)); }
+.site-footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.site-footer .footer-social { display: flex; gap: 14px; margin-top: 4px; justify-content: center; flex-wrap: wrap; }
+.site-footer .footer-copy { margin-top: 8px; font-size: calc(11.5px * var(--sz-footer, 1)); opacity: .75; }
+
+/* [hidden] must win over the display set by the rules above */
+.announce-bar[hidden],
+.hero-cta[hidden],
+.site-footer[hidden],
+.category-bar[hidden],
+.search-bar-wrap[hidden],
+.brand-text .tag[hidden] { display: none !important; }
+
+/* Product-card pieces the admin can hide */
+html.sc-hide-discount .discount-badge,
+html.sc-hide-mrp .price-mrp,
+html.sc-hide-desc .product-desc { display: none !important; }
+
+/* "Order now" lands with the sticky header + category bar out of the way */
+#catalog { scroll-margin-top: calc(var(--header-h) + 60px); }
+
+/* ---- Hide-on-scroll header + category chips -----------------------------
+   Scrolling down slides the header and the category chips up out of view;
+   scrolling up even a little slides them back. storefront-header.js only
+   toggles classes — the motion is here, and uses transform only so it stays
+   smooth on phones. The elements stay position: sticky, so hiding them never
+   shifts the page content.
+   - body.header-hidden        → the header slides up by its own height.
+   - .is-tucked (chips/banner) → set only while that bar is stuck under the
+     header; it slides up by the header height PLUS its own height, so it
+     leaves the screen completely (a bar still scrolling with the page, like
+     the chips under the hero, just keeps scrolling naturally). */
+.site-header,
+.store-offline-banner,
+.category-bar {
+  transition:
+    transform .38s cubic-bezier(.22, 1, .36, 1),
+    top .38s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .38s ease;
+}
+
+/* with the header gone these bars stick to the top edge (not under the empty spot where the header was) */
+body.header-hidden .store-offline-banner,
+body.header-hidden .category-bar { top: var(--net-h, 0px); }
+
+body.header-hidden .site-header {
+  transform: translate3d(0, -100%, 0);
+  box-shadow: none;
+}
+
+.store-offline-banner.is-tucked,
+.category-bar.is-tucked {
+  transform: translate3d(0, calc(-100% - var(--header-h) - var(--hdr-top) - var(--net-h, 0px)), 0);
+  box-shadow: none;
+}
+
+body.header-hidden .site-header,
+.store-offline-banner.is-tucked,
+.category-bar.is-tucked { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .store-offline-banner,
+  .category-bar { transition: none; }
+}
+
+/* Back at the very top the header must be there at once, never sliding in (the slot it leaves behind would show the
+   page's white for a moment). storefront-header.js sets this for a moment only. */
+html.header-snap .site-header,
+html.header-snap .store-offline-banner,
+html.header-snap .category-bar { transition: none !important; }
+
+/* And the spot the header sits in is the header's own colour even when the header is away from it, so a fast scroll to
+   the top can never show white there (the slot is the first strip of the page; the header covers it when shown). */
+body.storefront::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--header-h) + var(--hdr-top) + var(--net-h, 0px));
+  background: var(--site-header-bg, var(--ink));
+  pointer-events: none;
+}
+
+/* ---- Tab/category switching: nothing may animate or flicker --------------- */
+html.tab-switching { overflow-anchor: none; }
+html.tab-switching .site-header,
+html.tab-switching .store-offline-banner,
+html.tab-switching .category-bar {
+  transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow 0s;
+}
+html.tab-switching .brand-text .name,
+html.tab-switching .brand-text .tag { transition: none; }
+
+
+/* ---- "No internet" strip ------------------------------------------------
+   A thin line at the very top: red while the phone has no connection, green for a few seconds once it is back, then gone.
+   It takes its own room above the header (the header sticks just under it), so nothing is hidden behind it. */
+.net-bar {
+  position: sticky;
+  top: 0;
+  z-index: 600;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: var(--net-h);
+  padding-top: var(--hdr-top-base);
+  box-sizing: border-box;
+  background: #b3261e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: background 0.3s ease;
+}
+.net-bar[hidden] { display: none; }
+.net-bar.is-back { background: #1e8e4e; }
+.net-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--net-line);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.net-bar.is-wrap span { white-space: normal; text-align: center; line-height: 1.25; }
+.net-bar span::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: net-pulse 1.3s ease-in-out infinite;
+}
+.net-bar.is-back span::before { animation: none; }
+@keyframes net-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) {
+  .net-bar span::before { animation: none; }
+}
