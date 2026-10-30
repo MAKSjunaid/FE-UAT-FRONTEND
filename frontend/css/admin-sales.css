@@ -1,0 +1,468 @@
+/* ==========================================================================
+   Sales tab: period dropdown (+ custom date range), the period header and
+   status boxes, the By Day / By Customer / By Item sub-tabs, export/import
+   toolbar, and the import result panel. Split out of admin-cards.css to
+   keep that file smaller.
+   ========================================================================== */
+
+.sales-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+/* The period picker (Today / Yesterday / Last 7 days / … / Custom date).
+   16px font so iOS Safari doesn't zoom the page on focus, same reason as
+   the date fields below. */
+.period-select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.period-select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 161, 59, 0.2);
+}
+
+/* Period header: the big money/orders card, then the four status boxes
+   (those reuse .stats-grid/.stat-card from admin-cards.css as-is). */
+.sales-summary {
+  margin-bottom: var(--sp-3);
+}
+
+.sales-summary .stat-card .value {
+  font-size: 28px;
+}
+
+/* The All / New / Delivered / Cancelled boxes double as the status filter
+   for the three lists underneath, so each is a <button> that still looks
+   like the .stat-card it reuses. */
+.status-box {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+
+/* Selected box: filled with the same ink/gold as the active By Day /
+   By Customer / By Item pill, so the two rows read as one system. */
+.status-box.is-selected {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.status-box.is-selected .label {
+  color: var(--gold-light);
+}
+
+.status-box.is-selected .value {
+  color: var(--gold-light);
+}
+
+.status-box.is-selected .stat-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: var(--gold-light);
+}
+
+/* By Day / By Customer / By Item — three equal pills in one row. */
+.sales-subtabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--sp-4);
+}
+
+.sales-subtab {
+  flex: 1 1 0;
+  padding: 9px 6px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #fff;
+  border: 1.5px solid #e6dcc0;
+  white-space: nowrap;
+}
+
+.sales-subtab.active {
+  background: var(--ink);
+  color: var(--gold-light);
+  border-color: var(--ink);
+}
+
+.sales-data-actions {
+  margin-top: var(--sp-5);
+}
+
+/* "Show more days" under a long By Day list. */
+.show-more-days {
+  display: block;
+  margin: var(--sp-3) auto 0;
+}
+
+/* Two rows on mobile: From+To fields on their own row, Apply(+Clear) on
+   a row of its own underneath. .date-range-row is just a column stack
+   of those two rows here; collapses to one single inline row (fields
+   sharing space with the buttons) at the 640px breakpoint below. */
+.date-range-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* CSS Grid, not flexbox, for the actual From/To split — this is the
+   part that turned out to matter. A flexbox item's width (even with
+   flex-grow/shrink both 0 and an explicit flex-basis) is still allowed
+   to be pulled wider by its content's intrinsic size in some engines,
+   and on iOS Safari specifically that showed up as the box visibly
+   shrinking to hug the picked date the moment one was chosen — a fixed
+   flex-basis percentage was not actually immune to it. A grid track
+   has no such escape hatch: minmax(140px, 1fr) means each column is
+   exactly half the row (down to a 140px floor, big enough that a
+   picked date like "23 Sep 2026" never gets clipped) and two identical
+   track functions are always sized identically to each other — neither
+   column's content, empty hint or filled date, has any way to change
+   that. */
+.date-range-fields {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr);
+  gap: 8px;
+}
+
+.date-range-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#applyRangeBtn {
+  flex: 1;
+}
+
+.date-field {
+  min-width: 0; /* let the grid track set the width, do not fight it */
+}
+
+.date-field-box {
+  position: relative;
+  /* A fixed height, not just min-height: on iOS Safari a focused
+     type="date" input can report a different (larger) intrinsic
+     content size than the same input unfocused. As long as the
+     input stays IN FLOW, that focused-state intrinsic size can push
+     back on this box's own sizing the instant you tap it — which is
+     exactly the bug where the box visibly shrinks/reflows to hug
+     "26 Sep 2026" on tap. Fixing the height here, then taking the
+     input fully out of flow below, removes that path entirely. */
+  height: 42px;
+  /* iOS's own internal rendering for the native control can want a
+     little more room than we give it here, and — unlike a normal
+     box — that isn't clipped by default just because the box has a
+     fixed height. overflow: hidden is what actually clips it, so
+     nothing from the (now invisible, see below) native control can
+     ever poke out past our own visible box. */
+  overflow: hidden;
+}
+
+/* The ONLY visible part of the field. The real <input type="date">
+   underneath is fully transparent (see below) — its native styling
+   on iOS is unreliable (a control that can render smaller than its
+   own box, at a different size focused vs. not, sometimes even with
+   its own background instead of ours). Rather than fight that, we
+   never show it at all: this box always displays either the
+   placeholder ("From Date" / "To Date") or, once a date is picked,
+   that date formatted by us — admin-stats.js keeps the text and the
+   .has-value class in sync with the real input's value. Because this
+   box's own size never depends on the native input's content, it
+   can't shrink or shift no matter what iOS does underneath.
+   pointer-events: none lets every tap pass straight through to the
+   real input below, which is what actually opens the picker. */
+.date-field-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  font-size: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.date-field-hint.has-value {
+  color: var(--text-main);
+}
+
+.date-range-row input[type="date"] {
+  /* Taken fully out of flow, exactly like .date-field-hint above, so
+     the input can never contribute to (or fight) .date-field-box's
+     own width/height. Its box is now set entirely by the CSS Grid
+     track on .date-range-fields plus the fixed height on
+     .date-field-box above — the input just fills whatever space it's
+     given and can no longer shrink that space to fit its own
+     focused-state content, which is what iOS Safari was doing.
+
+     opacity: 0 makes it fully invisible — .date-field-hint (on top,
+     pointer-events: none) is the only thing ever actually seen. That
+     also gets rid of the "second, smaller box" artifact some iOS
+     versions produce: whatever size or shape iOS chooses to render
+     the native control at no longer matters, since nothing about it
+     is shown. It still fully overlaps the visible box and still
+     receives the tap, which is what opens the native date picker. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  opacity: 0;
+  /* 16px minimum — under that, iOS Safari zooms the page in on tap. */
+  font-size: 16px;
+}
+
+.sales-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.file-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.range-result,
+.import-result {
+  margin-bottom: var(--sp-4);
+}
+
+/* ---- Date-wise breakdown, under the range total's stat card ------------ */
+.daily-sales {
+  margin-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.daily-sales-group {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+/* Tap target for expanding a day — a plain <button> reset back to look
+   like the row it replaces, not a button, matching the same treatment
+   already used for .daily-sales-row-summary below. */
+.daily-sales-head {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The separator under the head only makes sense once there's something
+   underneath it to separate from — collapsed, it just reads as a stray
+   line under a single row. */
+.daily-sales-group.is-open .daily-sales-head {
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #eee3cc;
+}
+
+.daily-sales-head-chevron {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
+  color: var(--text-muted);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.daily-sales-group.is-open .daily-sales-head-chevron {
+  transform: rotate(90deg);
+}
+
+.daily-sales-rows {
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+}
+
+.daily-sales-date {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* Date and summary always share one line. The summary scales with the
+   screen width (down to 7px) so even "₹8,040 · 4 orders · 1 new · 2 delivered
+   · 1 cancelled" fits beside the date on a phone. */
+.daily-sales-day-total {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: clamp(7px, 2.15vw, 11.5px);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.daily-sales-row {
+  padding: 7px 0;
+}
+
+.daily-sales-row + .daily-sales-row {
+  border-top: 1px dashed #eee3cc;
+}
+
+.daily-sales-row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.daily-sales-row-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Tap target for expanding a row — a plain <button> reset back to look
+   like the text it wraps, not a button. */
+.daily-sales-row-summary {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.daily-sales-row-chevron {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
+  color: var(--text-muted);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.daily-sales-row.is-open .daily-sales-row-chevron {
+  transform: rotate(90deg);
+}
+
+.daily-sales-row-details {
+  margin-top: 8px;
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+}
+
+.daily-sales-row-details .order-items-list {
+  margin-top: 8px;
+}
+
+/* Shown in a row's detail panel while its full order detail is being
+   fetched on first tap (see admin-stats.js). */
+.daily-sales-row-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* .spinner (animations.css) defaults to a near-invisible ring meant for a
+   solid/dark button background — this row's own background is light, so
+   give it a gold ring instead. */
+.spinner-dark {
+  border-color: rgba(201, 161, 59, 0.25);
+  border-top-color: var(--gold);
+}
+
+.import-errors {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #ddd1ae;
+  font-size: 11.5px;
+  color: var(--danger);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+@media (min-width: 640px) {
+  .period-select { max-width: 280px; }
+  /* Wide enough for fields + buttons on one single row again. */
+  .date-range-row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .date-range-fields {
+    /* The buttons need their own room here, so the fields no longer
+       own the whole row — let them size by content again instead of
+       forcing a 50/50 grid split of just their own share of it. */
+    display: flex;
+    flex: 1 1 auto;
+    gap: 8px;
+  }
+  .date-field {
+    flex: 1 1 140px;
+    min-width: 140px;
+  }
+  #applyRangeBtn { flex: 0 0 auto; }
+}
+
+/* Phones: the day summary ("₹2,72,67,895 · 5280 orders · 2 new · 4913
+   delivered · 365 cancelled") is too long to sit beside the date at a
+   readable size, so it drops to its own line under the date and wraps if
+   it still doesn't fit — normal 12px text instead of shrinking to 7px. */
+@media (max-width: 520px) {
+  .daily-sales-head {
+    flex-wrap: wrap;
+    row-gap: 3px;
+  }
+  .daily-sales-day-total {
+    flex: 1 1 100%;
+    font-size: 12px;
+    text-align: left;
+    white-space: normal;
+    padding-left: 16px;   /* lines up under the date, past the ▸ arrow */
+    line-height: 1.4;
+  }
+}

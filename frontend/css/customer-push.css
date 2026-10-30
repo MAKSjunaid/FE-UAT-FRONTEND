@@ -1,0 +1,161 @@
+/* Order-success screen: the "Notify me when my order is delivered" button and its small messages
+   (see js/customer-push.js). */
+.cn-slot { margin-top: var(--sp-3); }
+.cn-slot:empty { display: none; }
+
+.cn-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 16px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--gold);
+  background: #fffaf0;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.cn-btn:active { transform: scale(0.98); }
+.cn-btn:disabled { opacity: 0.6; cursor: default; }
+
+.cn-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--text-main);
+  background: #f4f1e8;
+  border: 1px solid #e6dcc0;
+}
+.cn-box.cn-ok { background: #e8f5ee; border-color: #bfe0cd; color: #1e5e3b; font-weight: 600; }
+
+/* The "Get offers & order updates" bar shown when the shop is opened. */
+.cn-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + var(--safe-bottom));
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 24px; /* a little more room on the left so the text is not hugging the edge */
+  background: var(--ink);
+  color: var(--text-on-dark);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-lg);
+  font-size: 13.5px;
+  font-weight: 600;
+  animation: fadeUp var(--dur-med) var(--ease-out) both;
+}
+.cn-bar-txt { min-width: 0; }
+.cn-bar-yes {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  border: 0;
+  cursor: pointer;
+}
+.cn-bar-no {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  /* the same "liquid glass" as the banner name on the banners (.sb-badge in site-banners.css): almost see-through,
+     a shine across the top, a light edge and a soft shadow underneath. The X is two bars, not a text character,
+     so it sits exactly in the middle */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 52%), rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(2.5px) saturate(1.4);
+  backdrop-filter: blur(2.5px) saturate(1.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 8px 14px -7px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 0;
+  cursor: pointer;
+}
+.cn-bar-no:active { transform: scale(0.92); }
+.cn-bar-no::before, .cn-bar-no::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  margin: -1px 0 0 -6px;
+  border-radius: 1px;
+  background: #e4e4e4; /* light grey, like the banner name */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.22); /* soft outline, as on the banner name */
+}
+.cn-bar-no::before { transform: rotate(45deg); }
+.cn-bar-no::after { transform: rotate(-45deg); }
+
+/* "Notifications are switched off" help card (shown when the phone's setting has to be changed by hand). */
+.cn-help {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  margin: 0 auto;
+  bottom: calc(14px + var(--safe-bottom));
+  z-index: 81;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 14px 14px 12px 16px;
+  background: var(--ink);
+  color: var(--text-on-dark);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 13.5px;
+  line-height: 1.4;
+  animation: fadeUp var(--dur-med) var(--ease-out) both;
+}
+.cn-help-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; }
+.cn-help-note { margin: 8px 0 0; opacity: 0.85; }
+.cn-help-steps { margin: 8px 0 0; padding-left: 20px; }
+.cn-help-steps li { margin: 3px 0; }
+.cn-help b { color: var(--gold); }
+
+/* Close button of the help card: same look as the bar's ✕ — a soft round button in the card's own dark colours with a
+   thin light X. The X is two bars, not a text character, so it is exactly centred. */
+.cn-help-x {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 52%), rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(2.5px) saturate(1.4);
+  backdrop-filter: blur(2.5px) saturate(1.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 8px 14px -7px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.cn-help-x:active { transform: scale(0.92); }
+.cn-help-x::before, .cn-help-x::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 2px;
+  margin: -1px 0 0 -7px;
+  border-radius: 1px;
+  background: #e4e4e4; /* light grey, like the banner name */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.22); /* soft outline, as on the banner name */
+}
+.cn-help-x::before { transform: rotate(45deg); }
+.cn-help-x::after { transform: rotate(-45deg); }

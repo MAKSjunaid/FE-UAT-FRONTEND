@@ -1,0 +1,72 @@
+/* ==========================================================================
+   Admin: Settings tab = a menu list (Customers, Customize) with a back arrow
+   on each page. To undo: restore the previous admin.html, admin-main.js and
+   admin-backup.js and delete this file.
+   ========================================================================== */
+.settings-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 640px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-4);
+  text-align: left;
+  background: var(--bg-card);
+  border: 1.5px solid #e6dcc0;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast);
+}
+.settings-row:active { transform: scale(0.985); border-color: var(--gold); }
+
+.settings-row-ico {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: #f4f1e8;
+  border-radius: 12px;
+}
+
+.settings-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.settings-row-text strong { font-size: 15px; }
+.settings-row-text small { font-size: 12px; color: var(--text-muted); }
+
+.settings-row-chev { flex: 0 0 auto; font-size: 26px; line-height: 1; color: var(--text-muted); }
+
+.settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--sp-3);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid #e6dcc0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+.settings-back:active { background: #f4f1e8; }
+
+/* "More" tab icon: three dots (drawn as text, so it takes the tab's colour like the other icons) */
+.more-ico {
+  display: inline-block;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: 0;
+  transform: translateY(-1px);
+}
+.admin-bottom-nav .nav-ico.more-ico { font-size: 26px; line-height: 1; transform: translateY(-3px); }
+.admin-tab .more-ico { font-size: 1.3em; }

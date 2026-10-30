@@ -1,0 +1,230 @@
+/* ==========================================================================
+   Admin: phone top bar with a ☰ menu.
+   Phones (<= 640px): the top bar shows only the brand and a ☰ button. The
+   Online switch, ⏰ store hours, 🔔 order alerts and Log out move into a
+   drop-down under the ☰ (the same elements, so every existing behaviour keeps
+   working). Wider screens are unchanged.
+   To undo: restore the previous admin.html (and delete this file + admin-menu.js).
+   ========================================================================== */
+.menu-btn,
+.menu-backdrop { display: none; }
+
+@media (max-width: 640px) {
+  .admin-topbar { position: relative; padding: 0 12px; gap: 10px; flex-wrap: nowrap; }
+  .admin-topbar .brand-text { flex: 1 1 auto; min-width: 0; }
+  .admin-topbar .brand-text .name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ---- the ☰ button ------------------------------------------------- */
+  .admin-topbar .menu-btn {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .menu-lines { position: relative; display: block; width: 18px; height: 14px; }
+  .menu-lines i {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, top 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .menu-lines i:nth-child(1) { top: 0; }
+  .menu-lines i:nth-child(2) { top: 6px; }
+  .menu-lines i:nth-child(3) { top: 12px; }
+  .admin-topbar.menu-open .menu-lines i:nth-child(1) { top: 6px; transform: rotate(45deg); }
+  .admin-topbar.menu-open .menu-lines i:nth-child(2) { opacity: 0; }
+  .admin-topbar.menu-open .menu-lines i:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+  /* store state at a glance: green dot = online, red = offline */
+  .menu-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2e8b57;
+    border: 2px solid var(--ink);
+    box-sizing: border-box;
+  }
+  .menu-btn.is-offline .menu-dot { background: #e5484d; }
+
+  /* ---- the drop-down ---------------------------------------------------- */
+  .menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 490;               /* under the header (500), above the page */
+    background: rgba(15, 13, 9, 0.28);
+    opacity: 1;
+    transition: opacity 0.22s ease;
+  }
+  .menu-backdrop[hidden] { display: none; }
+
+  .admin-topbar .topbar-actions {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 10px;
+    z-index: 5;
+    width: min(300px, calc(100vw - 20px));
+    flex: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: #fffdf7;
+    border: 1px solid #eadfc2;
+    border-radius: 18px;
+    box-shadow: 0 14px 36px rgba(20, 16, 8, 0.3);
+    color: var(--ink);
+    transform-origin: top right;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-8px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.26s;
+  }
+  .admin-topbar.menu-open .topbar-actions {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    transition: opacity 0.2s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+  }
+
+  /* Row group: store status + store hours */
+  .admin-topbar .topbar-actions .store-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 12px;
+    background: #faf6e8;
+    border: 1px solid #efe5c6;
+    border-radius: 14px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .admin-topbar .topbar-actions .store-toggle::before {
+    content: "Store status";
+    flex: 1 1 auto;
+    font-weight: 800;
+  }
+  .admin-topbar .topbar-actions .store-toggle-label { display: inline; font-size: 13px; font-weight: 800; color: var(--text-muted); }
+
+  /* every button in the drop-down becomes a full-width row */
+  .admin-topbar .topbar-actions .btn-sm {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #faf6e8;
+    border: 1px solid #efe5c6;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+    box-shadow: none;
+  }
+  .admin-topbar .topbar-actions .btn-sm:active { background: #f1e8cb; }
+  .admin-topbar .topbar-actions .btn-sm[hidden] { display: none; }
+
+  /* ⏰ sits inside the status card, as its second row */
+  .admin-topbar .topbar-actions .store-toggle .store-sched-btn {
+    flex: 1 0 100%;
+    margin-top: 2px;
+    background: #fff;
+    border-color: #e6dcc0;
+  }
+  .store-sched-btn::before { content: "Store hours"; order: 1; font-size: 14px; }
+  .store-sched-btn.has-override::before { content: "Store hours · manual"; }
+  .store-sched-btn.has-override::after { top: 50%; right: 14px; transform: translateY(-50%); }
+  .store-sched-btn.is-active { background: #fff8e1; border-color: var(--gold-light); }
+
+  /* Order alerts: label on the left, a clear ON / OFF switch on the right,
+     so the current state is visible before tapping (a tap flips it). */
+  .push-toggle-btn::before { content: "Order alerts"; order: 1; font-size: 14px; }
+  .push-toggle-btn::after {
+    content: "OFF";
+    order: 2;
+    margin-left: auto;
+    min-width: 52px;
+    padding: 5px 12px 5px 26px;
+    border-radius: 999px;
+    background: #d9d3c2 radial-gradient(circle at 13px 50%, #fff 0 8px, transparent 8.5px) no-repeat;
+    color: #5d5646;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-align: center;
+    line-height: 1.2;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .admin-topbar .topbar-actions .push-toggle-btn.is-active { background: #faf6e8; border-color: #efe5c6; }
+  .push-toggle-btn.is-active::after {
+    content: "ON";
+    padding: 5px 26px 5px 12px;
+    background: #2e9e57 radial-gradient(circle at calc(100% - 13px) 50%, #fff 0 8px, transparent 8.5px) no-repeat;
+    color: #fff;
+  }
+  .push-toggle-btn.is-busy::after {
+    content: "…";
+    padding: 5px 16px;
+    background: #e7dfc4;
+    color: #5d5646;
+  }
+  .push-toggle-btn:disabled { opacity: 1; }
+  .push-toggle-btn.is-blocked::after {
+    content: "BLOCKED";
+    padding: 5px 12px;
+    background: #f3d6d2;
+    color: #a83229;
+  }
+
+  /* Log out: icon + word */
+  .admin-topbar .topbar-actions #logoutBtn .lo-icon { display: inline; order: 0; }
+  .admin-topbar .topbar-actions #logoutBtn .lo-text { display: inline; order: 1; font-size: 14px; }
+  .admin-topbar .topbar-actions #logoutBtn { color: #a83229; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-lines i,
+  .admin-topbar .topbar-actions { transition: none; }
+}
+
+
+/* ---- New-order sound button (🔊 on / 🔇 off), top right beside the ☰ ------------------------------------------ */
+.admin-topbar .sound-top-btn { flex: 0 0 auto; font-size: 18px; line-height: 1; padding: 8px 12px; }
+.admin-topbar .sound-top-btn.is-off { opacity: 0.6; }
+.no-orders .sound-top-btn { display: none; }
+@media (max-width: 640px) {
+  .admin-topbar .sound-top-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .no-orders .admin-topbar .sound-top-btn { display: none; }
+}

@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Admin: bottom menu on phones.
+   Phones (<= 640px): the tab row leaves the top bar and becomes a fixed bar
+   at the bottom of the screen. Wider screens are unchanged (tabs on top).
+   To undo this feature: remove the <link> to this file, the
+   admin-bottomnav.js <script> and the <nav id="adminBottomNav"> from
+   admin.html (or just restore the previous admin.html).
+   ========================================================================== */
+:root { --admin-nav-h: 60px; }
+
+.admin-bottom-nav { display: none; }
+
+@media (max-width: 640px) {
+  /* the tab row moves out of the top bar */
+  .admin-header-group .admin-tabs { display: none; }
+
+  /* room under every page so the last item isn't hidden behind the bar */
+  #adminApp { padding-bottom: calc(var(--admin-nav-h) + var(--safe-bottom)); }
+
+  /* Short pages: make the page itself always at least one full screen tall,
+     so the phone browser never ends up with a "short document" whose bottom
+     edge (where the bar is pinned) sits above the real bottom of the screen.
+     100dvh follows the browser's address bar; 100vh is the fallback. */
+  html { min-height: 100%; }
+  body.admin {
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;   /* iPhone */
+    min-height: 100dvh;
+    min-height: var(--app-h, 100dvh);     /* exact screen height, set by admin-bottomnav.js */
+    padding-bottom: 0;          /* #adminApp already reserves the bar's room */
+  }
+
+  .admin-tabs.admin-bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    transform: translate3d(0, 0, 0);   /* own layer: stays glued while the page height changes */
+    z-index: 550;               /* above the page, below sheets (800+) and the + button */
+    height: calc(var(--admin-nav-h) + var(--safe-bottom));
+    padding: 0 6px var(--safe-bottom);
+    gap: 2px;
+    align-items: stretch;
+    justify-content: space-between;
+    overflow: visible;
+    background: var(--ink);
+    border: 0;
+    border-top: 1px solid rgba(240, 217, 138, 0.28);
+    box-shadow: 0 -6px 18px rgba(20, 16, 8, 0.28);
+  }
+
+  .admin-bottom-nav .admin-tab {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 2px 4px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: rgba(250, 247, 240, 0.62);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.22s ease;
+  }
+
+  .admin-bottom-nav .admin-tab.active {
+    background: transparent;
+    border: 0;
+    color: var(--gold-light);
+  }
+
+  .admin-bottom-nav .nav-ico {
+    font-size: 21px;
+    line-height: 1;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .admin-bottom-nav .admin-tab.active .nav-ico { transform: translateY(-2px) scale(1.12); }
+
+  .admin-bottom-nav .nav-lbl {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* gold marker on the active tab */
+  .admin-bottom-nav .admin-tab::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 26px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--gold);
+    transform: translateX(-50%) scaleX(0);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .admin-bottom-nav .admin-tab.active::before { transform: translateX(-50%) scaleX(1); }
+
+  .admin-bottom-nav .admin-tab:active { background: rgba(255, 255, 255, 0.06); }
+
+  /* new-orders count on the Orders icon */
+  .admin-bottom-nav .nav-badge {
+    position: absolute;
+    top: 2px;
+    left: calc(50% + 6px);
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #e5484d;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  .admin-bottom-nav .nav-badge[hidden] { display: none; }
+
+  /* things that used to sit at the bottom edge move up above the bar */
+  .fab { bottom: calc(var(--admin-nav-h) + var(--safe-bottom) + 16px); }
+  .cz-savebar { bottom: calc(var(--admin-nav-h) + var(--safe-bottom) + 8px); }
+  #view-customize { padding-bottom: 96px; }
+
+  /* the on-screen keyboard is open (a field is being edited): get out of the way */
+  html.kb-open .admin-tabs.admin-bottom-nav { display: none; }
+  html.kb-open #adminApp { padding-bottom: 0; }
+}
+
+@media (max-width: 340px) {
+  .admin-bottom-nav .admin-tab { font-size: 9.5px; letter-spacing: 0; }
+  .admin-bottom-nav .nav-ico { font-size: 19px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bottom-nav .admin-tab,
+  .admin-bottom-nav .nav-ico,
+  .admin-bottom-nav .admin-tab::before { transition: none; }
+}

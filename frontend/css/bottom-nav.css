@@ -1,0 +1,558 @@
+/* ==========================================================================
+   Bottom menu (phones only): Help & support, Cart, Home, Orders, Account.
+   Slides out of view while scrolling down and back when scrolling up
+   (js/bottom-nav.js toggles html.bnav-hidden). Hidden while a sheet is open
+   (html.sheet-real: a cart / account / help sheet, not the big card lifted out of a row, which leaves the menu showing behind its blur). From 720px wide up (tablet / computer) it is not shown
+   and nothing else on the page changes.
+   ========================================================================== */
+
+.bnav { display: none; }
+.trkbar { display: none; }
+.trk-veil { display: none; } /* (the Track order strip: phones only, styled in the media query below) */
+
+@media (max-width: 719px) {
+  html.has-bnav {
+    --bnav-h: 54px;
+    --trk-h: 0px;
+    --bnav-in: 0.42s cubic-bezier(0.22, 0.85, 0.3, 1);  /* the menu rises back and settles on its place, no overshoot */
+    --bnav-out: 0.4s cubic-bezier(0.55, 0, 0.45, 1);    /* and glides down, slowly at first */
+  }
+  html.has-bnav.has-track { --trk-h: 44px; } /* the Track order strip is showing: everything that sits above the menu rises by its height */
+
+  .bnav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 690; /* under the cart bar (700) and the sheets (850) */
+    height: calc(var(--bnav-h) + var(--safe-bottom));
+    padding: 0 0 var(--safe-bottom);
+    background: #fff;
+    border-top: 1px solid #eee3cc;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08);
+    transform: translateY(0);
+    transition: transform var(--bnav-in);
+    will-change: transform;
+  }
+  html.bnav-hidden .bnav { transform: translateY(calc(100% + 6px)); transition: transform var(--bnav-out); }
+  /* (a cart / account / help sheet simply covers the menu and the bars above it, then uncovers them again as it closes: nothing slides away and back) */
+  .bnav::after { /* the menu's white carries on below the screen edge, so no thin strip of the page can show under it (some phones leave a sliver there) */
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 40px;
+    background: #fff;
+  }
+
+  .bnav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* icons line up even when one label wraps to two lines */
+    gap: 3px;
+    position: relative;
+    padding: 7px 0 2px;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bnav-item svg { width: 23px; height: 23px; flex: none; }
+  .bnav-label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* the Account label: "Account" until a customer is signed in, then the customer's first line of name. A name that does not fit
+     keeps running through the label from right to left, round and round (js/bottom-nav.js adds .is-run and the second copy). */
+  .bnav-label.is-name { text-overflow: clip; max-width: 9ch; } /* (room for about 8 letters and a space: a longer name runs through this window) */
+  .bnav-run { display: inline-flex; width: max-content; animation: bnavRun var(--run-dur, 7s) linear infinite; will-change: transform; }
+  .bnav-run > span { flex: none; padding-right: 22px; }
+  @keyframes bnavRun { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .bnav-run { animation: none; } }
+  .bnav-item:active { color: var(--gold-dark); }
+  .bnav-item.is-active { color: var(--gold-dark); }
+  .bnav-item.is-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 28%;
+    right: 28%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--gold);
+  }
+
+  /* the number on the Cart icon */
+  .bnav-badge {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 4px);
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+    box-shadow: 0 0 0 2px #fff;
+  }
+  .bnav-badge[hidden] { display: none; }
+  .bnav-badge.is-bump { animation: bnavBump 0.38s var(--ease-out, ease-out); }
+  @keyframes bnavBump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+
+  /* ---- Track order strip: one line just above the menu while an order is on its way ---- */
+  .trkbar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--bnav-h) + var(--safe-bottom));
+    z-index: 691; /* just above the menu (690), under the cart bar (700) and the sheets (850) */
+    margin: 0;
+    --trk-bg: linear-gradient(100deg, #17140f 0%, #2a2214 55%, #3a2d12 100%);
+    border-radius: 14px 14px 0 0;
+    background: var(--trk-bg);
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 -6px 18px rgba(23, 20, 15, 0.22);
+    transform: translateY(115%);
+    opacity: 0;
+    transition: transform 0.3s var(--ease-out, ease-out), opacity 0.2s ease, bottom var(--bnav-in), box-shadow 0.25s ease;
+  }
+  /* opened out: the whole panel is cream with clean rounded top corners (no dark edge, no gold line along the top); only the "Track order" line stays dark */
+  .trkbar.is-open, .trkbar.is-closing { background: transparent; border-radius: 0; box-shadow: none; } /* (nothing behind the orders: each order panel is its own card, the rest is see-through) */
+  .trkbar.is-open .trk-slide { border-radius: 22px 22px 0 0; overflow: hidden; }
+  .trkbar.is-closing .trk-slide { border-radius: 14px 14px 0 0; overflow: hidden; } /* (folding: the corners settle to the strip's own 14px while it closes) */
+  .trk-slide { transition: border-radius 0.3s ease; }
+  .trkbar.is-open::before, .trkbar.is-closing::before { display: none; }
+  .trkbar[hidden] { display: none; }
+  .trkbar.is-on { transform: translateY(0); opacity: 1; }
+  .trkbar::before { /* a thin gold highlight along the top edge */
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    opacity: 0.7;
+    z-index: 1;
+    pointer-events: none;
+  }
+  html.has-bnav.bnav-hidden .trkbar { transition: transform 0.3s var(--ease-out, ease-out), opacity 0.2s ease, bottom var(--bnav-out); bottom: var(--safe-bottom); box-shadow: 0 -6px 18px rgba(23, 20, 15, 0.22), 0 24px 0 #2a2214; } /* (the strip's dark carries on below the screen edge too) */ /* the menu slid away: the strip stays, at the screen's edge */
+  html.has-bnav.bnav-hidden .trkbar.is-open, html.has-bnav.bnav-hidden .trkbar.is-closing { box-shadow: 0 24px 0 #2a2214; } /* (opened out: no shadow along the see-through top, only the dark below the screen edge) */
+
+  /* the blurred, dimmed page behind the opened-out strip (under the menu and the strip, over everything else) */
+  .trk-veil {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 685;
+    background: rgba(15, 13, 9, 0.55); /* (the same dark and the same light blur as the cart / orders / account pages: .overlay in components.css) */
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    touch-action: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s; /* (stays in place a moment after folding, so the tap that folds it cannot reach the page) */
+  }
+  html.has-track-open .trk-veil { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+
+  /* the orders sit side by side; swiping moves from one to the next */
+  .trk-scroll {
+    display: flex;
+    align-items: flex-end; /* each order keeps its own height; the "Track order" lines stay level at the bottom */
+    height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
+  .trk-scroll::-webkit-scrollbar { display: none; }
+  .trk-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column-reverse; /* the details sit ABOVE the "Track order" line, which stays where it was (just above the menu) */
+    min-width: 0;
+  }
+  /* a very thin dotted line at the seam between two orders, so it shows while sliding from one to the next */
+  .trk-slide { position: relative; }
+  .trk-slide + .trk-slide::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 8px; width: 0; border-left: 1px dotted rgba(190, 152, 48, 0.85); pointer-events: none; z-index: 2; }
+  .trk-head {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    padding: 0 14px 2px 10px;
+    border: 0;
+    background: var(--trk-bg);
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .trk-head:active { filter: brightness(1.15); }
+  .trk-head { z-index: 2; } /* (an order panel pulled down sinks BEHIND this line) */
+
+  /* opened out: the details grow upwards out of the strip (no sheet, no close button) */
+  .trk-detail { position: relative; flex: none; display: grid; grid-template-rows: 0fr; background: #faf6ec; color: var(--text, #222); }
+  .trk-detail-in { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
+  /* only the order on screen is opened out, and it takes exactly the height its own content needs (an order with more lines is taller) */
+  /* The panel is laid out at its full size at once and only SLIDES (a transform: the phone's graphics chip does it, no layout work per frame):
+     it rises from behind the "Track order" line when opened and sinks back behind it when folded. */
+  .trkbar.is-open .trk-slide .trk-detail, .trkbar.is-closing .trk-slide .trk-detail { grid-template-rows: 1fr; border-radius: 22px 22px 0 0; overflow: hidden; } /* (the panel carries its own round top corners, so they are round from the first moment of the slide - opening, folding or pulled) */
+  .trkbar.is-opening .trk-slide .trk-detail { animation: trkRise 0.38s cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .trkbar.is-closing .trk-slide .trk-detail { animation: trkSink 0.3s cubic-bezier(0.4, 0, 0.6, 1) both; }
+  /* The corners of the "Track order" line itself: square while the panel sits on top of it, rounded when the panel is gone. They follow the slide
+     (round again as the panel finishes sinking in, square again as it starts to rise) instead of jumping at the end. */
+  .trkbar.is-opening .trk-head { animation: trkHeadSquare 0.06s linear both; }
+  .trkbar.is-closing .trk-head { animation: trkHeadRound 0.36s linear both; }
+  @keyframes trkHeadRound { 0%, 66% { border-radius: 0; } 100% { border-radius: 14px 14px 0 0; } }
+  @keyframes trkHeadSquare { from { border-radius: 14px 14px 0 0; } to { border-radius: 0; } }
+  @keyframes trkRise { from { transform: translate3d(0, 100%, 0); } to { transform: translate3d(0, 0, 0); } }
+  @keyframes trkSink { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 100%, 0); } }
+  .trkbar.is-open .trk-slide .trk-detail-in, .trkbar.is-closing .trk-slide .trk-detail-in { padding: 12px; max-height: calc(100vh - var(--bnav-h) - var(--safe-bottom) - var(--trk-h) - var(--safe-top) - max(64px, 10vh)); max-height: calc(100dvh - var(--bnav-h) - var(--safe-bottom) - var(--trk-h) - var(--safe-top) - max(64px, 10dvh)); overflow-y: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: auto; overscroll-behavior-y: contain; } /* (an empty strip is always left above the panel - at least ~64px / 10% of the screen, below the notch - so the page behind stays in view and a tap there folds it; a longer order scrolls inside the panel; a sideways swipe on the details still goes on to the next order) */
+  .trk-detail-in::-webkit-scrollbar { display: none; }
+  .trk-go { transition: transform 0.3s var(--ease-out, ease-out); transform: rotate(-90deg); } /* (points up: it opens upwards) */
+  .trkbar.is-open .trk-go { transform: rotate(90deg); }
+  .trkbar.is-opening .trk-go { transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1); } /* (the arrow turns in step with the panel sliding up / down) */
+  .trkbar.is-closing .trk-go { transition: transform 0.3s cubic-bezier(0.4, 0, 0.6, 1); }
+  .trkbar.is-open .trk-detail-in .profile-order-card, .trkbar.is-closing .trk-detail-in .profile-order-card { margin: 0; box-shadow: none; } /* (kept while folding: otherwise the card's margin comes back at once and the panel first grows a little) */
+  html.has-track-open .cart-bar,
+  html.has-track-open .cn-bar,
+  html.has-track-open .cn-help { z-index: 680; } /* (under the blur, so the opened-out strip is never covered by them) */
+
+  .trk-ico {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold-light), var(--gold));
+    color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(201, 161, 59, 0.22);
+  }
+  .trk-ico svg { width: 16px; height: 16px; }
+  .trk-txt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .trk-title { font-size: 13.5px; font-weight: 700; letter-spacing: 0.1px; color: var(--gold-light); }
+  .trk-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .trk-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; animation: trkPulse 1.6s ease-out infinite; }
+  .trk-slide.is-confirmed .trk-dot, .trk-slide.is-ready .trk-dot { background: #46d6a3; }
+  @keyframes trkPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
+    80%, 100% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); }
+  }
+  .trk-go { flex: none; font-size: 22px; line-height: 1; color: var(--gold-light); }
+  .trk-total { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 1px; line-height: 1; font-variant-numeric: tabular-nums; } /* what the order costs, on the folded line itself: a small "TOTAL" over the amount */
+  .trk-total small { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-light); opacity: 0.8; }
+  .trk-total b { font-size: 15.5px; font-weight: 800; letter-spacing: 0.1px; color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+  .trk-count { flex: none; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(240, 217, 138, 0.55); font-size: 11px; font-weight: 700; line-height: 1.3; letter-spacing: 0.2px; color: var(--gold-light); }
+  /* the empty part of the line is the bar's own dark with a light tint, painted SOLID (not a see-through white): nothing of the page behind can show in it */
+  .trk-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background-color: #2a2214; background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), var(--trk-bg); overflow: hidden; }
+  .trk-prog i {
+    display: block;
+    height: 100%;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold));
+    background-size: 200% 100%;
+    animation: trkShine 2.4s linear infinite;
+    transition: width 0.6s var(--ease-out, ease-out);
+  }
+  @keyframes trkShine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+  /* more than one order: a row of dots under the slides (the one on screen is a longer gold pill) */
+  html.has-bnav.has-track.has-track-multi { --trk-h: 54px; }
+  .trk-dots { background: var(--trk-bg); display: flex; justify-content: center; align-items: center; gap: 5px; height: 10px; padding-bottom: 3px; pointer-events: none; }
+  .trk-dots i { width: 5px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.35); transition: width 0.25s var(--ease-out, ease-out), background 0.25s ease; }
+  .trk-dots i.is-cur { width: 16px; background: var(--gold); }
+  @media (prefers-reduced-motion: reduce) {
+    .trk-dot, .trk-prog i { animation: none; }
+    .trkbar, .trk-slide { transition: none; }
+    .trkbar.is-opening .trk-slide .trk-detail, .trkbar.is-closing .trk-slide .trk-detail, .trkbar.is-opening .trk-head, .trkbar.is-closing .trk-head { animation: none; }
+  }
+
+  /* the cart bar sits just above the menu, and drops to the bottom edge when the menu slides away */
+  html.has-bnav .cart-bar {
+    bottom: calc(var(--bnav-h) + var(--trk-h) + var(--sp-2) + var(--safe-bottom));
+    transition: bottom var(--bnav-in);
+  }
+  html.has-bnav.bnav-hidden .cart-bar { bottom: calc(var(--trk-h) + var(--sp-2) + var(--safe-bottom)); transition: bottom var(--bnav-out); }
+
+  /* room at the end of the page so nothing is hidden behind the menu (and the cart bar) */
+  html.has-bnav body.storefront { padding-bottom: calc(var(--bnav-h) + var(--trk-h) + var(--safe-bottom) + 12px); }
+  html.has-bnav.has-cart-bar body.storefront { padding-bottom: calc(var(--bnav-h) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 20px); }
+
+  /* With a footer on the page, the room kept for the menu (and the cart bar) is part of the dark footer itself, not blank page below
+     it: the footer's own colour continues under the menu instead of a band of empty background after the last line. */
+  html.has-bnav body.storefront:has(.site-footer:not([hidden])),
+  html.has-bnav.has-cart-bar body.storefront:has(.site-footer:not([hidden])) { padding-bottom: var(--safe-bottom); }
+  html.has-bnav .site-footer {
+    padding-bottom: calc(var(--sp-4) + var(--bnav-h) + var(--trk-h) + var(--safe-bottom));
+    transition: padding-bottom var(--bnav-in); /* (moves together with the menu sliding away / back) */
+  }
+  html.has-bnav.has-cart-bar .site-footer { padding-bottom: calc(var(--sp-4) + var(--bnav-h) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom)); }
+  /* the menu is hidden: its room goes too, only what is still on screen at the bottom (Track order line, cart bar) is kept */
+  html.has-bnav.bnav-hidden .site-footer { padding-bottom: calc(var(--sp-4) + var(--trk-h) + var(--safe-bottom)); transition: padding-bottom var(--bnav-out); }
+  html.has-bnav.has-cart-bar.bnav-hidden .site-footer { padding-bottom: calc(var(--sp-4) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom)); }
+
+  /* a toast floats above the menu while it is showing */
+  html.has-bnav:not(.bnav-hidden):not(.sheet-real) #toastHost { bottom: calc(var(--bnav-h) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px); }
+  /* the menu is hidden but the Track order line (and the cart bar) are still at the bottom: the message floats above them */
+  html.has-bnav.bnav-hidden:not(.sheet-real) #toastHost { bottom: calc(var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px); }
+  html.has-bnav #toastHost { transition: bottom var(--bnav-in), top var(--dur-fast) var(--ease-out); }
+  html.has-bnav.bnav-hidden #toastHost { transition: bottom var(--bnav-out), top var(--dur-fast) var(--ease-out); }
+  /* the "Fresh updates from FreshCutz" bar (or its help card) is up over the cart bar: the message floats above it, not on top of it (--cn-gap: its height, set by bottom-nav.js) */
+  html.has-bnav.has-cart-bar:not(.bnav-hidden):not(.sheet-real) #toastHost { bottom: calc(var(--bnav-h) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px + var(--cn-gap, 0px)); }
+  html.has-bnav.has-cart-bar.bnav-hidden:not(.sheet-real) #toastHost { bottom: calc(var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px + var(--cn-gap, 0px)); }
+}
+
+/* narrow phones: "Help & support" may wrap to two lines instead of being cut */
+@media (max-width: 389px) {
+  .bnav-item { font-size: 10px; }
+  .bnav-label { white-space: normal; text-align: center; line-height: 1.05; overflow: visible; text-overflow: clip; }
+  .bnav-label.is-name { white-space: nowrap; overflow: hidden; }
+}
+/* phones: the WhatsApp and Account buttons at the top right are not shown - the menu below has Help & support and Account */
+@media (max-width: 719px) {
+  html.has-bnav .header-actions { display: none; }
+}
+
+@media (max-width: 369px) {
+  html.has-bnav { --bnav-h: 58px; } /* (a two-line "Help & support" may be needed on the narrowest phones) */
+}
+@media (max-width: 359px) {
+    .acct-name { font-size: 20px; }
+  .bnav-item { font-size: 9.5px; }
+  .bnav-item svg { width: 21px; height: 21px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* (phones set to reduce motion, or with animations switched off, still get a short plain slide of the menu - no spring) */
+  html.has-bnav { --bnav-in: 0.3s ease-out; --bnav-out: 0.3s ease-in; }
+  /* (the site-wide rule in animations.css cuts every transition to nothing for reduce-motion phones; the menu and what sits on it keep their short slide) */
+  html.has-bnav .bnav, html.has-bnav .cart-bar, html.has-bnav .trkbar, html.has-bnav .site-footer, html.has-bnav .cn-bar, html.has-bnav .cn-help, html.has-bnav #toastHost { transition-duration: 0.3s !important; }
+  .bnav-badge.is-bump { animation: none; }
+}
+
+/* Help & support sheet */
+.help-sheet { display: flex; flex-direction: column; gap: var(--sp-3); }
+.help-sheet p { margin: 0; font-size: 14px; color: var(--text-muted); }
+.help-hero { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md, 14px); background: var(--site-header-bg, var(--ink)); color: var(--text-on-dark, #fff); }
+.help-hero p { color: var(--gold-light); font-size: 13px; line-height: 1.4; margin-top: 3px; }
+.help-hero-ico { flex: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--gold); font-size: 21px; }
+.help-hero-title { font-size: 16px; font-weight: 800; }
+.help-q { border-top: 1px solid #f0e8d6; }
+.help-q:first-of-type { border-top: 0; }
+.help-q summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; font-size: 14.5px; font-weight: 600; cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.help-q summary::-webkit-details-marker { display: none; }
+.help-q summary::after { content: "›"; flex: none; font-size: 22px; line-height: 1; color: var(--text-muted); transition: transform 0.18s ease; }
+.help-q[open] summary::after { transform: rotate(90deg); }
+.help-a { padding: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+.help-a b { color: var(--text, #222); }
+.help-wa { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+.help-wa svg { flex: none; }
+.help-number { margin-top: -4px; text-align: center; font-size: 13px; color: var(--text-muted); }
+
+/* Account tab */
+.acct-page { display: flex; flex-direction: column; gap: var(--sp-3); }
+.acct-hero { position: relative; flex: none; overflow: hidden; display: flex; align-items: center; gap: 14px; padding: 16px 56px 16px 16px; border-radius: 18px; background: linear-gradient(110deg, #17140f 0%, #2a2214 58%, #3d2f12 100%); color: #fff; box-shadow: 0 6px 18px rgba(23, 20, 15, 0.18); }
+.acct-hero::before { content: ""; position: absolute; right: -38px; top: -46px; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(212, 168, 67, 0.34), rgba(212, 168, 67, 0) 68%); pointer-events: none; }
+.acct-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold, #d4a843), transparent); opacity: 0.7; }
+.acct-avatar { position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, var(--gold-light, #f0d58a), var(--gold, #d4a843)); color: var(--ink, #17140f); font-family: var(--font-display); font-size: 24px; font-weight: 700; box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.28); }
+.acct-who { position: relative; min-width: 0; flex: 1; }
+.acct-welcome { font-size: 10.5px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--gold-light, #f0d58a); opacity: 0.9; }
+.acct-name { margin-top: 1px; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; } /* (a long name wraps onto a second line instead of being cut) */
+.acct-phone { margin-top: 3px; font-size: 12.5px; color: rgba(255, 255, 255, 0.72); letter-spacing: 0.2px; }
+/* the Account page has no title bar: the greeting card carries its own ✕ in the corner */
+.sheet.sheet-acct .sheet-header { display: none; }
+.acct-x { position: absolute; top: 12px; right: 12px; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.acct-card { flex: none; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md, 14px); background: #fff; box-shadow: var(--shadow-sm); }
+.acct-h { margin: 0 0 var(--sp-2); font-size: 13px; font-weight: 800; letter-spacing: 0.2px; color: var(--text-muted); text-transform: uppercase; }
+.acct-p { margin: 0 0 6px; font-size: 14px; line-height: 1.45; }
+.acct-p:last-child { margin-bottom: 0; }
+.acct-title { position: relative; margin: 0 0 var(--sp-2); padding-left: 11px; font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.25; letter-spacing: 0.1px; color: var(--ink, #17140f); text-transform: none; }
+.acct-title::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 3px; width: 3.5px; border-radius: 3px; background: linear-gradient(180deg, var(--gold-light, #f0d58a), var(--gold, #d4a843)); }
+.acct-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.acct-chip { padding: 6px 12px; border-radius: 999px; background: #fffaf0; border: 1px solid #eee3cc; font-size: 13px; font-weight: 600; }
+.acct-rows { padding: 0 var(--sp-4); }
+.acct-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 0; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 600; text-align: left; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.acct-row + .acct-row { border-top: 1px solid #f0e8d6; }
+.acct-row-ico { flex: none; width: 28px; text-align: center; font-size: 18px; }
+.acct-row-text { flex: 1; }
+.acct-row-go { flex: none; font-size: 22px; line-height: 1; color: var(--text-muted); }
+.acct-card .address-summary-card { margin: 0; }
+
+/* "Fresh updates from FreshCutz - Allow" bar: a little smaller, and lifted above the menu so the menu does not cover it */
+.cn-bar { left: 0; right: 0; margin: 0 auto; transform: none; width: max-content; font-size: 12.5px; padding-left: 20px; gap: 8px; } /* (centred with auto margins: its own fade-in animation replaced the translateX(-50%) that used to centre it, which pushed it half off the screen) */
+.cn-bar-yes { font-size: 12px; padding: 7px 14px; }
+@media (max-width: 719px) {
+  /* the bar rides above the menu / Track order line / cart bar and glides with them (up when the menu comes back, down when it goes) */
+  html.has-bnav .cn-bar, html.has-bnav .cn-help { transition: bottom var(--bnav-in); }
+  html.has-bnav.bnav-hidden .cn-bar, html.has-bnav.bnav-hidden .cn-help { transition: bottom var(--bnav-out); }
+  html.has-bnav:not(.bnav-hidden):not(.sheet-real) .cn-bar,
+  html.has-bnav:not(.bnav-hidden):not(.sheet-real) .cn-help { bottom: calc(var(--bnav-h) + var(--trk-h) + var(--safe-bottom) + 12px); }
+  html.has-bnav.has-cart-bar:not(.bnav-hidden):not(.sheet-real) .cn-bar,
+  html.has-bnav.has-cart-bar:not(.bnav-hidden):not(.sheet-real) .cn-help { bottom: calc(var(--bnav-h) + var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px); }
+  html.has-bnav.bnav-hidden:not(.sheet-real) .cn-bar,
+  html.has-bnav.bnav-hidden:not(.sheet-real) .cn-help { bottom: calc(var(--trk-h) + var(--safe-bottom) + 12px); }
+  html.has-bnav.has-cart-bar.bnav-hidden:not(.sheet-real) .cn-bar,
+  html.has-bnav.has-cart-bar.bnav-hidden:not(.sheet-real) .cn-help { bottom: calc(var(--trk-h) + var(--bottom-bar-h) + var(--safe-bottom) + 14px); }
+}
+
+/* About block on the Account page */
+.acct-feats { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.acct-feat { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
+.acct-feat b { color: var(--text, #222); font-size: 14px; }
+.acct-feat-ico { flex: none; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #fffaf0; border: 1px solid #eee3cc; font-size: 17px; }
+.acct-thanks { margin: 14px 0 0; text-align: center; font-size: 13.5px; font-weight: 600; color: var(--text-muted); }
+
+/* softer text on the Account page (the paragraph, the thank-you line, the rows and the address title were too dark) */
+.acct-page .acct-p, .acct-page .acct-thanks { color: #8a806c; }
+.acct-page .acct-row { color: #7b715f; font-weight: 600; }
+.acct-page .acct-row-go { color: #b3a88f; }
+.acct-page .acct-h { color: #9a8f78; }
+.acct-page .acct-feat { color: #8a806c; }
+.acct-page .acct-feat b { color: #6f6656; }
+
+/* empty cart / no orders yet */
+.empty-fancy { display: flex; flex-direction: column; align-items: center; text-align: center; padding: var(--sp-5) var(--sp-3) var(--sp-4); }
+.empty-art { position: relative; width: 112px; height: 112px; margin-bottom: var(--sp-3); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #fff7df 0%, #f6e8bd 62%, #efdca4 100%); box-shadow: 0 0 0 10px rgba(201, 161, 59, 0.10), 0 0 0 22px rgba(201, 161, 59, 0.05); }
+.empty-art-emoji { font-size: 50px; line-height: 1; animation: emptyBob 3.2s ease-in-out infinite; }
+@keyframes emptyBob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-6px) rotate(-4deg); } }
+.empty-title { margin: var(--sp-3) 0 6px; font-size: 20px; }
+.empty-text { margin: 0 0 var(--sp-4); max-width: 280px; font-size: 14px; line-height: 1.5; color: #8a806c; }
+.empty-cta { min-width: 190px; }
+.empty-perks { list-style: none; margin: var(--sp-5) 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.empty-perks li { padding: 6px 12px; border-radius: 999px; background: #fffaf0; border: 1px solid #eee3cc; font-size: 12.5px; font-weight: 600; color: #7b715f; }
+@media (prefers-reduced-motion: reduce) { .empty-art-emoji { animation: none; } }
+
+/* "Edit your name and address": compact, in the same look as the Account page */
+.acct-edit { gap: 10px; }
+.acct-back { align-self: flex-start; margin: -2px 0 -2px -4px; padding: 4px 8px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--gold-dark); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.acct-edit-intro { margin: 0 2px; font-size: 13px; line-height: 1.45; color: #8a806c; }
+.acct-edit-card { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+.acct-edit .field { gap: 5px; }
+.acct-edit .field label { font-size: 12px; font-weight: 700; letter-spacing: 0.2px; color: #8a806c; }
+.acct-edit .field input,
+.acct-edit .field textarea { padding: 10px 12px; border: 1.5px solid #e9dfc6; border-radius: 10px; background: #fffdf8; font-size: 16px; line-height: 1.35; color: rgb(32, 28, 20); } /* typed text keeps the normal dark colour */
+.acct-edit .field textarea { min-height: 64px; resize: none; }
+.acct-edit .field .error { min-height: 0; font-size: 12px; }
+.acct-edit .field .error:empty { display: none; }
+.acct-edit-foot { padding: 12px 16px calc(12px + var(--safe-bottom)); }
+.acct-edit-foot .btn { padding: 12px 16px; font-size: 15px; }
+
+/* sign-in page (Account / Orders when not signed in) */
+.login-head { display: flex; flex-direction: column; align-items: center; text-align: center; padding: var(--sp-2) var(--sp-2) 0; }
+.login-ico { width: 64px; height: 64px; margin-bottom: 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px;
+  background: radial-gradient(circle at 50% 38%, #fff7df 0%, #f6e8bd 62%, #efdca4 100%); box-shadow: 0 0 0 6px rgba(201, 161, 59, 0.10); }
+.login-title { font-size: 18px; font-weight: 800; }
+.login-head .acct-edit-intro { margin: 6px 0 0; max-width: 290px; }
+
+/* regular weight (not bold) for the address title and the thank-you line on the Account page */
+.acct-page .acct-h.acct-h-light { font-weight: 400; }
+.acct-page .acct-thanks { font-weight: 400; }
+
+/* field labels ("Your name", "Phone number", ...) in regular weight on the Your Details, sign-in and edit-address pages */
+.acct-edit .field label { font-weight: 400; }
+
+/* the customer site says "Order Placed" (not NEW in capitals) on the order's badge */
+body.storefront .badge-new { text-transform: none; }
+
+/* ---- The opened-out Track order panel: a friendly line, the three steps, then that order ---- */
+.trk-note[hidden] { display: none; }
+.trk-note { display: flex; align-items: center; gap: 10px; padding: 2px 2px 0; }
+.trk-note-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, var(--gold-light), var(--gold)); color: var(--ink); box-shadow: 0 0 0 4px rgba(201, 161, 59, 0.2); }
+.trk-note-ico svg { width: 20px; height: 20px; }
+.trk-note-title { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+.trk-note-sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.35; }
+/* ---- (older name of the same block) ---- */
+.trk-sheet { display: flex; flex-direction: column; gap: 14px; }
+.trk-steps { position: relative; display: flex; justify-content: space-between; align-items: flex-start; --in: 50px; padding: 16px calc(var(--in) - 31px) 6px; border-radius: 16px; background: linear-gradient(100deg, #17140f, #2a2214); }
+.trk-step { flex: none; width: 62px; white-space: nowrap; line-height: 1.25; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.55); text-align: center; }
+.trk-step i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.3); font-style: normal; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.6); }
+.trk-step.is-done { color: #fff; }
+.trk-step.is-done i { border-color: var(--gold); background: var(--gold); color: var(--ink); }
+.trk-step.is-now i { box-shadow: 0 0 0 4px rgba(201, 161, 59, 0.28); }
+/* The four steps sit 62px wide, the first and last circle 50px in from the edges (as when there were three steps) and the others spread evenly between them (every name on one line, it may be a little wider than its 62px); each line runs from one circle to the next (--k: how many circles it starts after the first). */
+.trk-line { position: absolute; top: 28px; height: 2px; width: calc((100% - 2 * var(--in)) / 3 - 30px); left: calc(var(--in) + (100% - 2 * var(--in)) * var(--k, 0) / 3 + 15px); background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+.trk-line:nth-child(2) { --k: 0; }
+.trk-line:nth-child(4) { --k: 1; }
+.trk-line:nth-child(6) { --k: 2; }
+@media (max-width: 335px) { .trk-steps { --in: 39px; } } /* (the narrowest phones: the outer steps move out a little so the four names keep a gap between them) */
+.trk-line.is-done { background: var(--gold); }
+.trk-line.is-part::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 34%; border-radius: 2px; background: var(--gold); animation: trkLineGo 0.9s var(--ease-out, ease-out) both; }
+@keyframes trkLineGo { from { width: 0; } to { width: 34%; } }
+/* The ring round the step the order is at slowly grows and fades back (switched off for people who asked their phone for less motion). */
+.trk-step.is-now i { animation: trkPulse 2.4s ease-in-out infinite; }
+@keyframes trkPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(201, 161, 59, 0.28); } 50% { box-shadow: 0 0 0 7px rgba(201, 161, 59, 0.1); } }
+@media (prefers-reduced-motion: reduce) { .trk-step.is-now i { animation: none; } }
+.trk-steps { padding-bottom: 14px; }
+.trk-steps.is-cancelled { padding: 14px; background: #fdecea; }
+.trk-cancelled { width: 100%; text-align: center; font-weight: 600; color: #b3261e; }
+
+/* Delivery address page (Final Step -> Change address, and first-time Delivery Details): same compact cards as the account pages.
+   Only the spacing is tightened; typed text, delivery-time buttons and payment options keep their original look. */
+.addr-edit .acct-edit-card .field + .field { margin: 0; }
+.addr-edit .field input,
+.addr-edit .field textarea { color: rgb(32, 28, 20); }
+.addr-edit .field[data-role="slots"] > label,
+.addr-edit .pay-field > label { margin-bottom: 1px; }
+.addr-edit .field label.pay-opt { font-size: 13px; font-weight: 600; color: var(--charcoal); letter-spacing: normal; }
+.addr-edit .field .pay-opt input[type="radio"] { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 0; background: none; }
+
+/* ---- "Delivered!" celebration: a card above the menu / the Track order strip, with a burst of gold confetti (js/bottom-nav.js) ---- */
+@media (max-width: 719px) {
+  .celeb { position: fixed; left: 12px; right: 12px; z-index: 692; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; color: #fff; background: radial-gradient(120% 160% at 0% 0%, rgba(201, 161, 59, 0.28), rgba(201, 161, 59, 0) 60%), linear-gradient(100deg, #17140f, #2a2214); box-shadow: inset 0 0 0 1px rgba(201, 161, 59, 0.35), 0 10px 28px rgba(23, 20, 15, 0.35); transform: translateY(30px) scale(0.96); opacity: 0; transition: transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.3s ease; overflow: visible; cursor: pointer; }
+  .celeb.is-in { transform: translateY(0) scale(1); opacity: 1; }
+  .celeb-ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--ink, #17140f); background: linear-gradient(145deg, #f0d57a, var(--gold, #c9a13b) 55%, #a8801f); box-shadow: 0 0 0 5px rgba(201, 161, 59, 0.28), 0 3px 12px rgba(201, 161, 59, 0.55); }
+  .celeb.is-in .celeb-ico { animation: celebPop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.4) 0.15s both; }
+  .celeb-ico svg path { stroke-dasharray: 24; stroke-dashoffset: 24; }
+  .celeb.is-in .celeb-ico svg path { animation: celebTick 0.45s ease-out 0.45s forwards; }
+  .celeb-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .celeb-txt b { font-size: 16px; letter-spacing: 0.1px; color: #f6dfa0; }
+  .celeb-txt span { font-size: 12.5px; line-height: 1.35; color: rgba(255, 255, 255, 0.82); }
+  .celeb-x { flex: none; align-self: flex-start; width: 26px; height: 26px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.75); font-size: 12px; cursor: pointer; }
+  .celeb-bits { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .celeb-bits i { position: absolute; top: 0; width: 7px; height: 11px; border-radius: 2px; opacity: 0; }
+  .celeb.is-in .celeb-bits i { animation-name: celebFall; animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1); animation-fill-mode: forwards; }
+  @keyframes celebFall { 0% { opacity: 1; transform: translate(0, 12px) rotate(0deg); } 35% { opacity: 1; transform: translate(calc(var(--dx) * 0.6), -62px) rotate(calc(var(--r) * 0.5)); } 100% { opacity: 0; transform: translate(var(--dx), 44px) rotate(var(--r)); } }
+  @keyframes celebPop { 0% { transform: scale(0.4); } 100% { transform: scale(1); } }
+  @keyframes celebTick { to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { .celeb-bits { display: none; } .celeb.is-in .celeb-ico, .celeb.is-in .celeb-ico svg path { animation: none; stroke-dashoffset: 0; } }
+}

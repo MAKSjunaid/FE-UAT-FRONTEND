@@ -1,0 +1,667 @@
+/* ==========================================================================
+   Cart bottom bar + cart/checkout sheet. Mobile-first: the panel is a
+   full-height bottom sheet on phones, and becomes a right-hand drawer
+   from tablet width up.
+   ========================================================================== */
+
+.cart-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Lifted a little off the very bottom edge instead of sitting flush
+     against it (which read as too close to/crowded by the phone's own
+     bottom UI), while still clearing the safe area on notched devices. */
+  bottom: calc(var(--sp-2) + var(--safe-bottom));
+  z-index: 700;
+  background: var(--site-cartbar-bg, var(--ink));
+  color: #fff;
+  padding: 12px var(--sp-4);
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  border-radius: var(--r-lg);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+  animation: fadeUp var(--dur-med) var(--ease-out) both;
+}
+
+.cart-bar.show { display: flex; }
+
+.cart-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cart-bar-info .count {
+  font-size: calc(11.5px * var(--sz-cartbar, 1));
+  color: var(--text-on-dark-muted);
+}
+
+.cart-bar-info .total {
+  font-size: calc(17px * var(--sz-cartbar, 1));
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+.cart-bar .btn {
+  flex: 0 0 auto;
+  font-size: calc(14px * var(--sz-cartbar, 1));
+}
+
+/* ---- Panel shell (cart + checkout share this) -------------------------- */
+.sheet {
+  position: fixed;
+  z-index: 850;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  inset: auto 0 0 0;
+  max-height: 85vh; /* Safari counts the area under its address bar in vh, so 92vh slid under it */
+  max-height: min(85vh, 85dvh);
+  border-radius: 20px 20px 0 0;
+  animation: slideUpSheet var(--dur-med) var(--ease-out) both;
+  box-shadow: var(--shadow-lg);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4);
+  border-bottom: 1px solid #eee3cc;
+  flex: 0 0 auto;
+}
+
+.sheet-header h2 {
+  font-size: 18px;
+}
+
+.sheet-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(23, 20, 15, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain; /* scrolling past the end of the sheet never moves the page behind it */
+  padding: var(--sp-4);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.sheet-footer {
+  padding: var(--sp-4);
+  border-top: 1px solid #eee3cc;
+  background: var(--bg-card);
+  flex: 0 0 auto;
+}
+
+/* ---- Cart line item ------------------------------------------------- */
+.cart-item {
+  position: relative;
+  display: flex;
+  gap: var(--sp-3);
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+}
+
+.cart-item img {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.cart-item-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cart-item-name {
+  padding-right: 30px; /* keeps a long name clear of the trash icon */
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.cart-item-variant {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.cart-item-price {
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+/* Trash icon in the item panel's top-right corner: removes the whole line
+   in one tap, instead of tapping − down from 3 to 2 to 1 to 0. */
+.cart-item-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b6558; /* explicit colour (not a var) so the icon can never inherit to transparent */
+  background: rgba(23, 20, 15, 0.06);
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cart-item-delete svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  pointer-events: none; /* taps always land on the button itself */
+}
+
+.cart-item-delete:active {
+  background: rgba(23, 20, 15, 0.14);
+  color: var(--ink);
+}
+
+.remove-link {
+  font-size: 11.5px;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ---- Summary rows ------------------------------------------------------ */
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  padding: 3px 0;
+}
+
+.summary-row.total {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  border-top: 1px dashed #ddd1ae;
+  margin-top: 6px;
+  padding-top: 10px;
+}
+
+/* ---- Saved-address summary (returning customer, delivery step) --------- */
+.address-summary-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.address-summary-row {
+  font-size: 13.5px;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.address-summary-row + .address-summary-row {
+  margin-top: 4px;
+}
+
+/* ---- "My Account" order history (profile sheet) ------------------------ */
+.profile-order-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--sp-3);
+}
+
+.profile-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-bottom: 8px;
+}
+
+.profile-order-code {
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.profile-order-time {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.profile-order-address {
+  font-size: 12.5px;
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.profile-order-items {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: #faf7f0;
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.profile-order-items div + div {
+  margin-top: 3px;
+}
+
+.profile-order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* ---- Success screen ---------------------------------------------------- */
+/* the order-placed sheet has no title bar: just the ✕, floating in the top-right corner */
+.sheet.sheet-success .sheet-header {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  padding: 0; border: 0; background: none;
+}
+.sheet.sheet-success .sheet-header h2 { display: none; }
+
+.order-success {
+  text-align: center;
+  padding: var(--sp-6) var(--sp-4) var(--sp-3); /* (less room under the Order ID chip, before the items panel) */
+}
+
+.success-check {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--success);
+  color: #fff;
+  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--sp-4);
+  animation: checkPop 480ms var(--ease-out) both;
+}
+
+.success-check::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--success);
+  animation: ringPulse 900ms var(--ease-out) 420ms both;
+}
+
+/* Order ID: a small, legible chip — not the decorative display serif
+   used for headings, which read as oversized for a reference number. */
+.order-id-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f4f1e8;
+  border: 1px solid #e6dcc0;
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  margin-top: 10px;
+}
+
+.order-id-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.order-id-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.order-summary-list {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.order-notes {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed #e6dcc0;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.order-notes-label {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.screenshot-hint {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: var(--sp-3);
+}
+
+/* ---- Responsive: right-hand drawer from tablet up ----------------------- */
+@media (min-width: 720px) {
+  .sheet {
+    inset: 0 0 0 auto;
+    width: 420px;
+    max-height: 100vh;
+    border-radius: 0;
+    animation: slideInRight var(--dur-med) var(--ease-out) both;
+  }
+
+  .cart-bar {
+    left: auto;
+    right: var(--sp-5);
+    bottom: var(--sp-5);
+    max-width: 380px;
+  }
+}
+
+/* "My Account": the orders load a few at a time — this is the line + spinner shown at the end of the list while the next ones come */
+.profile-orders-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-2);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.profile-orders-more .spinner { width: 16px; height: 16px; }
+/* first load of the list: just the spinner line, no divider above it */
+.profile-orders-more.profile-orders-loading { border-top: 0; margin-top: 0; padding: var(--sp-5, 24px) 0; }
+.profile-orders-end {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-2);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---- Final Step: preferred delivery time (tap to choose, tap again to clear) ---- */
+.slot-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot-chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast), border-color var(--dur-fast);
+}
+.slot-chip:active { transform: scale(0.97); }
+.slot-chip.is-selected {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold) 60%, var(--gold-dark));
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+/* Today / Tomorrow: each day is a plain heading (not a button) with its times below it; Tomorrow sits under Today */
+/* the white panel the choices sit in (like the Items panel) */
+.slot-panel { background: var(--bg-card); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); box-shadow: var(--shadow-sm); }
+/* (already inside a white card, as on the Delivery Details page: no second panel) */
+.acct-edit-card .slot-panel { background: none; box-shadow: none; padding: 0; }
+.slot-panel .error:empty { display: none; }
+.slot-panel .slot-picked { background: #fffaf0; }
+.slot-day-head { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 6px; }
+.slot-day-head:first-of-type { margin-top: 0; }
+.slot-day-head b { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.slot-day-head span { font-size: 12px; color: var(--text-muted); }
+.field[data-mode="days"] .slot-chip { min-height: 38px; padding: 7px 14px; font-size: 13.5px; }
+.slot-picked { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 14px; border-radius: var(--r-md, 12px); background: #fffaf0; border: 1px solid #eee3cc; font-size: 13.5px; color: var(--text-muted); }
+.slot-picked[hidden] { display: none; }
+.slot-picked b { color: var(--text-main); }
+
+/* Place Order with no payment mode chosen: the section blinks once after the page scrolls to it */
+.pay-field.pay-attn .pay-opts { animation: payAttn 0.9s ease-out 0.25s 2; border-radius: var(--r-md, 12px); }
+@keyframes payAttn { 0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } 40% { box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.28); } }
+
+/* ---- Final Step: payment mode (radio buttons) ---- */
+.pay-opts { display: flex; flex-direction: column; gap: 8px; }
+.pay-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: var(--r-md, 12px);
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.pay-opt input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--gold-dark, #9a7a22);
+  cursor: pointer;
+}
+.pay-opt.is-selected { border-color: var(--gold); background: #fffaf0; }
+.pay-opt-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pay-opt-title { font-size: 15px; font-weight: 700; }
+.pay-opt-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+.pay-apps { display: flex; gap: 10px; margin-top: 8px; }
+.pay-app { display: inline-flex; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.pay-app img { display: block; width: 100%; height: 100%; }
+.pay-field .error:empty { display: none; }
+.pay-field .error { margin-top: 6px; }
+
+/* ---- Order Placed: pay with UPI ---- */
+.upi-card {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-md, 12px);
+  border: 1.5px solid var(--gold);
+  background: #fffaf0;
+  text-align: center;
+}
+.upi-title { font-size: 17px; font-weight: 800; color: var(--ink); }
+.upi-sub { margin: 4px 0 var(--sp-2); font-size: 14px; color: var(--text-muted); overflow-wrap: anywhere; }
+.upi-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-bottom: var(--sp-3); }
+.upi-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 72px;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.upi-tile img { display: block; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); transition: transform var(--dur-fast, 0.15s); }
+.upi-tile:active img { transform: scale(0.94); }
+.upi-desk { margin: 0 0 var(--sp-2); font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.upi-desk[hidden] { display: none; }
+.upi-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.upi-qr { margin: var(--sp-3) auto 0; width: min(220px, 70%); padding: 8px; background: #fff; border-radius: 8px; }
+.upi-qr[hidden] { display: none; }
+.upi-qr svg { display: block; width: 100%; height: auto; }
+
+/* My Orders: the small "Forgot to pay? Pay now" line that opens the payment card */
+.upi-forgot { margin: var(--sp-2) 0; }
+.upi-forgot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: #fffaf0;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.upi-forgot-btn b { color: var(--ink); }
+.upi-forgot-arrow { display: inline-block; font-size: 16px; line-height: 1; transition: transform var(--dur-fast, 0.15s); }
+.upi-forgot.is-open .upi-forgot-arrow { transform: rotate(90deg); }
+.upi-forgot-body[hidden] { display: none; }
+.upi-forgot .upi-card { margin-top: var(--sp-2); }
+.upi-forgot .proof-box { margin-top: var(--sp-2); padding-top: var(--sp-2); }
+
+/* ---- UPI payment screenshot (Order Placed screen and My Orders) ---- */
+.proof-box {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed #d9c98f;
+  text-align: center;
+}
+.profile-order-card > .proof-box { margin: var(--sp-2) 0; padding: var(--sp-2) 0 0; }
+.proof-title, .proof-thanks { font-size: 15px; font-weight: 800; color: var(--ink); }
+.proof-thanks { color: var(--success, #1f8a4c); }
+.proof-sub { margin: 4px 0 var(--sp-2); font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.proof-btn { cursor: pointer; }
+.proof-msg { margin-top: 6px; min-height: 0; font-size: 12px; color: var(--text-muted); }
+.proof-box.is-busy { opacity: 0.7; pointer-events: none; }
+/* inside My Orders the card is narrower: keep the four app tiles on one row */
+.upi-forgot .upi-card { padding: var(--sp-3) var(--sp-2); }
+.upi-forgot .upi-tiles { gap: 8px; }
+.upi-forgot .upi-tile { width: 66px; font-size: 11px; white-space: nowrap; }
+/* "Pay now": opens the phone's own list of UPI apps */
+.upi-paynow { display: flex; justify-content: center; width: 100%; max-width: 220px; margin: 0 auto var(--sp-2); text-decoration: none; }
+.proof-btn { display: inline-flex; align-items: center; gap: 6px; }
+.proof-clip { flex: none; }
+
+/* ---- simpler payment card: one big "Pay now", small app icons, the rest under "Other ways to pay" ---- */
+.upi-card { padding: var(--sp-3); }
+.upi-title { margin-bottom: 10px; font-size: 16px; }
+.upi-paynow { max-width: 260px; margin: 0 auto; padding: 11px 16px; font-size: 16px; }
+.upi-tiles, .upi-forgot .upi-tiles { gap: 14px; margin: 12px 0 2px; }
+.upi-tile, .upi-forgot .upi-tile { width: auto; }
+.upi-tile img { width: 40px; height: 40px; border-radius: 10px; }
+.upi-other {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 4px 6px;
+  border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 13px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.upi-other-arrow { display: inline-block; font-size: 16px; line-height: 1; transition: transform var(--dur-fast, 0.15s); }
+.upi-card.is-other-open .upi-other-arrow { transform: rotate(90deg); }
+.upi-other-body { margin-top: 6px; }
+.upi-other-body[hidden] { display: none; }
+.upi-card .proof-box { margin-top: 10px; padding-top: 10px; }
+.proof-box .proof-sub { margin: 6px 0 0; font-size: 12px; }
+.proof-box.is-done .proof-sub { margin: 4px 0 var(--sp-2); font-size: 13px; }
+
+/* ---- "Pay now" carries the UPI app icons and gently animates ---- */
+.upi-paynow { position: relative; overflow: hidden; align-items: center; gap: 10px; animation: upiPulse 2.4s ease-in-out infinite; transition: transform 0.12s; }
+.upi-paynow:active { transform: scale(0.97); }
+.upi-paynow-text { font-weight: 800; }
+.upi-paynow-icons { display: inline-flex; align-items: center; gap: 4px; }
+.upi-paynow-icons img { display: block; width: 22px; height: 22px; border-radius: 6px; box-shadow: 0 0 0 1.5px #fff; }
+.upi-paynow::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  transform: translateX(-130%) skewX(-18deg); animation: upiShine 3.2s ease-in-out infinite; pointer-events: none;
+}
+@keyframes upiPulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(176, 137, 40, 0.35), 0 0 0 0 rgba(212, 175, 55, 0.45); }
+  50% { box-shadow: 0 4px 14px rgba(176, 137, 40, 0.45), 0 0 0 9px rgba(212, 175, 55, 0); }
+}
+@keyframes upiShine { 0% { transform: translateX(-130%) skewX(-18deg); } 55%, 100% { transform: translateX(380%) skewX(-18deg); } }
+@media (prefers-reduced-motion: reduce) { .upi-paynow, .upi-paynow::after { animation: none; } }
+
+/* ---- smaller title and Pay now button, with a little jiggle ---- */
+.upi-title { font-size: 14px; margin-bottom: 8px; }
+.upi-paynow { max-width: 210px; padding: 8px 14px; font-size: 14px; gap: 8px; animation: upiPulse 2.4s ease-in-out infinite, upiJiggle 4s ease-in-out infinite; }
+.upi-paynow-icons { gap: 3px; }
+.upi-paynow-icons img { width: 18px; height: 18px; border-radius: 5px; box-shadow: 0 0 0 1px #fff; }
+@keyframes upiJiggle {
+  0%, 62%, 100% { transform: rotate(0) scale(1); }
+  66% { transform: rotate(-3deg) scale(1.03); }
+  70% { transform: rotate(3deg) scale(1.03); }
+  74% { transform: rotate(-2.5deg) scale(1.02); }
+  78% { transform: rotate(2.5deg) scale(1.02); }
+  82% { transform: rotate(-1deg) scale(1); }
+  86% { transform: rotate(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .upi-paynow, .upi-paynow::after { animation: none; } }
+
+/* the thank-you on its own (after an upload) */
+.proof-box.is-done { margin-top: var(--sp-3); padding: var(--sp-3); border: 1.5px solid var(--gold); border-radius: var(--r-md, 12px); background: #fffaf0; }
+.profile-order-card > .proof-box.is-done { margin: var(--sp-2) 0; }
+.upi-forgot .proof-box.is-done { margin-top: 0; }
+
+/* the button is only as wide as its content */
+.upi-paynow { width: fit-content; min-width: 0; padding-left: 20px; padding-right: 20px; }
+
+/* My Orders: "Already paid? Upload payment screenshot" - the question in a lighter weight, like "Forgot to pay?" */
+.proof-lead { font-weight: 500; }
+
+/* back from the UPI app: the upload box is highlighted */
+.proof-nudge { display: none; margin: 0 0 8px; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.proof-box.is-nudge .proof-nudge { display: block; }
+.proof-box.is-nudge .proof-sub { display: none; }
+.proof-box.is-nudge .proof-btn { border-color: var(--gold); background: #fff4cf; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35); animation: proofNudge 1.3s ease-in-out infinite; }
+@keyframes proofNudge {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(212, 175, 55, 0.12); }
+}
+@media (prefers-reduced-motion: reduce) { .proof-box.is-nudge .proof-btn { animation: none; } }
+/* while the "Done paying?" line is showing, the button needs no "Already paid?" in front */
+.proof-box.is-nudge .proof-lead { display: none; }
+
+/* iPhone / iPad: the app icons instead of "Pay now" - each opens its own UPI app with the amount filled in */
+.upi-ios-apps { display: flex; justify-content: center; gap: 18px; margin: 2px auto 0; }
+.upi-ios-app { display: block; border-radius: 12px; line-height: 0; text-decoration: none; transition: transform 0.12s; -webkit-tap-highlight-color: transparent; }
+.upi-ios-app:active { transform: scale(0.93); }
+.upi-ios-app img { display: block; width: 46px; height: 46px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+
+/* the UPI ID with a Copy button, under Pay now */
+.upi-idrow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px auto 0; max-width: 100%; }
+.upi-id { min-width: 0; padding: 5px 10px; border: 1px dashed var(--gold, #d4af37); border-radius: 8px; background: #fffaf0; font-size: 14px; font-weight: 700; word-break: break-all; user-select: all; -webkit-user-select: all; }
+.upi-copy-main { flex: none; }

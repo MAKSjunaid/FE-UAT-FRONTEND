@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Sales tab > By Item: one card per product, ranked by revenue, with a
+   tap-to-expand variant breakdown. The period dropdown and status boxes
+   above it belong to the Sales tab itself (see admin-sales.css) — only
+   the product list needs its own classes here.
+   ========================================================================== */
+
+.item-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--sp-3);
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+  overflow: hidden;
+}
+
+/* The whole card head is the tap target for expanding the variant
+   breakdown — reset back to look like the row it replaces, not a button,
+   same treatment as the Sales tab's own .daily-sales-head. */
+.item-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-4);
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.item-card-name {
+  font-weight: 800;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+
+.item-card-chevron {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
+  color: var(--text-muted);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.item-card.is-open .item-card-chevron {
+  transform: rotate(90deg);
+}
+
+.item-card-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: 0 0 auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.item-card-revenue {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.item-card-qty {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.item-variant-list {
+  padding: 0 var(--sp-4) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+}
+
+.item-variant-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  background: #faf7f0;
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+@media (min-width: 860px) {
+  .item-card-head { padding: var(--sp-5); }
+  .item-variant-list { padding: 0 var(--sp-5) var(--sp-5); }
+}

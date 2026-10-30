@@ -1,0 +1,76 @@
+/* Compact item cards for phones: two per row instead of one big panel each, with a small
+   button next to the search box that switches back to the big panels.
+   (js/storefront.js adds the .pg-compact class to #productGrid and draws the button.)
+   Phones only (under 620px): tablets / desktops already show 2-4 columns.
+   To remove: delete this file, its <link> in index.html and the "view toggle" block in storefront.js. */
+
+/* name + description travel together (no effect in the big view) */
+.product-text { display: contents; }
+
+/* an item with no description: nothing is drawn in the big view; the compact view keeps the line free */
+.product-desc:empty { display: none; }
+
+/* the button */
+.view-toggle { display: none; }
+.view-toggle[hidden] { display: none !important; }
+@media (max-width: 619px) {
+  .search-bar-wrap.has-vt { display: flex; align-items: center; gap: 8px; }
+  .search-bar-wrap.has-vt .search-bar { flex: 1; min-width: 0; }
+  .view-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+    border: 1.5px solid #e6dcc0; background: var(--bg-card); color: var(--ink);
+    padding: 0; cursor: pointer; box-shadow: var(--shadow-sm);
+  }
+  .view-toggle[hidden] { display: none !important; }
+  .view-toggle:active { transform: scale(0.94); }
+  .view-toggle svg { width: 18px; height: 18px; display: block; }
+  .view-toggle .vt-big { display: none; }
+  .view-toggle.is-compact .vt-big { display: block; }
+  .view-toggle.is-compact .vt-grid { display: none; }
+}
+
+@media (max-width: 619px) {
+  .product-grid.pg-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 10px; margin-top: -12px; }
+  /* banners and the featured rows stay as wide as the screen (the grid itself is inset 10px) */
+  .product-grid.pg-compact > .sb,
+  .product-grid.pg-compact > .sp { grid-column: 1 / -1; margin-left: -10px; margin-right: -10px; }
+  .product-grid.pg-compact > :first-child { margin-top: 0 !important; } /* (the grid itself already moved up 12px) */
+
+  /* name + description stay together at the top; js/storefront.js gives the two panels of a row the same text height, so the
+     sizes / price / Add button line up - and only as much room as the longer text needs */
+  .pg-compact .product-text { display: flex; flex-direction: column; gap: 3px; }
+  .pg-compact .product-card { border-radius: 16px; display: flex; flex-direction: column; }
+  .pg-compact .product-media-frame { aspect-ratio: var(--site-img-ratio-d, 1 / 1); } /* square (or what the admin's image-height setting says) */
+  .pg-compact .product-media-frame::after { height: 30%; }
+  .pg-compact .discount-badge,
+  .pg-compact .out-of-stock-badge { top: 8px; left: 8px; padding: 3px 8px; font-size: calc(10px * var(--sz-pbadge, 1)); }
+
+  .pg-compact .product-body { padding: 10px; gap: 7px; min-width: 0; flex: 1; }
+  .pg-compact .product-name {
+    font-size: calc(14.5px * var(--sz-pname, 1)); line-height: 1.22;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .pg-compact .product-desc {
+    font-size: calc(11.5px * var(--sz-pdesc, 1)); line-height: 1.3;
+    -webkit-line-clamp: 2; /* up to two lines */
+  }
+
+  .pg-compact .variant-toggle { gap: 5px; }
+  .pg-compact .variant-toggle button {
+    padding: 6px 4px; font-size: calc(11.5px * var(--sz-buttons, 1)); min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pg-compact .variant-toggle button.active { transform: none; }
+
+  .pg-compact .price-row { gap: 6px; flex-wrap: wrap; }
+  .pg-compact .price-now { font-size: calc(16.5px * var(--sz-price, 1)); }
+  .pg-compact .price-mrp { font-size: calc(11.5px * var(--sz-price, 1)); }
+
+  .pg-compact .product-footer { margin-top: auto; padding-top: 2px; gap: 6px; }
+  .pg-compact .add-btn,
+  .pg-compact .out-of-stock-btn { min-height: 38px; padding: 8px 4px; font-size: calc(13px * var(--sz-buttons, 1)); }
+  .pg-compact .qty-stepper { height: 38px; }
+  .pg-compact .qty-stepper button { width: 34px; font-size: calc(17px * var(--sz-buttons, 1)); }
+  .pg-compact .qty-stepper .qty-value { font-size: calc(14px * var(--sz-buttons, 1)); }
+}

@@ -1,0 +1,78 @@
+/* Cart animations: fly-to-cart bubble, cart-bar bounce, order-success tick.
+   (js/cart-fx.js drives the first two; js/checkout.js draws the tick.) */
+
+/* ---- 1) the bubble that flies into the cart ------------------------------ */
+.fx-fly {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  z-index: 950;                      /* above the cart bar and sheets */
+  pointer-events: none;
+  background: var(--gold) center / cover no-repeat;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  will-change: transform, opacity;
+}
+
+/* ---- 2) cart bar count / total bounce ------------------------------------ */
+@keyframes fxBump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); }
+  65% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.cart-bar-info { transform-origin: left center; }
+.cart-bar-info.fx-bump { animation: fxBump 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.cart-bar-info.fx-bump .total { color: #fff; transition: color 0.4s ease; }
+
+/* ---- 3) order placed: a tick that draws itself + a small sparkle burst --- */
+.success-check .success-tick {
+  width: 46px;
+  height: 46px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.success-check .success-tick path {
+  stroke-dasharray: 44;
+  stroke-dashoffset: 44;
+  animation: fxTickDraw 420ms cubic-bezier(0.22, 1, 0.36, 1) 260ms forwards;
+}
+@keyframes fxTickDraw { to { stroke-dashoffset: 0; } }
+
+.success-check .spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+  animation: fxSpark 760ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
+}
+.success-check .spark:nth-of-type(even) { background: var(--success); width: 6px; height: 6px; margin: -3px 0 0 -3px; }
+@keyframes fxSpark {
+  0% { transform: rotate(var(--r)) translateY(-34px) scale(0.3); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: rotate(var(--r)) translateY(-68px) scale(1); opacity: 0; }
+}
+
+/* Switched off in the admin's Customize tab (Cart & checkout) */
+.no-cart-fx .fx-fly { display: none; }
+.no-cart-fx .cart-bar-info.fx-bump { animation: none; }
+.no-cart-fx .success-check .spark { display: none; }
+.no-cart-fx .success-check .success-tick path { animation: none; stroke-dashoffset: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-fly { display: none; }
+  .cart-bar-info.fx-bump { animation: none; }
+  .success-check .spark { display: none; }
+  .success-check .success-tick path { animation: none; stroke-dashoffset: 0; }
+}

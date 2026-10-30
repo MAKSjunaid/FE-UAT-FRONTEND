@@ -1,0 +1,500 @@
+/* ==========================================================================
+   Admin dashboard shell: login screen, top bar, tab navigation, view
+   switching. See admin-cards.css for stats/order/product card styling.
+   ========================================================================== */
+
+body.admin {
+  background: #f4f1e8;
+  padding-bottom: var(--sp-6);
+}
+
+/* ---- Login screen ------------------------------------------------------- */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 20%, #2a2114, var(--ink) 65%);
+  padding: var(--sp-4);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-5);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.login-card img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto var(--sp-3);
+  border: 2px solid var(--gold);
+}
+
+.login-card h1 {
+  font-size: 20px;
+  margin-bottom: var(--sp-1);
+}
+
+.login-card p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: var(--sp-5);
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  text-align: left;
+}
+
+/* ---- Top bar + tabs, as one sticky unit ------------------------------ */
+/* .admin-topbar and .admin-tabs used to each be their own independent
+   position: sticky element, the second one's `top` hard-coded to sit
+   right below the first (`top: var(--header-h)`). Two separately-sticky
+   elements stacked like that is a well-known source of persistent visible
+   jitter on mobile Safari/Chrome — each one gets recalculated against the
+   scroll position on its own, and any tiny mismatch between the second
+   one's assumed offset and the first one's *actual* current height (which
+   changes the moment something in between — like the iOS "Add to Home
+   Screen" banner below — shows, hides, or wraps to a second line) shows
+   up as a small up/down jump on every scroll frame. Wrapping both (and
+   the banner between them) in a single sticky .admin-header-group fixes
+   this at the root: there's only ever one sticky element now, and the
+   topbar/banner/tabs just stack normally inside it, so there's no offset
+   to keep in sync and nothing left to jitter against. translateZ(0)
+   forces it onto its own compositor layer, and padding-top: var(--safe-top)
+   (0 on ordinary browsers, the status-bar/Dynamic-Island inset on an
+   iPhone PWA) keeps the whole group clear of the notch/status bar. */
+.admin-header-group {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  padding-top: var(--safe-top);
+  background: var(--ink);
+  transform: translateZ(0);
+}
+
+.admin-topbar {
+  background: var(--ink);
+  color: var(--text-on-dark);
+  height: var(--header-h);
+  padding: 0 var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-topbar .brand-text .name { color: var(--gold-light); font-size: 16px; }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.store-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-on-dark);
+}
+
+.push-toggle-btn {
+  padding: 6px 10px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.push-toggle-btn.is-active {
+  background: rgba(240, 217, 138, 0.25);
+  border-color: var(--gold-light);
+}
+
+/* [hidden] must come after (or win specificity over) the display:flex
+   rule below, or toggling the `hidden` attribute in JS has no visible
+   effect — the browser's own [hidden]{display:none} loses the cascade
+   to our later, equal-specificity .push-ios-banner{display:flex}. */
+.push-ios-banner[hidden] {
+  display: none;
+}
+
+.push-ios-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  background: #fdf6e3;
+  color: #7a5c00;
+  font-size: 12.5px;
+  padding: 10px var(--sp-4);
+  border-bottom: 1px solid #eadfad;
+}
+
+.push-ios-banner button {
+  flex: 0 0 auto;
+  background: none;
+  color: inherit;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* The shared .btn-ghost style (near-transparent dark tint + dark text) is
+   meant for light backgrounds — on this dark topbar it was nearly
+   invisible, so give the logout button its own light, visible styling. */
+.admin-topbar .btn-ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-dark);
+  border: 1.5px solid rgba(240, 217, 138, 0.35);
+}
+
+.admin-topbar .btn-ghost:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  background: #f4f1e8;
+  padding: 10px var(--sp-4);
+  overflow-x: auto;
+  border-bottom: 1px solid #e6dcc0;
+}
+
+.admin-tab {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #fff;
+  border: 1.5px solid #e6dcc0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-tab.active {
+  background: var(--ink);
+  color: var(--gold-light);
+  border-color: var(--ink);
+}
+
+.admin-tab .count-pill {
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+}
+
+.admin-view {
+  display: none;
+  padding: var(--sp-4);
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.admin-view.active {
+  display: block;
+  animation: fadeIn var(--dur-med) var(--ease-out) both;
+}
+
+/* ---- Search box (Orders + Customers tabs) ------------------------------- */
+.search-row {
+  margin-bottom: var(--sp-3);
+}
+
+/* The 🔎 sits outside the input (it used to be part of the placeholder, so it vanished as soon as you typed). */
+.search-field {
+  position: relative;
+}
+
+.search-field .search-ico {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.search-field .search-input {
+  padding-left: 40px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  /* 16px minimum — under that, iOS Safari zooms the page in on tap. */
+  font-size: 16px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* ---- Store hours (auto open/close) ------------------------------------- */
+.store-sched-btn {
+  position: relative;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Manual override marker: a small dot on the button corner (stays inside the circle) */
+.store-sched-btn.has-override::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e67e22;
+  border: 1.5px solid #fff;
+  box-sizing: border-box;
+}
+
+.store-sched-btn.is-active {
+  background: rgba(240, 217, 138, 0.25);
+  border-color: var(--gold-light);
+}
+
+.sched-status {
+  background: #fff8e1;
+  border: 1px solid #ecd9a0;
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.sched-status .btn {
+  margin-top: 6px;
+}
+
+.sched-auto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+
+.sched-auto small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sched-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  transition: opacity var(--dur-fast);
+}
+
+.sched-fields.is-dim {
+  opacity: 0.45;
+}
+
+.sched-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+.sched-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sched-day {
+  min-width: 46px;
+  padding: 8px 10px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid #ddd1ae;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sched-day.on {
+  background: #17140f;
+  border-color: #17140f;
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.sched-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* Hour : minute AM/PM drop-downs (no seconds anywhere) */
+.sched-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sched-time select {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 6px;
+  font: inherit;
+  font-size: 15px;
+  border: 1.5px solid #ddd1ae;
+  border-radius: var(--r-md);
+  background: #fff;
+}
+
+.sched-colon {
+  font-weight: 800;
+}
+
+@media (max-width: 480px) {
+  .sched-times {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Phone-sized top bar: one tidy row ----------------------------------
+   Brand on the left; on the right the store switch, ⏰ hours, 🔔 alerts and
+   an icon-only log out. Nothing wraps, so the bar never grows past its
+   54px height. */
+.lo-icon { display: none; }
+
+@media (max-width: 560px) {
+  .admin-topbar {
+    padding: 0 10px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .admin-topbar .brand-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .admin-topbar .brand-text .name {
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-actions {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .store-toggle {
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .admin-topbar .btn-sm {
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex: 0 0 auto;
+  }
+
+  .lo-text { display: none; }
+  .lo-icon { display: inline; }
+}
+
+/* Very narrow phones: the Online/Offline word gives way to the switch's colour */
+@media (max-width: 370px) {
+  .store-toggle-label { display: none; }
+}
+
+/* ---- Hide-on-scroll header ---------------------------------------------
+   Scrolling down slides the whole header group (top bar + tabs) up out of
+   view; scrolling up even a little slides it back. admin-header.js only
+   toggles the .is-hidden class — the motion lives here, on the compositor
+   (transform/opacity only), so it stays smooth on phones. The group stays
+   position: sticky, so hiding it never shifts the page content. */
+.admin-header-group {
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform .38s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .38s ease;
+  will-change: transform;
+}
+
+.admin-header-group.is-scrolled {
+  box-shadow: 0 6px 18px rgba(20, 16, 8, .22);
+}
+
+.admin-header-group.is-hidden {
+  transform: translate3d(0, -100%, 0);
+  box-shadow: none;
+  pointer-events: none; /* nothing can be tapped while it is off-screen */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-header-group { transition: none; }
+}
+
+/* ---- Tab switching: nothing may animate or flicker -----------------------
+   scroll-memory.js sets html.tab-switching while it moves the page to a tab's
+   own scroll position. The shadow fade is paused for that moment, browser
+   scroll-anchoring is off so nothing nudges the page afterwards, and the old
+   whole-view fade-in (which made the page flash on every switch) is gone. */
+.admin-view.active { animation: none; }
+html.tab-switching { overflow-anchor: none; }
+html.tab-switching .admin-header-group {
+  transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow 0s;
+}
+
+/* Sales: Export / Import now sit in the toolbar, under the period filter */
+.sales-toolbar .sales-data-actions { margin-top: 0; }
+.sales-toolbar .import-result { margin-bottom: 0; }
+.sales-toolbar .sales-data-actions .btn { flex: 0 1 auto; }
+@media (max-width: 480px) {
+  /* keep Export this period / Export all / Import compact on phones */
+  .sales-toolbar .sales-data-actions { gap: 5px; }
+  .sales-toolbar .sales-data-actions .btn {
+    flex: 0 0 auto;
+    padding-left: 7px;
+    padding-right: 7px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+}
+@media (min-width: 351px) and (max-width: 480px) {
+  .sales-toolbar .sales-data-actions { flex-wrap: nowrap; } /* one row; tiny screens wrap instead */
+}
+
+/* Sales: Download / Download all / Upload — golden border, like the rest of the theme */
+.sales-toolbar .sales-data-actions .btn {
+  border: 1.5px solid var(--gold);
+}

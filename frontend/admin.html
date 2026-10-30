@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>FreshCutz Admin</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="images/logo.jpg" />
+<!-- Lets the admin "Add to Home Screen" (required on iPhone before push
+     notifications will work at all) and gives Web Push its icon. -->
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="images/logo.jpg" />
+<meta name="theme-color" content="#1c1712" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="css/variables.css" />
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/animations.css" />
+<link rel="stylesheet" href="css/components.css?v=3" />
+<link rel="stylesheet" href="css/cart.css" />
+<link rel="stylesheet" href="css/admin-shell.css?v=13" />
+<link rel="stylesheet" href="css/admin-cards.css?v=9" />
+<link rel="stylesheet" href="css/admin-sales.css?v=2" />
+<link rel="stylesheet" href="css/admin-customers.css" />
+<link rel="stylesheet" href="css/admin-items.css" />
+<link rel="stylesheet" href="css/admin-customize.css?v=13" />
+<link rel="stylesheet" href="css/splash.css?v=1" />
+<link rel="stylesheet" href="css/admin-bottomnav.css?v=3" />
+<link rel="stylesheet" href="css/admin-menu.css?v=5" />
+<link rel="stylesheet" href="css/admin-backup.css?v=3" />
+<link rel="stylesheet" href="css/admin-banners.css?v=13" />
+<link rel="stylesheet" href="css/admin-specials.css?v=3" />
+<link rel="stylesheet" href="css/admin-reorder.css?v=4" />
+<link rel="stylesheet" href="css/admin-settings.css?v=2" />
+<link rel="stylesheet" href="css/admin-users.css?v=3" />
+<link rel="stylesheet" href="css/admin-map.css?v=3" />
+<link rel="stylesheet" href="css/admin-promotions.css?v=5" />
+</head>
+<body class="admin">
+
+  <!-- Login screen -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card anim-scale-in">
+      <img src="images/logo.jpg" alt="FreshCutz" />
+      <h1>FreshCutz Admin</h1>
+      <p>Sign in to manage products &amp; orders</p>
+      <form id="loginForm">
+        <div class="field">
+          <label for="lg-username">Username</label>
+          <input id="lg-username" name="username" required autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="lg-password">Password</label>
+          <input id="lg-password" name="password" type="password" required autocomplete="current-password" />
+          <div class="error" id="loginError"></div>
+        </div>
+        <button class="btn btn-gold btn-block" id="loginBtn" type="submit">Sign In</button>
+      </form>
+      <p id="loginDiag" style="margin:14px 0 0;font-size:11px;line-height:1.4;opacity:.55;text-align:center"></p>
+    </div>
+  </div>
+
+  <!-- Admin app -->
+  <div id="adminApp" hidden>
+    <div class="admin-header-group">
+      <header class="admin-topbar">
+        <div class="brand-text">
+          <div class="name">FRESHCUTZ ADMIN</div>
+        </div>
+        <div class="topbar-actions" id="topbarActions">
+          <div class="store-toggle">
+            <span class="store-toggle-label" id="storeToggleLabel">Online</span>
+            <label class="switch">
+              <input type="checkbox" id="storeOnlineToggle" checked />
+              <span class="track"></span>
+            </label>
+            <button class="btn btn-ghost btn-sm store-sched-btn" id="storeScheduleBtn" type="button" title="Open and close automatically">⏰</button>
+          </div>
+          <button class="btn btn-ghost btn-sm push-toggle-btn" id="pushToggleBtn" hidden title="Enable order alerts on this device">🔔</button>
+          <button class="btn btn-ghost btn-sm backup-top-btn" id="backupNowBtn" type="button" title="Email a backup now">
+            <span class="bk-ico" aria-hidden="true">📧</span>
+            <span class="bk-text"><span class="bk-label">Email backup now</span><span class="bk-sub" id="backupNowSub"></span></span>
+          </button>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button" aria-label="Log out" title="Log out"><span class="lo-text">Log out</span><span class="lo-icon" aria-hidden="true">⏻</span></button>
+        </div>
+        <!-- New-order sound: 🔊 on / 🔇 off, kept for each login account (js/admin-sound.js). Always visible, beside the ☰. -->
+        <button class="btn btn-ghost btn-sm sound-top-btn" id="orderSoundBtn" type="button" aria-pressed="true"><span class="sound-ico" aria-hidden="true">🔊</span></button>
+        <!-- Phones: the switch, ⏰, 🔔 and Log out above live in a drop-down opened by
+             this button (css/admin-menu.css + js/admin-menu.js). Hidden on wider screens. -->
+        <button class="btn btn-ghost btn-sm menu-btn" id="topMenuBtn" type="button" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="topbarActions">
+          <span class="menu-lines" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="menu-dot" aria-hidden="true"></span>
+        </button>
+      </header>
+
+      <div class="push-ios-banner" id="pushIosBanner" hidden>
+        <span>📲 To get order alerts on this iPhone: tap Share, then "Add to Home Screen" — then open FreshCutz Admin from your Home Screen and tap "Enable alerts".</span>
+        <button id="pushIosBannerClose" aria-label="Dismiss">✕</button>
+      </div>
+
+      <nav class="admin-tabs">
+        <button class="admin-tab active" data-view="orders">📦 Orders <span class="count-pill" id="newOrdersPill" hidden>0</span></button>
+        <button class="admin-tab" data-view="products">🍗 Products</button>
+        <button class="admin-tab" data-view="banners">🖼️ Banners</button>
+        <button class="admin-tab" data-view="stats">📊 Sales</button>
+        <button class="admin-tab" data-view="settings"><span class="more-ico" aria-hidden="true">⋯</span> More</button>
+      </nav>
+    </div>
+
+    <!-- Invisible layer under the phone menu drop-down: tapping it closes the menu. -->
+    <div class="menu-backdrop" id="topMenuBackdrop" hidden></div>
+
+    <!-- Phone menu: fixed to the bottom of the screen (shown only on phones —
+         see css/admin-bottomnav.css; wider screens keep the tabs at the top).
+         It carries the same .admin-tab[data-view] buttons as the top tabs, so
+         admin-main.js switches views with it without any change. -->
+    <nav class="admin-tabs admin-bottom-nav" id="adminBottomNav" aria-label="Main menu">
+      <button class="admin-tab active" data-view="orders" type="button"><span class="nav-ico" aria-hidden="true">📦</span><span class="nav-lbl">Orders</span><span class="nav-badge" id="newOrdersBadgeBottom" hidden>0</span></button>
+      <button class="admin-tab" data-view="products" type="button"><span class="nav-ico" aria-hidden="true">🍗</span><span class="nav-lbl">Products</span></button>
+      <button class="admin-tab" data-view="banners" type="button"><span class="nav-ico" aria-hidden="true">🖼️</span><span class="nav-lbl">Banners</span></button>
+      <button class="admin-tab" data-view="stats" type="button"><span class="nav-ico" aria-hidden="true">📊</span><span class="nav-lbl">Sales</span></button>
+      <button class="admin-tab" data-view="settings" type="button"><span class="nav-ico more-ico" aria-hidden="true">⋯</span><span class="nav-lbl">More</span></button>
+    </nav>
+
+    <section class="admin-view active" id="view-orders">
+      <div class="search-row">
+        <div class="search-field">
+          <span class="search-ico" aria-hidden="true">🔎</span>
+          <input type="search" id="orderSearchInput" class="search-input" placeholder="Search by order ID, phone or name" />
+        </div>
+      </div>
+      <div class="admin-tabs" style="position:static;padding:0 0 var(--sp-3);background:transparent;border:none;" id="orderStatusFilter">
+        <button class="admin-tab" data-status="">All</button>
+        <button class="admin-tab active" data-status="NEW">New</button>
+        <button class="admin-tab" data-status="PACKED">Packed</button>
+        <button class="admin-tab" data-status="DELIVERED">Delivered</button>
+        <button class="admin-tab" data-status="CANCELLED">Cancelled</button>
+      </div>
+      <div id="ordersList"></div>
+    </section>
+
+    <section class="admin-view" id="view-products">
+      <div id="productsList"></div>
+      <button class="fab" id="addProductFab" aria-label="Add product">+</button>
+    </section>
+
+    <section class="admin-view" id="view-stats">
+      <div class="sales-toolbar">
+        <select id="salesPeriod" class="period-select" autocomplete="off" aria-label="Period">
+          <option value="today" selected>Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="all">All time</option>
+          <option value="custom">Custom date</option>
+        </select>
+
+        <!-- Only shown while "Custom date" is the selected period. -->
+        <div class="date-range-row" id="customRangeRow" hidden>
+          <div class="date-range-fields">
+            <div class="date-field">
+              <div class="date-field-box">
+                <input type="date" id="statsFrom" autocomplete="off" aria-label="From date" />
+                <!-- The real input above is fully invisible (see
+                     admin-sales.css) — this box is the only thing ever
+                     shown. admin-stats.js keeps its text in sync: the
+                     placeholder below while empty, the picked date once
+                     one is chosen. A real placeholder="" attribute is
+                     ignored by type="date" on iOS Safari and most Android
+                     browsers, and showing the native input's own value
+                     directly is what caused the iOS-only box-size bug. -->
+                <span class="date-field-hint" id="statsFromHint">From Date</span>
+              </div>
+            </div>
+            <div class="date-field">
+              <div class="date-field-box">
+                <input type="date" id="statsTo" autocomplete="off" aria-label="To date" />
+                <span class="date-field-hint" id="statsToHint">To Date</span>
+              </div>
+            </div>
+          </div>
+          <div class="date-range-actions">
+            <button class="btn btn-gold btn-sm" id="applyRangeBtn">Apply</button>
+          </div>
+        </div>
+
+        <!-- Right under the period / custom-date filter, so a long list never
+             has to be scrolled to the bottom just to download or upload. -->
+        <div class="sales-actions-row sales-data-actions">
+          <button class="btn btn-ghost btn-sm" id="exportFilteredBtn">⬇ Download this period</button>
+          <button class="btn btn-ghost btn-sm" id="exportAllBtn">⬇ Download all</button>
+          <label class="btn btn-ghost btn-sm file-btn">
+            ⬆ Upload
+            <input type="file" id="importFile" accept=".xlsx" hidden />
+          </label>
+        </div>
+          <div class="import-result" id="importResult" hidden></div>
+      </div>
+
+      <!-- Header for whichever period is selected: money + delivered
+           orders, then the All/New/Delivered/Cancelled boxes. Filled in
+           by admin-stats.js. -->
+      <div class="sales-summary" id="salesSummary"></div>
+      <div class="stats-grid" id="salesStatusGrid"></div>
+
+      <nav class="sales-subtabs" id="salesSubtabs">
+        <button class="sales-subtab active" data-pane="days">By Day</button>
+        <button class="sales-subtab" data-pane="customers">By Customer</button>
+        <button class="sales-subtab" data-pane="items">By Item</button>
+      </nav>
+
+      <div class="sales-pane" id="salesPane-days">
+        <div class="range-result" id="rangeResult"></div>
+      </div>
+
+      <div class="sales-pane" id="salesPane-customers" hidden>
+        <div class="search-row">
+          <input type="search" id="salesCustomerSearchInput" class="search-input" placeholder="🔎 Search by phone or name" />
+        </div>
+        <div id="salesCustomersList"></div>
+      </div>
+
+      <div class="sales-pane" id="salesPane-items" hidden>
+        <div id="itemsList"></div>
+      </div>
+
+    </section>
+
+    <section class="admin-view" id="view-settings">
+      <div class="settings-menu">
+        <button type="button" class="settings-row" data-open-view="customers">
+          <span class="settings-row-ico" aria-hidden="true">👥</span>
+          <span class="settings-row-text"><strong>Customers</strong><small>Phone numbers, names and order history</small></span>
+          <span class="settings-row-chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="settings-row" data-open-view="customize">
+          <span class="settings-row-ico" aria-hidden="true">🎨</span>
+          <span class="settings-row-text"><strong>Customize</strong><small>Look &amp; feel, backup e-mail and more</small></span>
+          <span class="settings-row-chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="settings-row" data-open-view="promotions">
+          <span class="settings-row-ico" aria-hidden="true">📣</span>
+          <span class="settings-row-text"><strong>Push notifications</strong><small>Send offers and promotions to your customers' phones</small></span>
+          <span class="settings-row-chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="settings-row" data-open-view="map">
+          <span class="settings-row-ico" aria-hidden="true">🗺️</span>
+          <span class="settings-row-text"><strong>Delivery map</strong><small>Switch the map on or off and draw the areas you deliver to</small></span>
+          <span class="settings-row-chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="settings-row" data-open-view="users">
+          <span class="settings-row-ico" aria-hidden="true">🔐</span>
+          <span class="settings-row-text"><strong>Users &amp; access</strong><small>Create logins for staff and choose what they can open</small></span>
+          <span class="settings-row-chev" aria-hidden="true">›</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="admin-view" id="view-users">
+      <button type="button" class="settings-back" data-open-view="settings"><span aria-hidden="true">←</span> More</button>
+      <div id="usersRoot"></div>
+    </section>
+
+    <section class="admin-view" id="view-map">
+      <button type="button" class="settings-back" data-open-view="settings"><span aria-hidden="true">←</span> More</button>
+      <div id="mapRoot"></div>
+    </section>
+
+    <section class="admin-view" id="view-promotions">
+      <button type="button" class="settings-back" data-open-view="settings"><span aria-hidden="true">←</span> More</button>
+      <div id="promotionsRoot"></div>
+    </section>
+
+    <section class="admin-view" id="view-customers">
+      <button type="button" class="settings-back" data-open-view="settings"><span aria-hidden="true">←</span> More</button>
+      <div class="search-row">
+        <input type="search" id="customerSearchInput" class="search-input" placeholder="🔎 Search by phone or name" />
+      </div>
+      <div id="customersList"></div>
+    </section>
+
+    <section class="admin-view" id="view-banners">
+      <div id="specialsRoot"></div>
+      <div id="reorderRoot"></div>
+      <div id="bannersRoot"><div class="empty-state"><p>Loading…</p></div></div>
+    </section>
+
+    <section class="admin-view" id="view-customize">
+      <button type="button" class="settings-back" data-open-view="settings"><span aria-hidden="true">←</span> More</button>
+      <div id="customizeRoot"></div>
+    </section>
+  </div>
+
+  <div id="sheetRoot"></div>
+  <div id="toastHost"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/admin-access.js?v=5"></script>
+  <script src="js/admin-auth.js?v=10"></script>
+  <script src="js/admin-store.js?v=5"></script>
+  <script src="js/admin-push.js?v=9"></script>
+  <script src="js/admin-products.js?v=21"></script>
+  <script src="js/admin-product-import.js?v=7"></script>
+  <script src="js/admin-product-bulk.js?v=7"></script>
+  <script src="js/admin-proof.js?v=8"></script>
+  <script src="js/admin-orders.js?v=16"></script>
+  <script src="js/admin-order-map.js?v=4"></script>
+  <script src="js/admin-live.js?v=3"></script>
+  <script src="js/admin-sound.js?v=4"></script>
+  <script src="js/admin-stats.js?v=9"></script>
+  <script src="js/admin-customers.js?v=2"></script>
+  <script src="js/admin-sales-customers.js?v=2"></script>
+  <script src="js/admin-items.js?v=2"></script>
+  <script src="js/site-elements.js?v=12"></script>
+  <script src="js/admin-banners.js?v=22"></script>
+  <script src="js/admin-specials.js?v=5"></script>
+  <script src="js/admin-reorder.js?v=8"></script>
+  <script src="js/splash.js?v=1"></script>
+  <script src="js/slot-time.js?v=3"></script>
+  <script src="js/admin-customize.js?v=44"></script>
+  <script src="js/delivery-map.js?v=25"></script>
+  <script src="js/map-index.js?v=1"></script>
+  <script src="js/admin-map.js?v=4"></script>
+  <script src="js/admin-backup.js?v=12"></script>
+  <script src="js/admin-header.js?v=3"></script>
+  <script src="js/admin-bottomnav.js?v=2"></script>
+  <script src="js/admin-menu.js?v=2"></script>
+  <script src="js/scroll-memory.js?v=5"></script>
+  <script src="js/admin-notify-kit.js?v=2"></script>
+  <script src="js/admin-order-messages.js?v=6"></script>
+  <script src="js/admin-promotions.js?v=3"></script>
+  <script src="js/admin-users.js?v=8"></script>
+  <script src="js/admin-main.js?v=20"></script>
+</body>
+</html>

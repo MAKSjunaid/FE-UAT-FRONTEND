@@ -1,0 +1,59 @@
+/* Email backup: the top-bar button (inside the ☰ menu on phones) and the card in the Customize tab. */
+
+/* ---- top bar button -------------------------------------------------- */
+.backup-top-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  line-height: 1.15;
+  text-align: left;
+}
+.backup-top-btn .bk-ico { font-size: 15px; flex: 0 0 auto; }
+.backup-top-btn .bk-text { display: flex; flex-direction: column; min-width: 0; }
+.backup-top-btn .bk-label { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.backup-top-btn .bk-sub { font-size: 10.5px; font-weight: 500; opacity: 0.8; white-space: nowrap; }
+.backup-top-btn .bk-sub:empty { display: none; }
+.backup-top-btn .bk-line { display: inline; }
+.backup-top-btn .bk-line + .bk-line::before { content: " · "; }
+.backup-top-btn.is-busy { opacity: 0.65; pointer-events: none; }
+
+/* Medium screens: not enough room for the second line (still in the button's tooltip) */
+@media (min-width: 641px) and (max-width: 900px) {
+  .backup-top-btn .bk-sub { display: none; }
+}
+
+/* Phones: a full-width row in the ☰ drop-down */
+@media (max-width: 640px) {
+  .admin-topbar .topbar-actions .backup-top-btn { padding: 8px 14px; }
+  .admin-topbar .topbar-actions .backup-top-btn .bk-ico { font-size: 18px; }
+  .admin-topbar .topbar-actions .backup-top-btn .bk-label { font-size: 14px; font-weight: 700; }
+  .admin-topbar .topbar-actions .backup-top-btn .bk-sub {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    opacity: 1;
+    white-space: normal;
+    line-height: 1.3;
+    margin-top: 2px;
+  }
+  /* phone menu: Last and Next on their own lines */
+  .admin-topbar .topbar-actions .backup-top-btn .bk-line { display: block; }
+  .admin-topbar .topbar-actions .backup-top-btn .bk-line + .bk-line::before { content: none; }
+}
+
+/* ---- Customize tab card ------------------------------------------------ */
+.bk-times { margin-top: 10px; font-size: 13px; line-height: 1.6; }
+.bk-err { color: #b3261e; margin-top: 8px; }
+.bk-times[hidden], #bkControls[hidden] { display: none; }
+.backup-top-btn .spinner { width: 12px; height: 12px; vertical-align: -1px; }
+.bk-select {
+  padding: 8px 10px;
+  border: 1px solid #d9ceaf;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  max-width: 60%;
+}
+.bk-select:disabled { opacity: 0.55; }

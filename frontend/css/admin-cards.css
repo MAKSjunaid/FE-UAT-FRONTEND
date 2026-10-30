@@ -1,0 +1,462 @@
+/* ==========================================================================
+   Admin dashboard: stat cards, order cards, product cards, toggle switch,
+   floating add button. See admin-shell.css for the surrounding layout.
+   ========================================================================== */
+
+/* ---- Stat cards -------------------------------------------------------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card .label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Sits right beside each card's own label ("Today", "Last 7 days", …) —
+   shown only while a summary fetch is in flight (admin-stats.js's
+   refresh()), so there's a visible sign that specific card's number
+   might be about to change instead of silently sitting there stale for
+   however long that fetch takes. Sized down from the base .spinner
+   (built for buttons) to fit next to this small uppercase label text.
+   .spinner-dark is the same gold-on-cream spin already used elsewhere
+   in the admin panel (the day-orders loading rows) — kept here for the
+   same reason: one consistent "this is loading" look everywhere. */
+.stat-spinner {
+  width: 9px;
+  height: 9px;
+  border-width: 1.5px;
+  flex-shrink: 0;
+}
+
+.stat-card .value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.stat-card .sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ---- Order card -------------------------------------------------------- */
+.order-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--sp-3);
+  animation: fadeUp var(--dur-fast) var(--ease-out) both;
+  /* Transparent by default, reserved so the status-action flash below
+     (added/removed via JS) doesn't shift the card's size or its
+     neighbors when it appears — see .is-flashing further down. */
+  border: 2px solid transparent;
+}
+
+/* Marking an order Delivered/Cancelled/Reopened used to just disable its
+   button, and the card was gone an instant later — removed from the now-
+   wrong status tab, or (on the All tab) silently swapped for the updated
+   one — with nothing to actually confirm what just happened. These two
+   animations run in sequence instead (see admin-orders.js's
+   applyLocalStatusChange): first a colored border/background flash naming
+   which action fired (green for Delivered, red for Cancelled, amber for
+   Reopened — the same colors as their badges elsewhere in this file), then
+   — everywhere except the All tab, where the card stays put and simply
+   shows its new state — a brief slide-and-fade before it's actually
+   removed from the list. */
+@keyframes orderCardFlash {
+  0% { background-color: var(--bg-card); border-color: transparent; }
+  15% { background-color: var(--flash-bg); border-color: var(--flash-color); }
+  100% { background-color: var(--bg-card); border-color: transparent; }
+}
+
+.order-card.is-flashing {
+  animation: orderCardFlash 700ms var(--ease-out) both;
+}
+.order-card.flash-delivered { --flash-color: var(--success); --flash-bg: #e3f5ea; }
+.order-card.flash-cancelled { --flash-color: var(--danger); --flash-bg: #fbe8e5; }
+.order-card.flash-packed { --flash-color: #0e7470; --flash-bg: #d8f1ef; }
+.order-card.flash-reopened { --flash-color: #b5570c; --flash-bg: #fde8d8; }
+.order-card.flash-arrived { --flash-color: #1d6fd6; --flash-bg: #e4f0fd; }   /* a brand-new order dropping in */
+
+@keyframes orderCardLeave {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(28px) scale(0.97); }
+}
+
+.order-card.is-leaving {
+  animation: orderCardLeave var(--dur-slow) var(--ease-out) both;
+  pointer-events: none;
+}
+
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-bottom: 8px;
+}
+
+.order-code-lbl {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.order-time {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.order-customer {
+  font-size: 13px;
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.order-customer strong { display: block; font-size: 14px; }
+
+.order-items-list {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: #faf7f0;
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  margin: 8px 0;
+}
+
+.order-items-list div + div {
+  margin-top: 3px;
+}
+
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 15px;
+  margin: 8px 0;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* Infinite-scroll "loading more" row at the bottom of the Orders list —
+   same golden spinner used everywhere else in the admin panel, just
+   centered and given some breathing room since this sits below a whole
+   list of cards rather than inline within one (see .daily-sales-row-loading
+   in admin-sales.css for that inline variant). */
+.orders-load-more {
+  display: flex;
+  /* Explicit width + text-align, on top of the flex centering below, so
+     this row is always centered regardless of screen size — without
+     width: 100% a flex container can end up only as wide as its own
+     content (spinner + text), which left it sitting at the left edge of
+     the list instead of centered under it, most noticeably on narrow
+     mobile screens. */
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: var(--sp-4) 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---- Product admin card -------------------------------------------------- */
+.admin-product-card {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--sp-3);
+  overflow: hidden;
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+
+.admin-product-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  flex: 0 0 auto;
+  position: relative;
+  background: #f1ecdd;
+}
+
+.admin-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-upload-btn {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 9.5px;
+  text-align: center;
+  padding: 3px 0;
+}
+
+.admin-product-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-product-main .name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-product-main .name-row .name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.admin-product-prices {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.admin-product-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .track {
+  position: absolute;
+  inset: 0;
+  background: #ddd1ae;
+  border-radius: var(--r-pill);
+  transition: background var(--dur-fast);
+}
+
+.switch .track::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform var(--dur-fast) var(--ease-out);
+  box-shadow: var(--shadow-sm);
+}
+
+.switch input:checked + .track {
+  background: var(--success);
+}
+
+.switch input:checked + .track::before {
+  transform: translateX(18px);
+}
+
+.fab {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: calc(var(--sp-4) + var(--safe-bottom));
+  z-index: 600;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold) 65%, var(--gold-dark));
+  color: var(--ink);
+  font-size: 26px;
+  box-shadow: var(--shadow-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab:active { transform: scale(0.92); }
+
+@media (min-width: 640px) {
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 860px) {
+  .order-card, .admin-product-card { padding: var(--sp-5); }
+}
+
+/* Five order tabs (All / New / Packed / Delivered / Cancelled) fit a phone's width without sideways scrolling. */
+#orderStatusFilter { gap: 5px; }
+#orderStatusFilter .admin-tab { padding: 9px 9px; font-size: 12px; }
+
+/* ---- UPI payment screenshot: button on the order card + full-screen viewer ---- */
+.upi-line { display: inline; line-height: 2.1; }
+.pay-note { font-size: 12px; color: var(--text-muted); }
+.proof-link {
+  margin: 0 2px 0 2px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1.5px solid #e6dcc0;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.proof-link:hover { background: #fffaf0; border-color: var(--gold); }
+
+/* The payment status: a small coloured pill sized to its words. People who may change it also get "Change" - the pill then turns
+   into a drop-down with Update (only once something different is picked) and Cancel beside it. */
+.pay-ctl { display: inline-flex; align-items: center; gap: 9px; vertical-align: middle; }
+.pay-sel,
+.pay-pill {
+  --pc: #888;
+  --pb: #eee;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  border-radius: var(--r-pill, 999px);
+  border: 0;
+  background: var(--pb);
+  color: var(--pc);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  white-space: nowrap;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.2s ease;
+}
+.pay-pill { padding: 3px 10px; }
+.pay-sel select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+  letter-spacing: inherit;
+  margin: 0;
+  padding: 3px 24px 3px 10px;
+  cursor: pointer;
+  border-radius: 999px;
+  min-width: 0;
+}
+.pay-sel select option { color: #2a261c; background: #fff; font-weight: 600; }
+.pay-sel::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  pointer-events: none;
+  opacity: 0.75;
+}
+.pay-sel:focus-within { box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3); }
+.pay-sel select:disabled { cursor: progress; opacity: 0.7; }
+.pay-act {
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: #8a6a00;
+}
+.pay-act:hover { color: #5e4800; }
+.pay-update { color: #14703a; }
+.pay-update:hover { color: #0c5229; }
+.pay-update[hidden] { display: none; }
+.pay-cancel { color: var(--text-muted); }
+.pay-act:disabled { opacity: 0.5; cursor: progress; }
+.tone-ok { --pc: var(--success, #1f7a4a); --pb: #dcf3e6; }
+.tone-bad { --pc: var(--danger, #c0392b); --pb: #f6dada; }
+.tone-warn { --pc: #8a5a00; --pb: #fdeec8; }
+.tone-alert { --pc: #b5570c; --pb: #fde8d8; }
+.tone-info { --pc: #1d5aa8; --pb: #dbe9fb; }
+.tone-fraud { --pc: #8f1d16; --pb: #f1b9b5; }
+
+.pv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(15, 13, 9, 0.8);
+}
+.pv-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: 100%;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pv-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #eee; }
+.pv-title { font-weight: 800; font-size: 15px; }
+.pv-check { margin-top: 2px; font-size: 14px; color: var(--text-muted); }
+.pv-close { flex: 0 0 auto; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f1ede2; font-size: 16px; cursor: pointer; }
+.pv-body { flex: 1 1 auto; overflow: auto; background: #f6f3ea; min-height: 120px; text-align: center; -webkit-overflow-scrolling: touch; }
+.pv-img { display: block; max-width: 100%; margin: 0 auto; cursor: zoom-in; }
+.pv-body.is-zoomed .pv-img { max-width: none; width: 200%; cursor: zoom-out; }
+.pv-msg { padding: 40px 16px; color: var(--text-muted); }
+.pv-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid #eee; font-size: 12px; color: var(--text-muted); }
+.pv-foot .pv-hint { flex: 1 1 auto; }
