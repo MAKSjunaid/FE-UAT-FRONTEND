@@ -1,0 +1,20 @@
+{
+  "id": "freshcutz-store",
+  "name": "FreshCutz — Freshly Cut. Naturally Juicy.",
+  "short_name": "FreshCutz",
+  "description": "Order fresh, hygienically packed chicken and farm eggs online. Freshly cut to order, delivered to your door.",
+  "lang": "en-IN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#17140f",
+  "theme_color": "#17140f",
+  "categories": ["shopping", "food"],
+  "icons": [
+    { "src": "images/icons/icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "images/icons/icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "images/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
