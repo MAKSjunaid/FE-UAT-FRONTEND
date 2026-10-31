@@ -1,0 +1,208 @@
+/* Customer "Cancel order" (js/order-cancel.js): a quiet button on an open order, and a small bottom sheet. */
+
+/* ---- the button on the order card ---- */
+.oc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1.5px solid #f0cdc7;
+  border-radius: var(--r-sm);
+  background: #fdf4f2;
+  color: var(--danger);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast), border-color var(--dur-fast);
+}
+.oc-btn:active { transform: scale(0.98); background: #fbe6e2; border-color: var(--danger); }
+
+/* ---- the short pop-up, at the top of the page ---- */
+.oc-toast {
+  position: fixed;
+  top: calc(var(--safe-top, 0px) + 14px); /* (when the pop-up belongs to a page, its place is set from that page: order-cancel.js) */
+  left: 50%;
+  z-index: 950; /* over the sheets, the track panel and the ordinary pop-ups */
+  width: min(92vw, 380px);
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--text-on-dark);
+  border-left: 4px solid var(--info);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  animation: ocToastIn 0.32s var(--ease-out) both;
+  transition: opacity 0.26s ease, transform 0.26s ease;
+}
+.oc-toast.success { border-left-color: var(--success); }
+.oc-toast.error { border-left-color: var(--danger); }
+.oc-toast.is-out { opacity: 0; transform: translate(-50%, -14px); }
+@keyframes ocToastIn { from { opacity: 0; transform: translate(-50%, -24px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---- the sheet ---- */
+html.oc-open, html.oc-open body { overflow: hidden; }
+.oc-ov {
+  position: fixed;
+  inset: 0;
+  z-index: 870; /* above the account sheet and the track panel (850), under the toasts (900) */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(23, 20, 15, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  overscroll-behavior: contain;
+  animation: ocFade 0.18s ease-out both;
+}
+
+.oc-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 18px calc(var(--safe-bottom, 0px) + 18px);
+  background: var(--bg-page);
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--shadow-lg);
+  animation: ocUp 0.4s var(--ease-out) both;
+  max-height: 88vh;
+  max-height: min(88vh, 88dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.oc-grab { width: 38px; height: 4px; margin: 0 auto 14px; border-radius: 4px; background: #ddd3b8; }
+.oc-h { margin: 0 0 12px; font-family: var(--font-display); font-size: 20px; color: var(--ink); }
+.oc-center { text-align: center; margin-bottom: 6px; }
+.oc-p { margin: 0 0 18px; text-align: center; font-size: 14px; color: var(--text-muted); }
+
+.oc-reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oc-r {
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+  padding: 8px 12px;
+  text-align: left;
+  border: 1.5px solid #e6dcc0;
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
+}
+.oc-r:active { transform: scale(0.97); }
+.oc-r.is-on { border-color: var(--gold); background: #fffaf0; box-shadow: 0 0 0 3px rgba(201, 161, 59, 0.25); }
+
+.oc-note {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid #e6dcc0;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  resize: none;
+}
+.oc-note[hidden] { display: none; }
+.oc-note:focus { outline: none; border-color: var(--gold); }
+
+.oc-actions { display: flex; gap: 10px; margin-top: 16px; }
+.oc-b {
+  flex: 1 1 0;
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast);
+}
+.oc-b:active { transform: scale(0.97); }
+.oc-b:disabled { opacity: 0.45; cursor: default; }
+.oc-keep { background: #ece5cf; color: var(--ink); }
+.oc-next { min-height: 48px; background: #ece5cf; color: var(--ink); font-weight: 800; font-size: 15px; }
+/* "Are you sure?": keeping the order is the highlighted answer (big, green); cancelling is the quiet one */
+.oc-actions-sure { flex-direction: column-reverse; gap: 8px; }
+.oc-actions-sure .oc-b { flex: none; width: 100%; }
+.oc-keep-big, .oc-keep-hi { min-height: 54px; background: var(--success); color: #fff; box-shadow: 0 6px 16px rgba(47, 143, 91, 0.35); }
+.oc-keep-hi { background: var(--success); color: #fff; box-shadow: 0 6px 16px rgba(47, 143, 91, 0.35); }
+.oc-keep-big:focus-visible, .oc-keep-hi:focus-visible { outline: 3px solid rgba(47, 143, 91, 0.35); outline-offset: 2px; }
+.oc-go { min-height: 44px; background: transparent; color: var(--danger); font-weight: 700; font-size: 14px; }
+.oc-go:active { background: #fbe6e2; }
+.oc-go.is-busy { opacity: 0.7; }
+.oc-go-slot { min-height: 44px; }
+.oc-go.is-dodging {
+  position: fixed;
+  z-index: 3;
+  width: auto;
+  min-height: 44px;
+  padding: 0 14px;
+  background: #fff;
+  border: 1.5px solid #f0cdc7;
+  box-shadow: 0 8px 22px rgba(23, 20, 15, 0.3);
+  transition: left 0.28s var(--ease-out), top 0.28s var(--ease-out), width 0.28s var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) { .oc-go.is-dodging { transition: none; } }
+
+.oc-warn {
+  width: 52px;
+  height: 52px;
+  margin: 2px auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fbe6e2;
+  color: var(--danger);
+  font-size: 28px;
+  font-weight: 900;
+  animation: ocPop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.oc-pane[hidden] { display: none; }
+
+@keyframes ocFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ocFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ocUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes ocPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .oc-ov, .oc-card, .oc-warn { animation: none; }
+}
+@media (min-width: 560px) {
+  .oc-ov { align-items: center; }
+  .oc-card { border-radius: 22px; padding-bottom: 18px; }
+}
+
+/* "Are you sure?": the safe answer ("No, keep it") shakes in its own place, now and then, to draw the eye */
+.oc-keep-big { animation: ocJiggle 2.2s ease-in-out 0.4s infinite; transform-origin: 50% 50%; }
+@keyframes ocJiggle {
+  0%, 38%, 100% { transform: translateX(0) rotate(0); }
+  4% { transform: translateX(-5px) rotate(-1.6deg); }
+  8% { transform: translateX(5px) rotate(1.6deg); }
+  12% { transform: translateX(-5px) rotate(-1.2deg); }
+  16% { transform: translateX(5px) rotate(1.2deg); }
+  20% { transform: translateX(-3px) rotate(-0.8deg); }
+  24% { transform: translateX(3px) rotate(0.8deg); }
+  28% { transform: translateX(-1px) rotate(-0.3deg); }
+  32% { transform: translateX(1px) rotate(0.3deg); }
+}
+.oc-keep-big:active { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .oc-keep-big { animation: none; } }

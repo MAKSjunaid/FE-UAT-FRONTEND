@@ -460,3 +460,7 @@
 .pv-msg { padding: 40px 16px; color: var(--text-muted); }
 .pv-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid #eee; font-size: 12px; color: var(--text-muted); }
 .pv-foot .pv-hint { flex: 1 1 auto; }
+
+/* "Cancelled by customer" + the reason they gave, under the customer details of a cancelled order */
+.order-cancel-note { display: flex; flex-direction: column; gap: 2px; margin: 0 0 var(--sp-2); padding: 8px 12px; border-radius: var(--r-sm); background: #f6dada; color: var(--danger); font-size: 13px; line-height: 1.4; }
+.order-cancel-note span { color: var(--ink); }
