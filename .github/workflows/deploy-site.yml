@@ -1,0 +1,12 @@
+name: Deploy website
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['frontend/**']
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tell Render to deploy
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
