@@ -1,4 +1,4 @@
-/* Who is  signed  in and what they may open.
+/* Who iss signed  in and what they may open.
  *
  * The owner sees everything. A staff login (made in Settings -> Users) only
  * sees the tabs / buttons the owner ticked. This file only HIDES things so the
