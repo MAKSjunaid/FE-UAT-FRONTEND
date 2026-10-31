@@ -47,7 +47,7 @@ window.AdminOrderMap = (() => {
   }
 
   function clearBadges() {
-    list.querySelectorAll(".om-line").forEach((n) => n.remove());
+    list.querySelectorAll(".om-line, .om-mini").forEach((n) => n.remove());
     list.querySelectorAll("[data-om]").forEach((n) => n.removeAttribute("data-om"));
   }
 
@@ -72,22 +72,28 @@ window.AdminOrderMap = (() => {
     return z ? { lat: p.lat, lng: p.lng, area: "in", zone: z.name } : { lat: p.lat, lng: p.lng, area: "out" };
   }
 
+  /** Outside the areas: a warning line. Inside them (or no areas drawn): nothing to warn about, so only a small "Open on map" link beside the address. */
   function badgeHtml(it) {
     if (!it) return ""; // no pin on this order: nothing is shown
-    const open = `<button type="button" class="om-open" data-om-open>Open on map</button>`;
-    if (it.area === "in") return `<div class="om-line om-in"><span>✓ Inside your delivery area${it.zone ? " · " + esc(it.zone) : ""}</span>${open}</div>`;
-    if (it.area === "out") return `<div class="om-line om-out"><span>⚠ Outside your delivery area</span>${open}</div>`;
-    return `<div class="om-line om-pin"><span>📍 Pinned on the map</span>${open}</div>`;
+    if (it.area === "out") return `<div class="om-line om-out"><span>⚠ Outside your delivery area</span><button type="button" class="om-open" data-om-open>Open on map</button></div>`;
+    return "";
   }
+  const MINI = `<button type="button" class="om-mini" data-om-open>Open on map</button>`;
 
   function paint(card, zones) {
     if (card.dataset.om === "1") return;
     const it = infoOf(card, zones);
     if (!it) return; // no pin on this order: nothing is shown
     card.dataset.om = "1";
-    card.querySelectorAll(".om-line").forEach((n) => n.remove());
-    const anchor = card.querySelector(".order-customer");
-    if (anchor) anchor.insertAdjacentHTML("afterend", badgeHtml(it));
+    card.querySelectorAll(".om-line, .om-mini").forEach((n) => n.remove());
+    const line = badgeHtml(it);
+    if (line) {
+      const anchor = card.querySelector(".order-customer");
+      if (anchor) anchor.insertAdjacentHTML("afterend", line);
+    } else {
+      const addr = card.querySelector(".oc-addr");
+      if (addr) addr.insertAdjacentHTML("afterend", MINI);
+    }
   }
 
   async function flush() {

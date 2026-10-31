@@ -112,3 +112,7 @@ html.mp-ed-open, html.mp-ed-open body { overflow: hidden; }
 .om-in-t { color: #1d6b3a; } .om-out-t { color: #b3261e; }
 .om-pin-dot { width: 22px; height: 22px; border-radius: 50%; background: #c9a13b; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
 .om-pin-dot.is-in { background: #2e9b57; } .om-pin-dot.is-out { background: #d8443a; }
+
+/* inside the delivery area: just a small link beside the address */
+.om-mini { margin-left: 8px; padding: 1px 9px; border: 1px solid #cdbf93; border-radius: 999px; background: #faf6ea; color: #7a5f1a; font: inherit; font-size: 11.5px; font-weight: 700; line-height: 1.6; cursor: pointer; vertical-align: 1px; white-space: nowrap; }
+.om-mini:active { background: #f1e7c6; }

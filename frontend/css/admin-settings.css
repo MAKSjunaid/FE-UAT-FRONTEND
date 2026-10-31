@@ -70,3 +70,20 @@
 }
 .admin-bottom-nav .nav-ico.more-ico { font-size: 26px; line-height: 1; transform: translateY(-3px); }
 .admin-tab .more-ico { font-size: 1.3em; }
+
+/* ---- Customize > Customer cancellation (js/admin-cancel.js; the rows, fields and buttons are the .nm-* ones of Customer notifications) ---- */
+.cc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cc-chip { position: relative; flex: 1 1 auto; min-width: 88px; }
+.cc-chip input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+.cc-chip span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: var(--r-sm); border: 1.5px solid #e0d6b8; background: #faf6ea; font-weight: 700; font-size: 13.5px; color: var(--text-muted); transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast); }
+.cc-chip input:checked + span { background: var(--ink); border-color: var(--ink); color: #fff; }
+.cc-chip input:checked + span::before { content: "✓"; }
+.cc-select { width: 100%; min-height: 44px; padding: 0 12px; border-radius: var(--r-sm); border: 1.5px solid #e0d6b8; background: #faf6ea; font: inherit; font-weight: 700; color: var(--ink); }
+.cc-sub { margin-top: var(--sp-2); }
+.cc-dodge { margin: var(--sp-3) 0 var(--sp-2); }
+.cc-rrs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.cc-rr { display: flex; align-items: center; gap: 6px; }
+.cc-rr input[type="text"] { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; border: 1.5px solid #e0d6b8; border-radius: var(--r-sm); background: #fff; font: inherit; font-size: 15px; color: var(--ink); }
+.cc-rr input[type="text"]:focus { outline: none; border-color: var(--gold); }
+.cc-rr .nm-del { flex: none; }
+.cc-sub .nm-field input[type="text"] { min-height: 44px; }

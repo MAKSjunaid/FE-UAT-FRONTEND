@@ -495,7 +495,7 @@ window.AdminCustomize = (() => {
       }
       // Nothing is read from the server until a section is opened.
       // (the notifications card has its own request, and may already be replaced by now - so look at the event's own path)
-      if (!card.open || !card.matches || !card.matches("details.cz-card") || e.composedPath().some((n) => n.id === "orderMsgRoot")) return;
+      if (!card.open || !card.matches || !card.matches("details.cz-card") || e.composedPath().some((n) => n.id === "orderMsgRoot" || n.id === "cancelMsgRoot")) return;
       if (card.querySelector("#czBackupMount")) {
         if (window.AdminBackup && window.AdminBackup.open) window.AdminBackup.open(); // (its own small status call)
         return;
@@ -762,6 +762,7 @@ window.AdminCustomize = (() => {
       )}
 
       <div id="orderMsgRoot"></div>
+      <div id="cancelMsgRoot"></div>
 
       ${section(
         "Store-offline messages",
@@ -1449,7 +1450,7 @@ window.AdminCustomize = (() => {
 
   // Settings that are saved by their own buttons (upload / remove), never as part of a section Save.
   const NOT_SPREAD = new Set(["banners", "logoUrl", "splashImageUrl"]);
-  const isRealCard = (card) => !(card.id === "czTplCard" || card.closest("#orderMsgRoot") || card.querySelector("#czBackupMount"));
+  const isRealCard = (card) => !(card.id === "czTplCard" || card.closest("#orderMsgRoot, #cancelMsgRoot") || card.querySelector("#czBackupMount"));
 
   /** Whole sections: when anything in a section changed, ALL of that section's settings (those read from the server) are sent, and the
    *  server replaces them completely - so what is stored is always exactly what the section shows, never a mix of old and new.

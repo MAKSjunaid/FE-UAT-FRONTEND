@@ -181,12 +181,13 @@ window.AdminOrders = (() => {
       <div class="order-customer">
         <strong>${Utils.escapeHtml(order.customerName)}</strong>
         📞 <a href="tel:${Utils.escapeHtml(order.phone)}">${Utils.escapeHtml(order.phone)}</a><br/>
-        🏠 ${Utils.escapeHtml(order.flatNo)}, ${Utils.escapeHtml(order.addressLine)}
+        <span class="oc-addr">🏠 ${Utils.escapeHtml(order.flatNo)}, ${Utils.escapeHtml(order.addressLine)}</span>
         ${order.landmark ? `<br/>📍 ${Utils.escapeHtml(order.landmark)}` : ""}
         ${order.deliverySlot ? `<br/>🕗 Deliver: ${Utils.escapeHtml(SlotTime.display(order.deliverySlot, order.status))}` : ""}
         ${order.paymentMode === "UPI" && window.AdminProof ? AdminProof.lineHtml(order) : order.paymentMode ? `<br/>${order.paymentMode === "UPI" ? "📲 Payment: UPI" : "💵 Payment: Cash on delivery"}` : ""}
         ${order.notes ? `<br/>📝 ${Utils.escapeHtml(order.notes)}` : ""}
       </div>
+      ${order.status === "CANCELLED" && order.cancelledByCustomer ? `<div class="order-cancel-note"><strong>Cancelled by customer</strong>${order.cancelReason ? `<span>${Utils.escapeHtml(order.cancelReason)}</span>` : ""}</div>` : ""}
       <div class="order-items-list">${itemsSummary(order)}</div>
       <div class="order-total-row"><span>Total</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${actionsFor(order) ? `<div class="order-actions">${actionsFor(order)}</div>` : ""}
@@ -463,7 +464,10 @@ window.AdminOrders = (() => {
         if (!base) base = view.orders.find((o) => o.id === patch.id);
       });
     }
-    const merged = base ? { ...base, status: patch.status, statusUpdatedAt: patch.statusUpdatedAt, deliveredAt: patch.deliveredAt } : null;
+    const merged = base
+      ? { ...base, status: patch.status, statusUpdatedAt: patch.statusUpdatedAt, deliveredAt: patch.deliveredAt,
+          cancelReason: patch.cancelReason || null, cancelledByCustomer: patch.cancelledByCustomer || null } // only set when the customer cancelled it
+      : null;
     if (merged) known.set(patch.id, merged);
     const out = { changed: [], dropped: [] };
     Object.keys(tabs).forEach((status) => {
