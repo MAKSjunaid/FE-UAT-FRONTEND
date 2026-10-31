@@ -1,4 +1,4 @@
-/* Admin -> Banners tab (see admin-banners.js) */
+/*  Admin -> Banners tab (see admin-banners.js) */
 .bn-intro { margin-bottom: 10px; }
 .bn-sets { display: flex; flex-direction: column; gap: 12px; }
 .bn-set { border: 1px solid #eadfc2; border-radius: 12px; padding: 12px; background: #fffdf7; }
