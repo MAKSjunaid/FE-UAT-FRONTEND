@@ -292,6 +292,7 @@ window.ProfileSheet = (() => {
     }
     // The order that was just placed is already known from the server's reply: the Track order strip shows it at once, without
     // waiting for (or depending on) a second look-up. The look-up still runs, and again a few seconds later, to catch anything else.
+    if (window.OrderCancel) OrderCancel.stamp(order); // (may it be cancelled, and for how long - from the server's reply)
     if (order && order.orderCode) placedHere.set(order.orderCode, { phone, order: { ...order } });
     savePhone(phone);
     if (order && order.customerName) setName(phone, order.customerName);
@@ -609,7 +610,10 @@ window.ProfileSheet = (() => {
       es.addEventListener("orders", (e) => {
         try {
           const c = JSON.parse(e.data);
-          if (c && Array.isArray(c.orders)) onChunk(c);
+          if (c && Array.isArray(c.orders)) {
+            if (window.OrderCancel) OrderCancel.stamp(c.orders); // (the seconds left to cancel become a clock time here)
+            onChunk(c);
+          }
         } catch {
           /* a push that is not understood is skipped */
         }
@@ -622,6 +626,7 @@ window.ProfileSheet = (() => {
   /** Reads the history the old way (everything at once) — only for a server that does not have the live connection yet. */
   async function legacyOrders(phone) {
     const all = await Api.get(`/api/customers/orders?phone=${encodeURIComponent(phone)}`);
+    if (window.OrderCancel) OrderCancel.stamp(all);
     try {
       // the whole history is here, so the "Buy it again" row can work itself out from it (as it always did)
       window.dispatchEvent(new CustomEvent("freshcutz:orders", { detail: { phone, orders: all } }));
@@ -752,6 +757,7 @@ window.ProfileSheet = (() => {
       if (steps && card.dataset.track) steps.outerHTML = trackStepsHtml(code, status);
       const note = card.parentElement && card.parentElement.querySelector(".trk-note");
       if (note && card.dataset.track) note.outerHTML = trackNoteHtml(code, status, order);
+      if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
     });
   }
@@ -882,6 +888,7 @@ window.ProfileSheet = (() => {
     if (mine) {
       mine.order.status = d.status;
       mine.order.deliveredAt = d.deliveredAt || null;
+      if (window.OrderCancel) OrderCancel.apply(mine.order, d);
       announceTrack();
     }
     if (!acct || !d.orderCode) return;
@@ -893,6 +900,8 @@ window.ProfileSheet = (() => {
     }
     held.status = d.status;
     held.deliveredAt = d.deliveredAt || null;
+    if (window.OrderCancel) OrderCancel.apply(held, d); // (cancelling may still be allowed in the new status - or not any more)
+    if (d.refresh) acct.stale = true; // (the shop refused a cancel: the next look at the orders re-reads them)
     paintStatus(d.orderCode, d.status, held);
     saveAcctSoon();
     announceTrack(); // (delivered / cancelled: the Track order strip goes away at once)
@@ -944,6 +953,32 @@ window.ProfileSheet = (() => {
     }
   }
 
+  /** The Track order strip must show EVERY open order, however old. "My Orders" only holds the newest page until the customer scrolls
+   * down, so while there are more orders on the server, the open ones are asked for by themselves (a tiny list: New / Packed only)
+   * and kept beside the held list, never inside it (so the list's paging is untouched). */
+  async function loadOpenExtras(phone, state) {
+    const extras = () => placedHere.forEach((e, code) => { if (e.extra) placedHere.delete(code); });
+    if (!state.hasMore) { extras(); return; } // everything is held already
+    let open;
+    try {
+      open = await Api.get(`/api/customers/orders/open?phone=${encodeURIComponent(phone)}`);
+    } catch {
+      return; // offline, or a server without this: the strip shows what is held
+    }
+    if (getSavedPhone() !== phone || !Array.isArray(open)) return;
+    if (window.OrderCancel) OrderCancel.stamp(open);
+    const held = new Set(state.orders.map((o) => o.orderCode));
+    const keep = new Set();
+    open.forEach((o) => {
+      if (held.has(o.orderCode)) return;
+      keep.add(o.orderCode);
+      const now = placedHere.get(o.orderCode);
+      if (now && !now.extra) return; // (placed on this page: its own, fresher, copy stays)
+      placedHere.set(o.orderCode, { phone, order: { ...o }, extra: true });
+    });
+    placedHere.forEach((e, code) => { if (e.extra && !keep.has(code)) placedHere.delete(code); });
+  }
+
   async function trackCheck() {
     if (trackBusy && Date.now() - trackBusySince < 25000) {
       trackAgain = true;
@@ -968,12 +1003,15 @@ window.ProfileSheet = (() => {
         }
         state.stale = false;
         await refreshNewest(document.createElement("div"), state); // (nothing is drawn: the container is not on the page)
+        await loadOpenExtras(phone, state);
+        announceTrack();
       } else {
         state.streaming = true;
         try {
           await streamOrders(phone, null, STREAM_LIMIT, (c) => takeChunk(state, c));
           state.loaded = true;
           trackVerified = phone;
+          await loadOpenExtras(phone, state);
         } catch {
           /* offline, or a server without the live connection: no strip */
         } finally {
@@ -1132,6 +1170,7 @@ window.ProfileSheet = (() => {
         data-action="reorder"
         data-order-code="${Utils.escapeHtml(order.orderCode)}"
       >${SiteCustomize.html("reorderButtonText")}</button>
+      ${window.OrderCancel ? OrderCancel.html(order) : ""}
     </div>`;
   }
 

@@ -711,6 +711,14 @@
         /* malformed push — the account page asks for its orders when it is next opened */
       }
     });
+    // the wording of the "Cancel order" screens (set in Customize); sent once when a signed-in customer connects
+    eventSource.addEventListener("cancelui", (e) => {
+      try {
+        tell("freshcutz:cancelui", JSON.parse(e.data));
+      } catch {
+        /* malformed push — the standard wording stays */
+      }
+    });
     eventSource.addEventListener("sitesame", () => {
       if (held) apply(held); // what this page saved is still current (nothing more was sent)
     });
