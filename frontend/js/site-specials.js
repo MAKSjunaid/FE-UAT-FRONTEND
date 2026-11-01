@@ -757,7 +757,13 @@ window.SiteSpecials = (() => {
       if (n) { const k = window.devicePixelRatio || 1; n = Math.round((rest + n) * k) / k - rest; }
       dy = n;
       card.style.transform = n ? `translateY(${n}px)` : "";
-      back.style.opacity = n ? String(1 - Math.min(n / 360, 0.7)) : "";
+      back.style.opacity = n ? fade(n).back : "";
+      card.style.opacity = n ? fade(n).card : ""; // the card itself fades as it is pulled down
+    };
+    // keeps changing all the way down the screen (no early stop): the card fades to 30%, the dark backdrop to 15%
+    const fade = (n) => {
+      const t = Math.min(n / (window.innerHeight * 0.7), 1);
+      return { card: (1 - 0.7 * t).toFixed(3), back: (1 - 0.85 * t).toFixed(3) };
     };
     card.addEventListener("touchstart", (e) => {
       tracking = !!pop && !pop.closing && e.touches.length === 1;
@@ -800,8 +806,8 @@ window.SiteSpecials = (() => {
         const from = dy;
         offset(0);
         if (animate()) {
-          card.animate([{ transform: `translateY(${from}px)` }, { transform: "none" }], { duration: 220, easing: EASE });
-          back.animate([{ opacity: 1 - Math.min(from / 360, 0.7) }, { opacity: 1 }], { duration: 220, easing: EASE });
+          card.animate([{ transform: `translateY(${from}px)`, opacity: fade(from).card }, { transform: "none", opacity: 1 }], { duration: 220, easing: EASE });
+          back.animate([{ opacity: fade(from).back }, { opacity: 1 }], { duration: 220, easing: EASE });
         }
       }
     };
