@@ -708,21 +708,12 @@ window.SiteSpecials = (() => {
     const clip = el.querySelector(".sp-pop-clip");
     const stage = el.querySelector(".sp-pop-stage");
     sizeStage(stage);
-    pop = { el, card, clip, stage, source, id, closing: false, owner, smooth: !!source.closest("#sheetRoot") };
+    pop = { el, card, clip, stage, source, id, closing: false, owner, smooth: true }; // (the cut edge opens with the card's growth - the card now lands over the header area too)
     el.querySelector(".sp-card").classList.add("sp-big");
 
     const from = source.getBoundingClientRect();
-    // The big card is centred in the free area UNDER the header / category chips, so that when it has landed it does not
-    // sit over them either (the page behind stays visible, dimmed, exactly where it is).
-    if (!source.closest("#sheetRoot")) {
-      const de = document.documentElement;
-      const top = Math.round(floatingBars(source, from, de.clientWidth, de.clientHeight, true).T);
-      if (top > 8) {
-        const pad = top + 12;
-        stage.style.paddingTop = pad + "px";
-        card.style.maxHeight = Math.max(240, de.clientHeight - pad - 16) + "px";
-      }
-    }
+    // The big card is centred on the whole screen - the same place at the top of the page and when scrolled (the dimmed
+    // backdrop covers the header / chips / cart bar behind it), so there is nothing to measure or offset here.
     snapToPixels(card);
     const to = card.getBoundingClientRect();
     // the small card stays in its place behind the big one (no hole in the row / the sheet while the big card is up)
@@ -734,8 +725,7 @@ window.SiteSpecials = (() => {
         [{ transform: flip(from, to), borderRadius: "16px", opacity: 0 }, { offset: 0.3, opacity: 1 }, { transform: "none", borderRadius: "20px", opacity: 1 }],
         { duration: 340, easing: EASE }
       );
-      const smooth = !!source.closest("#sheetRoot");
-      fly(clip, stage, cutOff(source, from), true, 340, to, smooth); // grows out from UNDER the header / chips
+      fly(clip, stage, cutOff(source, from), true, 340, to, true); // grows out from UNDER the header / chips
       el.querySelector(".sp-pop-back").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, easing: "ease-out" });
       card.querySelectorAll(".sp-desc, .sp-pop-x").forEach((n) =>
         n.animate([{ opacity: 0 }, { opacity: 0 }, { opacity: 1 }], { duration: 340, easing: "ease-out" })
