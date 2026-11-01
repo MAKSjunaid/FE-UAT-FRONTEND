@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Night mode — switched on with the moon button in the header (js/night-mode.js).
+   Everything here only applies while <html> has the class "night"; with it off the site is exactly as before.
+   ========================================================================== */
+
+/* the button in the header (looks like the other round header buttons) */
+.icon-btn.night-btn {
+  width: calc(22px * var(--sz-hicon, 1));
+  height: calc(22px * var(--sz-hicon, 1));
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--gold-light);
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0; /* (a button has a little side padding of its own, which squeezed the icon out of a small round button) */
+}
+/* sits right beside the location button at the top right (if the location button is not shown, it takes the right edge itself) */
+.site-header .area-btn[hidden] + .night-btn { margin-left: auto; }
+.icon-btn.night-btn svg { width: calc(13px * var(--sz-hicon, 1)); height: calc(13px * var(--sz-hicon, 1)); display: block; flex: none; }
+.icon-btn.night-btn .ico-sun { display: none; }
+html.night .icon-btn.night-btn .ico-moon { display: none; }
+html.night .icon-btn.night-btn .ico-sun { display: block; }
+html.night .icon-btn.night-btn { background: rgba(240, 217, 138, 0.18); }
+
+/* ---- colours: the same names the whole site already uses, so most things follow on their own.
+   (!important so they also win over colours the shop set in the admin's Customize tab) ---- */
+html.night {
+  color-scheme: dark;
+  --bg-page: #0e0c08 !important;
+  --bg-card: #1a1710 !important;
+  --text-main: #f1ead8 !important;
+  --text-muted: #a89f89;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+html.night body { background: var(--bg-page); color: var(--text-main); }
+
+/* white / cream surfaces that were written as fixed colours */
+html.night .brand-logo.custom-logo img { background: #fff; } /* an uploaded logo keeps its own backing */
+
+/* ===== generated from the day styles: every light surface / border / dark text gets a night colour ===== */
+html.night :where(.btn-outline) { color: var(--text-main); } /* components */
+html.night :where(.btn-ghost) { background: rgba(255, 255, 255, 0.10); } /* components */
+html.night :where(.badge-new) { background: #312216; color: #f6b179; } /* components */
+html.night :where(.badge-packed) { background: #183533; color: #80f0eb; } /* components */
+html.night :where(.badge-ready) { background: #151e2e; color: #8ca9e3; } /* components */
+html.night :where(.badge-delivered) { background: #173323; } /* components */
+html.night :where(.badge-cancelled) { background: #331717; } /* components */
+html.night :where(.badge-off) { background: #29251b; } /* components */
+html.night :where(.badge-live) { background: #173323; } /* components */
+html.night .field label { color: var(--text-main); } /* components */
+html.night .field input, html.night .field select, html.night .field textarea { background: #1f1c14; border-color: #3d351f; } /* components */
+html.night :where(.store-offline-banner) { background: #2b1613; border-bottom-color: #3e211c; color: #e3928c; } /* storefront-header */
+html.night :where(.section-title) { color: var(--text-main); } /* storefront-grid */
+html.night :where(.product-media-frame) { background: linear-gradient(135deg, #342d17, #3e351c); } /* storefront-grid */
+html.night :where(.out-of-stock-btn) { background: #311a16; } /* storefront-grid */
+html.night :where(.product-name) { color: var(--text-main); } /* storefront-grid */
+html.night .variant-toggle button { background: #1f1c14; border-color: #42381d; } /* storefront-grid */
+html.night :where(.price-now) { color: var(--gold-light); } /* storefront-grid */
+html.night :where(.sheet-header) { border-bottom-color: #3b301a; } /* cart */
+html.night :where(.sheet-close) { background: rgba(255, 255, 255, 0.11); } /* cart */
+html.night :where(.sheet-footer) { border-top-color: #3b301a; } /* cart */
+html.night :where(.cart-item-delete) { background: rgba(255, 255, 255, 0.11); } /* cart */
+html.night .cart-item-delete:active { background: rgba(255, 255, 255, 0.25); color: var(--text-main); } /* cart */
+html.night .summary-row.total { color: var(--text-main); } /* cart */
+html.night :where(.profile-order-items) { background: #2a2313; } /* cart */
+html.night :where(.order-id-chip) { background: #2e2816; border-color: #42381d; } /* cart */
+html.night :where(.order-notes) { border-top-color: #42381d; color: var(--text-main); } /* cart */
+html.night :where(.profile-orders-more) { border-top-color: rgba(255, 255, 255, 0.18); } /* cart */
+html.night :where(.profile-orders-end) { border-top-color: rgba(255, 255, 255, 0.18); } /* cart */
+html.night :where(.slot-chip) { background: #1f1c14; border-color: #42381d; } /* cart */
+html.night .slot-panel .slot-picked { background: #282112; } /* cart */
+html.night :where(.slot-picked) { background: #282112; border-color: #3b301a; } /* cart */
+html.night :where(.pay-opt) { background: #1f1c14; border-color: #42381d; } /* cart */
+html.night .pay-opt.is-selected { background: #282112; } /* cart */
+html.night :where(.upi-card) { background: #282112; } /* cart */
+html.night :where(.upi-title) { color: var(--text-main); } /* cart */
+html.night :where(.upi-forgot-btn) { background: #282112; } /* cart */
+html.night .upi-forgot-btn b { color: var(--text-main); } /* cart */
+html.night :where(.proof-title), html.night :where(.proof-thanks) { color: var(--text-main); } /* cart */
+html.night .proof-box.is-done { background: #282112; } /* cart */
+html.night :where(.proof-nudge) { color: var(--text-main); } /* cart */
+html.night .proof-box.is-nudge .proof-btn { background: #342d17; } /* cart */
+html.night :where(.upi-id) { background: #282112; } /* cart */
+html.night :where(.cn-btn) { background: #282112; color: var(--text-main); } /* customer-push */
+html.night :where(.cn-box) { background: #2e2816; border-color: #42381d; } /* customer-push */
+html.night .cn-box.cn-ok { background: #152f21; border-color: #20422f; color: #93dcb4; } /* customer-push */
+html.night :where(.sp) { border-color: #39301a; } /* site-specials */
+html.night :where(.sp-title) { color: var(--text-main); } /* site-specials */
+html.night :where(.sp-all) { color: var(--text-main); } /* site-specials */
+html.night :where(.sp-card) { border-color: #382f19; } /* site-specials */
+html.night :where(.sp-media) { background: linear-gradient(135deg, #342d17, #3e351c); } /* site-specials */
+html.night :where(.sp-name) { color: var(--text-main); } /* site-specials */
+html.night .sp-var button { background: #1f1c14; border-color: #42381d; } /* site-specials */
+html.night :where(.sp-now) { color: var(--gold-light); } /* site-specials */
+html.night :where(.sp-soldout) { background: #311a16; } /* site-specials */
+html.night :where(.trk-detail) { background: #2b2514; color: var(--text-main); } /* bottom-nav */
+html.night :where(.help-q) { border-top-color: #372d18; } /* bottom-nav */
+html.night .help-a b { color: var(--text-main); } /* bottom-nav */
+html.night :where(.acct-card) { background: #1f1c14; } /* bottom-nav */
+html.night :where(.acct-title) { color: var(--text-main); } /* bottom-nav */
+html.night :where(.acct-chip) { background: #282112; border-color: #3b301a; } /* bottom-nav */
+html.night .acct-row + .acct-row { border-top-color: #372d18; } /* bottom-nav */
+html.night .acct-feat b { color: var(--text-main); } /* bottom-nav */
+html.night :where(.acct-feat-ico) { background: #282112; border-color: #3b301a; } /* bottom-nav */
+html.night :where(.empty-art) { background: radial-gradient(circle at 50% 38%, #2e2815 0%, #3d351b 62%, #483e20 100%); } /* bottom-nav */
+html.night .empty-perks li { background: #282112; border-color: #3b301a; } /* bottom-nav */
+html.night .acct-edit .field input, html.night .acct-edit .field textarea { background: #262011; border-color: #3e351c; } /* bottom-nav */
+html.night :where(.login-ico) { background: radial-gradient(circle at 50% 38%, #2e2815 0%, #3d351b 62%, #483e20 100%); } /* bottom-nav */
+html.night :where(.trk-note-title) { color: var(--text-main); } /* bottom-nav */
+html.night :where(.trk-cancelled) { color: #eb8a85; } /* bottom-nav */
+html.night .addr-edit .field label.pay-opt { color: var(--text-main); } /* bottom-nav */
+html.night :where(.oc-btn) { background: #281612; border-color: #3c201b; } /* order-cancel */
+html.night .oc-btn:active { background: #2f1915; } /* order-cancel */
+html.night :where(.oc-grab) { background: #463c22; } /* order-cancel */
+html.night :where(.oc-h) { color: var(--text-main); } /* order-cancel */
+html.night :where(.oc-r) { border-color: #42381d; color: var(--text-main); } /* order-cancel */
+html.night .oc-r.is-on { background: #282112; } /* order-cancel */
+html.night :where(.oc-note) { background: #1f1c14; border-color: #42381d; color: var(--text-main); } /* order-cancel */
+html.night :where(.oc-keep) { background: #3a331a; color: var(--text-main); } /* order-cancel */
+html.night :where(.oc-next) { background: #3a331a; color: var(--text-main); } /* order-cancel */
+html.night .oc-go:active { background: #2f1915; } /* order-cancel */
+html.night .oc-go.is-dodging { background: #1f1c14; border-color: #3c201b; } /* order-cancel */
+html.night :where(.oc-warn) { background: #2f1915; } /* order-cancel */
+html.night :where(.dm-back) { background: #1f1c14; border-color: rgba(255, 255, 255, 0.14); color: var(--text-main); } /* delivery-map */
+html.night :where(.dm-mapwrap) { background: #332c17; } /* delivery-map */
+html.night :where(.dm-fab) { background: #1f1c14; color: var(--text-main); } /* delivery-map */
+html.night :where(.dm-me) { border-color: #1f1c14; } /* delivery-map */
+html.night :where(.dm-card) { background: #1f1c14; } /* delivery-map */
+html.night :where(.dm-status) { background: #2c2614; border-color: #3c341b; } /* delivery-map */
+html.night :where(.dm-loc) { background: #282112; color: var(--text-main); } /* delivery-map */
+html.night .dm-loc.is-set { background: #1f1c14; } /* delivery-map */
+html.night :where(.dm-results) { background: #1f1c14; border-color: rgba(255, 255, 255, 0.14); } /* delivery-map */
+html.night :where(.dm-res) { border-bottom-color: #332c17; } /* delivery-map */
+html.night .dm-res:active { background: #2c2614; } /* delivery-map */
+html.night :where(.dm-res-ico) { background: #312a16; } /* delivery-map */
+html.night :where(.dm-lv-card) { background: #1f1c14; color: var(--text-main); } /* delivery-map */
+html.night .dm-inline .dm-mapwrap { border-color: #453c1f; } /* delivery-map */
+html.night .dm-inline .dm-mapwrap.is-live .dm-sleep { color: var(--text-main); } /* delivery-map */
+html.night :where(.dm-ph) { background: #342b18; } /* delivery-map */
+
+/* ---- page: chips, search ---- */
+html.night .category-bar { background: rgba(14, 12, 8, 0.55); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06); }
+html.night .cat-chip { background: #221e15; border-color: #4a3f27; color: var(--text-muted); }
+html.night .cat-chip.active { background: var(--gold); border-color: var(--gold); color: var(--ink); font-weight: 700; }
+html.night .search-bar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%), #1d1a12;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.4), 0 8px 14px -7px rgba(0, 0, 0, 0.7);
+}
+html.night .search-bar-input { color: var(--text-main); }
+html.night .search-bar-input::placeholder { color: #8c836f; }
+html.night .view-toggle { background: #1d1a12; border-color: #4a3f27; color: var(--text-main); }
+
+/* ---- round close buttons: a clear light ring + light cross on the dark surfaces ---- */
+html.night .sheet-close, html.night .search-clear-x, html.night .dm-search-clear, html.night .cart-item-delete {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px solid rgba(255, 255, 255, 0.34);
+  color: var(--text-main);
+  box-shadow: none;
+}
+html.night .sp-pop-x { background: rgba(26, 23, 16, 0.92); border: 1.5px solid rgba(255, 255, 255, 0.4); color: var(--text-main); }
+html.night .acct-x, html.night .celeb-x { border: 1.5px solid rgba(255, 255, 255, 0.34); }
+html.night .dm-back, html.night .dm-fab { background: var(--bg-card); border: 1.5px solid rgba(255, 255, 255, 0.28); color: var(--text-main); }
+
+/* ---- selected states (gold, as in the day look) ---- */
+html.night .sp-var button.on, html.night .variant-toggle button.active { background: linear-gradient(135deg, rgba(240, 217, 138, 0.30), rgba(201, 161, 59, 0.16)); border-color: var(--gold); color: var(--gold-light); }
+html.night .pay-opt.is-selected, html.night .oc-r.is-on { border-color: var(--gold); }
+html.night .slot-chip { background: #221e15; border-color: #4a3f27; color: var(--text-main); }
+html.night .slot-chip.is-selected { background: linear-gradient(135deg, var(--gold-light), var(--gold) 60%, var(--gold-dark)); border-color: var(--gold); color: var(--ink); }
+
+/* ---- the bottom menu ---- */
+html.night .bnav { background: #14120c; border-top-color: #2c2619; box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.5); }
+html.night .bnav::after { background: #14120c; }
+html.night .bnav-item { color: var(--text-muted); }
+html.night .bnav-item.is-active, html.night .bnav-item:active { color: var(--gold-light); }
+
+/* ---- the item panel ---- */
+html.night .sp-pop-card .sp-body { background: var(--bg-card); }
+html.night .upi-qr { background: #fff; } /* a QR code must stay black on white to scan */
+
+/* very narrow phones: tighten the header a little so the brand name still fits on one line next to the location and the moon button */
+@media (max-width: 339px) {
+  .site-header .container { gap: 6px; }
+  .icon-btn.night-btn { width: calc(20px * var(--sz-hicon, 1)); height: calc(20px * var(--sz-hicon, 1)); }
+}
+
+/* typed text in every box (the day styles use a dark brown) */
+html.night input, html.night textarea, html.night select,
+html.night .field input, html.night .field select, html.night .field textarea,
+html.night .acct-edit .field input, html.night .acct-edit .field textarea { color: var(--text-main); caret-color: var(--gold-light); }
+html.night input:-webkit-autofill { -webkit-text-fill-color: var(--text-main); box-shadow: 0 0 0 40px #221e15 inset; }
+html.night .field input[type="radio"], html.night .field input[type="checkbox"] { background: transparent; border-color: transparent; box-shadow: none; }
+
+/* red / green / gold-brown text that was meant for a light page: lighter versions so it can be read on dark */
+html.night .badge-cancelled, html.night .field .error, html.night .out-of-stock-btn, html.night .unavailable-tag,
+html.night .remove-link, html.night .sp-soldout, html.night .oc-btn, html.night .oc-go, html.night .oc-warn { color: #ff8f84; }
+html.night .badge-delivered, html.night .badge-live { color: #6fdc9a; }
+html.night .dm-title, html.night .dm-fab svg, html.night .dm-search-ico, html.night .dm-res-ico, html.night .acct-back { color: var(--gold-light); }
+
+/* ==========================================================================
+   The scene that plays when the moon / sun button is tapped (js/night-mode.js)
+   ========================================================================== */
+.nm-fx { position: fixed; inset: 0; z-index: 3000; pointer-events: none; overflow: hidden; contain: layout paint; }
+.nm-wash {
+  position: absolute; inset: 0;
+  clip-path: circle(0 at var(--cx, 90%) var(--cy, 4%));
+  animation: nmGrow 0.56s cubic-bezier(0.5, 0, 0.25, 1) forwards, nmWashOut 0.8s ease 2.15s forwards;
+}
+.nm-stuff { position: absolute; inset: 0; animation: nmStuffOut 0.55s ease 2.4s forwards; }
+@keyframes nmGrow { to { clip-path: circle(150vmax at var(--cx, 90%) var(--cy, 4%)); } }
+@keyframes nmWashOut { to { opacity: 0; } }
+@keyframes nmStuffOut { to { opacity: 0; } }
+.nm-say {
+  position: absolute; left: 0; right: 0; bottom: 29%; padding: 0 16px; text-align: center;
+  font-family: var(--font-display); font-size: 22px; letter-spacing: 0.08em; opacity: 0;
+  animation: nmSay 0.8s ease 1.15s forwards;
+}
+@keyframes nmSay { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- turning night ON: dark sky, stars, moon, an owl swooping in ---- */
+.nm-to-night .nm-wash { background: radial-gradient(ellipse at 72% 14%, #1f2447 0%, #0c0e20 52%, #05060d 100%); }
+.nm-to-night .nm-say { color: var(--gold-light); text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6); }
+.nm-star {
+  position: absolute; border-radius: 50%; background: #fff6d6; opacity: 0;
+  box-shadow: 0 0 6px 1px rgba(255, 240, 190, 0.7);
+  animation: nmTwinkle 1.4s ease-in-out infinite, nmStarIn 0.5s ease 0.35s forwards;
+}
+@keyframes nmStarIn { to { opacity: 0.9; } }
+@keyframes nmTwinkle { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(0.45); filter: brightness(0.6); } }
+.nm-moon {
+  position: absolute; top: 11%; right: 15%; width: 62px; height: 62px; border-radius: 50%;
+  box-shadow: 15px -5px 0 0 #f6e7a8; filter: drop-shadow(0 0 14px rgba(246, 231, 168, 0.55));
+  opacity: 0; animation: nmMoon 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.3s forwards;
+}
+.nm-moon i { display: none; }
+@keyframes nmMoon { from { opacity: 0; transform: translateY(40px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.nm-owl {
+  position: absolute; left: 50%; top: 40%; width: 150px; margin-left: -75px; opacity: 0;
+  animation: nmOwl 2.3s cubic-bezier(0.3, 0.6, 0.3, 1) 0.3s forwards;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+}
+.nm-owl-svg { display: block; width: 100%; height: auto; overflow: visible; }
+@keyframes nmOwl {
+  0%   { opacity: 0; transform: translate(60vw, -42vh) scale(0.45) rotate(16deg); }
+  12%  { opacity: 1; }
+  58%  { opacity: 1; transform: translate(-7vw, 3vh) scale(1.08) rotate(-7deg); }
+  82%  { opacity: 1; transform: translate(0, -1vh) scale(1) rotate(0deg); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+.nm-wing { transform-box: view-box; }
+.nm-wing-l { transform-origin: 44px 70px; animation: nmFlapL 0.24s ease-in-out 0.3s 9 alternate; }
+.nm-wing-r { transform-origin: 96px 70px; animation: nmFlapR 0.24s ease-in-out 0.3s 9 alternate; }
+@keyframes nmFlapL { from { transform: rotate(0deg); } to { transform: rotate(-42deg) scaleY(0.9); } }
+@keyframes nmFlapR { from { transform: rotate(0deg); } to { transform: rotate(42deg) scaleY(0.9); } }
+.nm-eye { transform-box: fill-box; transform-origin: center; animation: nmBlink 0.34s ease-in-out 1.95s 2; }
+@keyframes nmBlink { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.08); } }
+
+/* ---- turning night OFF: a golden sunrise, the sun with its rays, little birds ---- */
+.nm-to-day .nm-wash { background: radial-gradient(circle at 50% 78%, #fff6cf 0%, #ffe08a 42%, #ffbe55 100%); }
+.nm-to-day .nm-say { color: #8a5a0c; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
+.nm-glow {
+  position: absolute; left: 50%; top: 40%; width: 120vmax; height: 120vmax; margin: -60vmax 0 0 -60vmax; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 244, 190, 0.35) 22%, rgba(255, 230, 140, 0) 52%);
+  opacity: 0; animation: nmGlow 2s ease-out 0.25s forwards;
+}
+@keyframes nmGlow { 0% { opacity: 0; transform: scale(0.4); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+.nm-sun {
+  position: absolute; left: 50%; top: 40%; width: 200px; margin: -100px 0 0 -100px; opacity: 0;
+  animation: nmSunUp 1.6s cubic-bezier(0.2, 0.8, 0.25, 1) 0.3s forwards;
+  filter: drop-shadow(0 6px 18px rgba(240, 150, 20, 0.45));
+}
+.nm-sun-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.nm-rays { transform-origin: 100px 100px; animation: nmSpin 6s linear infinite; }
+@keyframes nmSunUp { from { opacity: 0; transform: translateY(55vh) scale(0.7); } 40% { opacity: 1; } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes nmSpin { to { transform: rotate(360deg); } }
+.nm-bird { position: absolute; left: -60px; width: 46px; opacity: 0; animation: nmBird 2.4s ease-in-out forwards; }
+.nm-bird-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.nm-bird-wing { transform-box: fill-box; transform-origin: center bottom; animation: nmBirdFlap 0.26s ease-in-out infinite alternate; }
+@keyframes nmBirdFlap { from { transform: scaleY(1); } to { transform: scaleY(0.25); } }
+.nm-b1 { top: 17%; animation-delay: 0.8s; }
+.nm-b2 { top: 27%; width: 34px; animation-delay: 1.1s; }
+.nm-b3 { top: 21%; width: 26px; animation-delay: 1.4s; }
+@keyframes nmBird {
+  0%   { opacity: 0; transform: translate(0, 12px); }
+  10%  { opacity: 1; }
+  50%  { transform: translate(60vw, -16px); }
+  90%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(112vw, 6px); }
+}
+
+@media (prefers-reduced-motion: reduce) { .nm-fx { display: none; } }
