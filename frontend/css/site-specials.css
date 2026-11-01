@@ -151,13 +151,15 @@
 .sp-pop-card { pointer-events: auto; }
 .sp-pop-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(23, 20, 15, 0.6); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .sp-pop-card {
-  position: relative; width: min(100%, 360px); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
+  position: relative; width: min(100%, clamp(280px, 80vw, 340px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
   transform-origin: 0 0; border-radius: 20px; background: transparent; box-shadow: var(--shadow-lg);
   overscroll-behavior: contain; will-change: transform;
 }
 .sp-pop-card .sp-card { flex: none; width: 100%; border: 0; border-radius: inherit; box-shadow: none; background: transparent; }
 /* no background of its own and the card's own rounded corners: nothing square can show at the corners while the card grows / shrinks */
 .sp-pop-card .sp-media { cursor: default; background: none; border-top-left-radius: inherit; border-top-right-radius: inherit; }
+/* the photo keeps the height it had when the card was wider (4:3 of the old width), so narrowing the card changes only the width */
+.sp-pop-card .sp-media { height: calc(0.75 * min(100vw - 32px, 360px)); padding-bottom: 0; }
 .sp-pop-card .sp-media img { border-top-left-radius: inherit; border-top-right-radius: inherit; }
 .sp-pop-card .sp-name { cursor: default; display: block; -webkit-line-clamp: unset; font-size: calc(19px * var(--sz-pname, 1)); }
 .sp-pop-card .sp-desc { -webkit-line-clamp: unset; display: block; overflow: visible; font-size: calc(13.5px * var(--sz-pdesc, 1)); line-height: 1.45; }
