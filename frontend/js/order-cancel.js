@@ -291,9 +291,24 @@ window.OrderCancel = (() => {
       Object.assign(go.style, { left: x + "px", top: y + "px", width: w + "px" });
     }
 
+    // Phone keyboards slide over the page without resizing it, so a sheet pinned to the bottom of the screen ends up behind
+    // the keyboard, together with the box being typed in. Follow the visible part of the screen instead: the sheet rests
+    // on top of the keyboard, and the box scrolls into view.
+    const vv = window.visualViewport;
+    const fitKeyboard = () => {
+      if (!vv) return;
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      el.style.bottom = kb > 80 ? kb + "px" : "";
+      [cardReason, cardSure].forEach((c) => { c.style.maxHeight = kb > 80 ? Math.max(180, Math.round(vv.height - 12)) + "px" : ""; });
+      if (kb > 80 && document.activeElement === note) requestAnimationFrame(() => note.scrollIntoView({ block: "nearest" }));
+    };
+    if (vv) { vv.addEventListener("resize", fitKeyboard); vv.addEventListener("scroll", fitKeyboard); }
+    note.addEventListener("focus", () => setTimeout(fitKeyboard, 60));
+
     function close() {
       if (!sheet || sheet.el !== el) return;
       sheet = null;
+      if (vv) { vv.removeEventListener("resize", fitKeyboard); vv.removeEventListener("scroll", fitKeyboard); }
       document.removeEventListener("keydown", onKey);
       document.documentElement.classList.remove("oc-open");
       // slide the visible sheet back down and fade the dim layer (Web Animations: it works from wherever the sheet is right now)
