@@ -563,8 +563,9 @@ window.AdminOrders = (() => {
       const prev = known.get(msg.id);
       const echo = !!prev && prev.status === msg.status;
       const out = applyStatusToViews(msg, msg.seq);
-      settle(out);
-      return { echo };
+      const byCustomer = msg.status === "CANCELLED" && msg.cancelledByCustomer === true;
+      settle(out, byCustomer ? [msg.id] : null, "flash-cancelled"); // the customer's cancel: the card flashes where it is still on screen (All / Cancelled)
+      return { echo, byCustomer, code: msg.orderCode || (known.get(msg.id) || {}).orderCode || "", reason: msg.cancelReason || "" };
     }
     return { echo: false };
   }

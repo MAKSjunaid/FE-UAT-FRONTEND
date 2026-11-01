@@ -168,6 +168,12 @@
         Toast.show(`🐔 New order ${(msg.order && msg.order.orderCode) || ""}`.trim(), "success");
       }
     }
+    if (type === "status" && result.byCustomer && !msg.replay) {
+      // A customer cancelled their own order: the admin must notice, whatever screen is open (the card just leaves the New list).
+      window.AdminSound?.cancelled?.();
+      const what = `❌ ${result.code ? `Order ${result.code}` : "An order"} was cancelled by the customer`;
+      Toast.show(result.reason ? `${what} — ${result.reason}` : what, "error", 8000);
+    }
     afterRemoteOrderChange();
   }
 

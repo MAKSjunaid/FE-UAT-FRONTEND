@@ -66,13 +66,13 @@ window.AdminSound = (() => {
     return true;
   }
 
-  function chime() {
+  function chime(notes) {
     const t0 = ctx.currentTime + 0.03;
     const master = ctx.createGain();
     master.gain.value = 0.35;
     master.connect(ctx.destination);
     // "ding-dong": G5 then C6, each a soft bell (a sine plus a quieter octave above)
-    [[784, 0], [1046.5, 0.24]].forEach(([freq, at]) => {
+    (notes || [[784, 0], [1046.5, 0.24]]).forEach(([freq, at]) => {
       [[1, 1], [2, 0.25]].forEach(([mult, vol]) => {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
@@ -120,6 +120,19 @@ window.AdminSound = (() => {
     chime();
   }
 
+  /** Called when a customer cancels an order (admin-main.js): the same bells, falling instead of rising, so it sounds different. */
+  function cancelled() {
+    if (!on) return;
+    const now = Date.now();
+    if (now - lastAt < MIN_GAP_MS) return;
+    lastAt = now;
+    if (!running()) {
+      render();
+      return;
+    }
+    chime([[880, 0], [587.3, 0.24]]);
+  }
+
   // Any tap / key press is the browser's permission to make sound: wake the engine on the first one.
   const wake = () => {
     runningAtTap = running();
@@ -164,5 +177,5 @@ window.AdminSound = (() => {
   document.addEventListener("freshcutz:access", load);
   load();
 
-  return { newOrder, isOn: () => on };
+  return { newOrder, cancelled, isOn: () => on };
 })();
