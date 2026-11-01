@@ -8,17 +8,17 @@
 .area-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: calc(24px * var(--sz-hicon, 1));
-  padding: 0 calc(9px * var(--sz-hicon, 1));
+  gap: 3px;
+  height: calc(22px * var(--sz-hicon, 1));
+  padding: 0 calc(7px * var(--sz-hicon, 1));
   border-radius: 999px;
   border: 1px solid rgba(201, 161, 59, 0.6);
   background: rgba(255, 255, 255, 0.08);
   color: var(--gold-light);
   font: inherit;
-  font-size: calc(11px * var(--sz-hicon, 1));
+  font-size: calc(9px * var(--sz-hicon, 1));
   font-weight: 700;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
   white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -28,7 +28,7 @@
 /* sits right after the brand, pushed to the right edge; on phones the other header buttons are hidden (the bottom menu has them), this one stays */
 .site-header .area-btn { margin-left: auto; flex: 0 0 auto; }
 .area-btn:active { transform: scale(0.95); background: rgba(255, 255, 255, 0.16); }
-.area-btn .area-ico { font-size: calc(11px * var(--sz-hicon, 1)); line-height: 1; }
+.area-btn .area-ico { font-size: calc(9px * var(--sz-hicon, 1)); line-height: 1; }
 /* once a location is set the button carries its address, 12 characters wide; a longer one runs from right to left on a loop */
 .area-btn .area-txt { display: inline-block; overflow: hidden; vertical-align: middle; }
 .area-btn .area-txt.is-marquee { width: 12ch; }
