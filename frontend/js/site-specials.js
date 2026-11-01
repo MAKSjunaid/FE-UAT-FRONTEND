@@ -740,7 +740,73 @@ window.SiteSpecials = (() => {
     back.addEventListener("wheel", stop, { passive: false });
     const x = card.querySelector(".sp-pop-x");
     if (x) x.focus({ preventScroll: true });
+    swipeDown(card, back);
     if (owner) owner.hold(0); // the row it came from drifts on behind the big card (the tap had paused it for a moment)
+  }
+
+  /** Slide the big card down to close it: it follows the finger, the dimmed backdrop lightens as it goes, and on letting go
+   * it leaves (a long enough pull, or a quick flick) or springs back (a short pull). Only starts when the card is scrolled
+   * to its top and the finger moves down, so a card taller than the screen still scrolls normally inside itself. */
+  function swipeDown(card, back) {
+    let tracking = false, active = false, x0 = 0, y0 = 0, dy = 0, trail = [];
+    let rest = 0;
+    const offset = (n) => {
+      // Keep the card on whole device pixels while it is dragged. On a fractional
+      // position the photo and the white text area are drawn half a pixel apart
+      // and a thin dark line shows between them.
+      if (n) { const k = window.devicePixelRatio || 1; n = Math.round((rest + n) * k) / k - rest; }
+      dy = n;
+      card.style.transform = n ? `translateY(${n}px)` : "";
+      back.style.opacity = n ? String(1 - Math.min(n / 360, 0.7)) : "";
+    };
+    card.addEventListener("touchstart", (e) => {
+      tracking = !!pop && !pop.closing && e.touches.length === 1;
+      active = false; dy = 0; trail = [];
+      if (!tracking) return;
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+      rest = card.getBoundingClientRect().top;
+    }, { passive: true });
+    card.addEventListener("touchmove", (e) => {
+      if (!tracking || !pop || pop.closing) return;
+      const t = e.touches[0];
+      if (!active) {
+        const down = t.clientY - y0, side = Math.abs(t.clientX - x0);
+        if (down > 6 && down > side && card.scrollTop <= 0) {
+          active = true; // from here the finger moves the card
+          trail = [[performance.now(), y0]];
+        } else {
+          if (Math.abs(down) > 8 || side > 8) tracking = false; // an ordinary scroll / tap: leave it alone
+          return;
+        }
+      }
+      e.preventDefault();
+      trail.push([performance.now(), t.clientY]);
+      if (trail.length > 12) trail.shift();
+      offset(Math.max(0, t.clientY - y0));
+    }, { passive: false });
+    const end = () => {
+      if (!active) { tracking = false; return; }
+      active = false;
+      tracking = false;
+      // how fast the finger was moving at the end: over the last ~100 ms (a quick flick, even a short one, closes it)
+      const last = trail[trail.length - 1];
+      let first = trail[0];
+      for (let i = trail.length - 1; i >= 0; i--) { first = trail[i]; if (last[0] - trail[i][0] >= 100) break; }
+      const v = last && last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0; // px per ms
+      if (dy > 100 || (dy > 30 && v > 0.4)) {
+        closePop(dy);
+      } else {
+        const from = dy;
+        offset(0);
+        if (animate()) {
+          card.animate([{ transform: `translateY(${from}px)` }, { transform: "none" }], { duration: 220, easing: EASE });
+          back.animate([{ opacity: 1 - Math.min(from / 360, 0.7) }, { opacity: 1 }], { duration: 220, easing: EASE });
+        }
+      }
+    };
+    card.addEventListener("touchend", end);
+    card.addEventListener("touchcancel", end);
   }
 
   /** The card is centred, which can leave its edges half way between two screen pixels; the half-covered row of pixels
@@ -890,7 +956,7 @@ window.SiteSpecials = (() => {
   }
 
   /** The big card goes back to where it came from, then the sheet is as it was. */
-  function closePop() {
+  function closePop(dragY) {
     const c = pop;
     if (!c || c.closing) return;
     c.closing = true;
@@ -903,6 +969,21 @@ window.SiteSpecials = (() => {
     };
     if (!c.el.isConnected) return done(); // the sheet was replaced meanwhile
     if (!animate()) return done();
+    if (typeof dragY === "number" && dragY > 0) {
+      // closed by sliding it down: it carries on down off the screen from where the finger let go
+      const back = c.el.querySelector(".sp-pop-back");
+      const startOpacity = parseFloat(getComputedStyle(back).opacity) || 1;
+      const restTop = c.card.getBoundingClientRect().top - dragY;
+      const away = Math.max(window.innerHeight - restTop + 24, dragY + 80);
+      back.style.opacity = "";
+      back.animate([{ opacity: startOpacity }, { opacity: 0 }], { duration: 240, easing: "ease-in", fill: "forwards" });
+      const slide = c.card.animate([{ transform: `translateY(${dragY}px)` }, { transform: `translateY(${away}px)` }],
+        { duration: 240, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
+      slide.onfinish = done;
+      slide.oncancel = done;
+      setTimeout(done, 600);
+      return;
+    }
     const to = c.card.getBoundingClientRect();
     const from = c.source.isConnected ? whereItWillBe(c.source, 280) : null;
     c.card.querySelectorAll(".sp-desc, .sp-pop-x").forEach((n) => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: "forwards" }));
