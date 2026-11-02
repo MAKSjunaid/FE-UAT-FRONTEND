@@ -755,66 +755,87 @@
   // the changed products, so nothing is requested; a bigger one (hidden / added / moved) re-reads what is on screen.
   // A page that comes back after being hidden (or reconnects) tells the stream which version it holds, and the stream
   // sends what changed since then — so even catching up needs no separate request.
-  let eventSource = null;
-  let reconnectTimer = null;
-  let reconnectDelay = 2000;
+  let legacySource = null; // the old connection of its own (only with a server that has no shared one)
+  let legacyTimer = null;
+  let legacyDelay = 2000;
+  let attached = false;
 
   const versionNum = (v) => parseInt(v, 36);
 
+  /** One message of the live stream ("state" when it connects, "changed" after every edit). */
+  const announced = (e) => {
+    legacyDelay = 2000;
+    if (!heardAt) {
+      heardAt = Date.now();
+      heardResolve();
+    }
+    let d = null;
+    try {
+      d = JSON.parse(e.data);
+    } catch {
+      // not understood: just check what changed since the held version
+    }
+    if (d && d.version) {
+      const tail = inbox.length ? inbox[inbox.length - 1].version : version;
+      if (d.version === tail || versionNum(d.version) < versionNum(tail)) return; // already known / an old message
+      inbox.push(d);
+      // A small change that carries its products (everything this page holds is included) is applied at once, with
+      // no request. Anything that needs a download waits a moment, spread out so many customers online at once
+      // don't all ask in the same instant.
+      const instant =
+        (!d.structural || !!d.order || !!d.drop) &&
+        d.prev === tail &&
+        (d.ids || []).every((id) => !holds(id) || (d.items || []).some((p) => p.id === id));
+      scheduleRefresh(instant || booting ? 0 : 300 + Math.random() * 1500);
+    } else {
+      scheduleRefresh(booting ? 0 : 300 + Math.random() * 1500); // check what changed since the held version
+    }
+  };
+
+  // The catalog's changes arrive on the page's one shared live connection (live-stream.js), which asks from the version
+  // held NOW every time it connects (also after a drop). Only a server without that connection gets this part's own stream.
+  const livePart = {
+    query: () => `catalog=1&ccompact=1&since=${encodeURIComponent(version || "")}`,
+    on: { state: announced, changed: announced },
+    legacyStart() {
+      if (legacySource) return;
+      clearTimeout(legacyTimer);
+      const es = (legacySource = new EventSource(
+        Api.streamUrl(`/api/products/changes?since=${encodeURIComponent(version || "")}&compact=1`)
+      ));
+      es.addEventListener("state", announced);
+      es.addEventListener("changed", announced);
+      es.addEventListener("error", () => {
+        // The connection dropped. Reconnect ourselves (not the browser's automatic retry) so the new connection asks
+        // from the version held NOW.
+        if (legacySource !== es) return;
+        es.close();
+        legacySource = null;
+        if (document.hidden || !attached) return;
+        legacyTimer = setTimeout(() => livePart.legacyStart(), legacyDelay);
+        legacyDelay = Math.min(legacyDelay * 1.5, 20000);
+      });
+    },
+    legacyStop() {
+      if (legacySource) {
+        legacySource.close();
+        legacySource = null;
+      }
+      clearTimeout(legacyTimer);
+    },
+  };
+
   function connect() {
-    if (eventSource) return;
-    clearTimeout(reconnectTimer);
-    const es = (eventSource = new EventSource(
-      Api.streamUrl(`/api/products/changes?since=${encodeURIComponent(version || "")}&compact=1`)
-    ));
-    const announced = (e) => {
-      reconnectDelay = 2000;
-      if (!heardAt) {
-        heardAt = Date.now();
-        heardResolve();
-      }
-      let d = null;
-      try {
-        d = JSON.parse(e.data);
-      } catch {
-        // not understood: just check what changed since the held version
-      }
-      if (d && d.version) {
-        const tail = inbox.length ? inbox[inbox.length - 1].version : version;
-        if (d.version === tail || versionNum(d.version) < versionNum(tail)) return; // already known / an old message
-        inbox.push(d);
-        // A small change that carries its products (everything this page holds is included) is applied at once, with
-        // no request. Anything that needs a download waits a moment, spread out so many customers online at once
-        // don't all ask in the same instant.
-        const instant =
-          (!d.structural || !!d.order || !!d.drop) &&
-          d.prev === tail &&
-          (d.ids || []).every((id) => !holds(id) || (d.items || []).some((p) => p.id === id));
-        scheduleRefresh(instant || booting ? 0 : 300 + Math.random() * 1500);
-      } else {
-        scheduleRefresh(booting ? 0 : 300 + Math.random() * 1500); // check what changed since the held version
-      }
-    };
-    es.addEventListener("state", announced);
-    es.addEventListener("changed", announced);
-    es.addEventListener("error", () => {
-      // The connection dropped. Reconnect ourselves (not the browser's automatic retry) so the new connection asks
-      // from the version held NOW.
-      if (eventSource !== es) return;
-      es.close();
-      eventSource = null;
-      if (document.hidden) return;
-      reconnectTimer = setTimeout(connect, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 1.5, 20000);
-    });
+    if (attached) return;
+    attached = true;
+    if (window.FreshcutzLive) window.FreshcutzLive.attach("catalog", livePart);
+    else livePart.legacyStart();
   }
 
   function disconnect() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
-    clearTimeout(reconnectTimer);
+    attached = false;
+    if (window.FreshcutzLive) window.FreshcutzLive.detach("catalog");
+    else livePart.legacyStop();
     clearTimeout(refreshTimer);
     refreshTimer = null;
     refreshDue = Infinity;
