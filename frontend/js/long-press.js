@@ -95,7 +95,12 @@
   }, { passive: true });
 
   // while a preview is held, moving the finger must not scroll the page behind it
-  document.addEventListener("touchmove", (e) => { if (peeking && e.cancelable) e.preventDefault(); }, { passive: false });
+  // (capture phase, and stopped there: the "View all" sheet has its own pull-down-to-close finger gesture that must not see this finger)
+  document.addEventListener("touchmove", (e) => {
+    if (!peeking) return;
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false, capture: true });
 
   /** The finger came off after a long press: the preview closes again (the same way the card's own close button closes it). */
   function closePreview() {
