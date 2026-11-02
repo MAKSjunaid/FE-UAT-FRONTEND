@@ -7,7 +7,7 @@
  *   Replace it with that URL, e.g. "https://freshcutz-api.onrender.com"
  *   (no trailing slash).
  */
-window.FRESHCUTZ_API_BASE = "https://shop1-backend-img.onrender.com";
+window.FRESHCUTZ_API_BASE = "http://localhost:8080";
 
 /** WhatsApp number shown around the site, in international format. */
 window.FRESHCUTZ_WHATSAPP = "+91 97048 90039";
