@@ -5,17 +5,18 @@
 
 /* the button in the header (looks like the other round header buttons) */
 .icon-btn.night-btn {
-  width: calc(22px * var(--sz-hicon, 1));
-  height: calc(22px * var(--sz-hicon, 1));
+  width: calc(28px * var(--sz-hicon, 1));
+  height: calc(28px * var(--sz-hicon, 1));
   background: rgba(255, 255, 255, 0.14);
   color: var(--gold-light);
   cursor: pointer;
   flex: 0 0 auto;
+  border: 1px solid rgba(201, 161, 59, 0.6); /* the same gold ring as the location button */
   padding: 0; /* (a button has a little side padding of its own, which squeezed the icon out of a small round button) */
 }
 /* sits right beside the location button at the top right (if the location button is not shown, it takes the right edge itself) */
 .site-header .area-btn[hidden] + .night-btn { margin-left: auto; }
-.icon-btn.night-btn svg { width: calc(13px * var(--sz-hicon, 1)); height: calc(13px * var(--sz-hicon, 1)); display: block; flex: none; }
+.icon-btn.night-btn svg { width: calc(16px * var(--sz-hicon, 1)); height: calc(16px * var(--sz-hicon, 1)); display: block; flex: none; }
 .icon-btn.night-btn .ico-sun { display: none; }
 html.night .icon-btn.night-btn .ico-moon { display: none; }
 html.night .icon-btn.night-btn .ico-sun { display: block; }
@@ -182,7 +183,7 @@ html.night .upi-qr { background: #fff; } /* a QR code must stay black on white t
 /* very narrow phones: tighten the header a little so the brand name still fits on one line next to the location and the moon button */
 @media (max-width: 339px) {
   .site-header .container { gap: 6px; }
-  .icon-btn.night-btn { width: calc(20px * var(--sz-hicon, 1)); height: calc(20px * var(--sz-hicon, 1)); }
+  .icon-btn.night-btn { width: calc(26px * var(--sz-hicon, 1)); height: calc(26px * var(--sz-hicon, 1)); }
 }
 
 /* typed text in every box (the day styles use a dark brown) */
@@ -290,3 +291,6 @@ html.night .dm-title, html.night .dm-fab svg, html.night .dm-search-ico, html.ni
 }
 
 @media (prefers-reduced-motion: reduce) { .nm-fx { display: none; } }
+
+/* the cross on the item panel's close button is drawn with two bars in the dark ink colour: light ones on the dark button */
+html.night .sp-pop-x::before, html.night .sp-pop-x::after { background: var(--text-main); }
