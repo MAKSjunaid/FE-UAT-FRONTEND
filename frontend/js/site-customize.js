@@ -56,7 +56,6 @@
 
   let lastApplied = null; // JSON string of the last settings applied, to skip no-op updates
   let lastLogoUrl = null;
-  let eventSource = null;
   let current = null; // the config last applied — read by the storefront via SiteCustomize
 
   /** The admin-set text for `key` (or the original wording). Blank text the
@@ -655,11 +654,7 @@
   function resync() {
     held = null;
     heldVersion = null;
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
-    connect();
+    restart();
   }
 
   // A signed-in customer's page also tells the stream who it is (and which version of its "Buy it again" list it holds, see
@@ -690,39 +685,36 @@
     };
   }
 
-  function connect() {
-    if (eventSource || !window.EventSource) return;
-    const base = window.FRESHCUTZ_API_BASE || "";
-    const have = heldVersion ? `&have=${encodeURIComponent(heldVersion)}` : "";
-    const me = who();
-    streamPhone = me ? me.phone : "";
-    const customer = me ? `&phone=${encodeURIComponent(me.phone)}${me.v ? `&uv=${encodeURIComponent(me.v)}` : ""}` : "";
-    eventSource = new EventSource(`${base}/api/store/site/stream?compact=1${have}${customer}`);
-    window.FreshcutzStream = { phone: streamPhone };
-    eventSource.addEventListener("open", () => tell("freshcutz:stream", { phone: streamPhone }));
-    eventSource.addEventListener("usuals", usualsMessage("usuals"));
-    eventSource.addEventListener("usame", usualsMessage("usame"));
-    eventSource.addEventListener("usoff", usualsMessage("usoff")); // (the server handles lists; the row is switched off)
+  // What the page hears of its look and its customer. It listens through the page's one shared live connection
+  // (live-stream.js); only if the server is older and has no such connection does it open the old one of its own.
+  const listeners = {
+    usuals: usualsMessage("usuals"),
+    usame: usualsMessage("usame"),
+    usoff: usualsMessage("usoff"), // (the server handles lists; the row is switched off)
     // the admin changed the status of one of this customer's orders: just that is sent (a few bytes), see profile.js
-    eventSource.addEventListener("orderstatus", (e) => {
+    orderstatus: (e) => {
       try {
         tell("freshcutz:orderstatus", JSON.parse(e.data));
       } catch {
         /* malformed push — the account page asks for its orders when it is next opened */
       }
-    });
+    },
     // the wording of the "Cancel order" screens (set in Customize); sent once when a signed-in customer connects
-    eventSource.addEventListener("cancelui", (e) => {
+    cancelui: (e) => {
       try {
-        tell("freshcutz:cancelui", JSON.parse(e.data));
+        const wording = JSON.parse(e.data);
+        tell("freshcutz:cancelui", wording);
+        cancelV = (wording && wording.v) || ""; // (the next connection says which version it holds)
       } catch {
         /* malformed push — the standard wording stays */
       }
-    });
-    eventSource.addEventListener("sitesame", () => {
+    },
+    // the admin changed the rules for cancelling orders: the page re-reads its orders (see profile.js)
+    cancelrule: () => tell("freshcutz:cancelrule", {}),
+    sitesame: () => {
       if (held) apply(held); // what this page saved is still current (nothing more was sent)
-    });
-    eventSource.addEventListener("sitefull", (e) => {
+    },
+    sitefull: (e) => {
       try {
         const m = JSON.parse(e.data);
         held = m.site;
@@ -731,8 +723,8 @@
       } catch {
         /* malformed push — keep what is showing and wait for the next one */
       }
-    });
-    eventSource.addEventListener("sitepatch", (e) => {
+    },
+    sitepatch: (e) => {
       try {
         const m = JSON.parse(e.data);
         if (!held || m.prev !== heldVersion) return resync();
@@ -742,16 +734,69 @@
       } catch {
         resync(); // could not be applied: ask for the whole look again
       }
-    });
-    // EventSource reconnects by itself after a drop (and then the whole look arrives again).
+    },
+  };
+
+  let cancelV = ""; // the version of the "Cancel order" wording this page holds (see order-cancel.js)
+
+  /** What this page says about itself each time it connects: the copy of the look it saved, and (signed in) who it is. */
+  function siteQuery(path) {
+    const have = heldVersion ? `&have=${encodeURIComponent(heldVersion)}` : "";
+    const me = who();
+    streamPhone = me ? me.phone : "";
+    const held = cancelV && window.OrderCancel && window.OrderCancel.hasWording && window.OrderCancel.hasWording();
+    const customer = me
+      ? `&phone=${encodeURIComponent(me.phone)}${me.v ? `&uv=${encodeURIComponent(me.v)}` : ""}${held ? `&cv=${encodeURIComponent(cancelV)}` : ""}`
+      : "";
+    window.FreshcutzStream = { phone: streamPhone };
+    return `${path}${have}${customer}`;
+  }
+
+  let attached = false; // listening (a visible tab)
+  let legacySource = null; // the old connection of its own (only with an older server)
+
+  const livePart = {
+    query: () => siteQuery("site=1"),
+    on: listeners,
+    open: () => tell("freshcutz:stream", { phone: streamPhone }),
+    legacyStart() {
+      if (legacySource) return;
+      const base = window.FRESHCUTZ_API_BASE || "";
+      legacySource = new EventSource(`${base}/api/store/site/stream?${siteQuery("compact=1")}`);
+      legacySource.addEventListener("open", () => tell("freshcutz:stream", { phone: streamPhone }));
+      for (const [name, handler] of Object.entries(listeners)) legacySource.addEventListener(name, handler);
+      // EventSource reconnects by itself after a drop (and then the whole look arrives again).
+    },
+    legacyStop() {
+      if (legacySource) {
+        legacySource.close();
+        legacySource = null;
+      }
+    },
+  };
+
+  function connect() {
+    if (attached || !window.EventSource) return;
+    attached = true;
+    if (window.FreshcutzLive) window.FreshcutzLive.attach("site", livePart);
+    else livePart.legacyStart();
+  }
+
+  /** Connect again now (the page says something different about itself, or must start from the whole look). */
+  function restart() {
+    if (!attached) return connect();
+    if (window.FreshcutzLive) window.FreshcutzLive.restart("site");
+    else {
+      livePart.legacyStop();
+      livePart.legacyStart();
+    }
   }
 
   function disconnect() {
     window.FreshcutzStream = null;
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
+    attached = false;
+    if (window.FreshcutzLive) window.FreshcutzLive.detach("site");
+    else livePart.legacyStop();
     // (what is held is kept: the next connection says which copy it has, and gets "sitesame" if it is still current)
   }
 
@@ -828,18 +873,14 @@
   // the page wants the stream asked again (a number it was not told, e.g. the admin raised the count): reconnect - the answer is
   // the list or "unchanged", a few bytes - instead of a separate request
   window.addEventListener("freshcutz:refresh", () => {
-    if (!eventSource) return;
-    eventSource.close();
-    eventSource = null;
-    connect();
+    if (!attached) return;
+    restart();
   });
   window.addEventListener("freshcutz:who", () => {
-    if (!eventSource) return; // (hidden tab: the next connection says who)
+    if (!attached) return; // (hidden tab: the next connection says who)
     const me = who();
     if ((me ? me.phone : "") === streamPhone) return;
-    eventSource.close();
-    eventSource = null;
-    connect();
+    restart();
   });
 
   const savedLook = loadSaved();

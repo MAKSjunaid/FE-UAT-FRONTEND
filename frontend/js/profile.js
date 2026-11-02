@@ -87,7 +87,7 @@ window.ProfileSheet = (() => {
   // in memory. The orders come a few at a time over a live connection (the newest first, the next ones when the customer
   // scrolls to the end of the list; see "the orders" below). When the admin changes the status of an order the server pushes just that (see site-customize.js, "orderstatus")
   // and the order on screen is updated in place. Nothing is written to the phone's storage: it lives only while the page is open.
-  const AWAY_MS = 30000; // a page hidden for longer than this may have missed pushes: its newest orders are re-read once
+  const AWAY_MS = 3000; // a hidden page has no live connection, so anything the admin changes meanwhile is missed: after this long away its newest orders are re-read once (a short look at another tab costs nothing)
   let acct = null; // { phone, profile, orders: [], next, hasMore, loaded, stale }
   let hiddenAt = 0;
 
@@ -215,10 +215,33 @@ window.ProfileSheet = (() => {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) hiddenAt = Date.now();
     else if (hiddenAt && Date.now() - hiddenAt > AWAY_MS && acct) {
-      acct.stale = true; // (the live connection was closed meanwhile)
-      trackCheck(); // (an order may have moved on while the page was away: the Track order strip is checked again)
+      rereadOrders(); // (the live connection was closed meanwhile: an order may have moved on)
     }
     if (!document.hidden) hiddenAt = 0;
+  });
+
+  /** The orders held may be out of date (the page was hidden, or the admin changed the rules): the newest are read again now -
+   * on screen too, when My Orders is open - and the Track order strip is checked again. */
+  function rereadOrders() {
+    if (!acct) return;
+    acct.stale = true;
+    trackCheck();
+    if (ordersOpen && ordersOpen.isConnected && acct.loaded) {
+      // My Orders is on screen right now: re-read the newest orders at once, so what changed shows without the customer
+      // having to close and open the screen
+      acct.stale = false;
+      const state = acct;
+      refreshNewest(ordersOpen, state)
+        .then(() => loadOpenExtras(state.phone, state)) // (older open orders the Track order strip must show too)
+        .then(announceTrack, announceTrack);
+    }
+  }
+
+  // The admin changed the rules for cancelling (on / off, which statuses, how long): every order held may now allow - or no
+  // longer allow - cancelling, so the Cancel buttons are brought up to date by reading the orders again.
+  window.addEventListener("freshcutz:cancelrule", () => {
+    extrasAt = 0; // (the older open orders carry the same answer)
+    rereadOrders();
   });
 
   /** Tells the page the signed-in customer changed (signed in, signed out, or an order was just placed): the
@@ -268,6 +291,7 @@ window.ProfileSheet = (() => {
     // and only checks (one small live connection for the newest orders) whether anything changed meanwhile. Another number
     // starts clean. (The live connection stops telling this page about the old number's orders once signed out, hence "stale".)
     if (acct) acct.stale = true;
+    extrasAt = 0; // (no pushes reach this page while signed out: the open orders are read again on the next sign-in)
     acctForget(); // (nothing of the account stays saved on the phone)
     announceWho();
     announce();
@@ -757,6 +781,7 @@ window.ProfileSheet = (() => {
       if (steps && card.dataset.track) steps.outerHTML = trackStepsHtml(code, status);
       const note = card.parentElement && card.parentElement.querySelector(".trk-note");
       if (note && card.dataset.track) note.outerHTML = trackNoteHtml(code, status, order);
+      settleReorder(card, status, code); // (Reorder only on a finished order: delivered or cancelled)
       if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
     });
@@ -804,7 +829,7 @@ window.ProfileSheet = (() => {
     state.orders.forEach((o, i) => {
       const f = fresh.get(o.orderCode);
       if (!f) return;
-      if (f.status !== o.status) paintStatus(o.orderCode, f.status, f);
+      if (f.status !== o.status || !!f.canCancel !== !!o.canCancel) paintStatus(o.orderCode, f.status, f); // (the Cancel button follows the rules)
       state.orders[i] = f;
     });
     if (added.length) {
@@ -815,8 +840,11 @@ window.ProfileSheet = (() => {
     saveAcctSoon();
   }
 
+  let ordersOpen = null; // the My Orders list that is on screen (if any)
+
   async function loadOrders(phone, container) {
     const state = acctFor(phone);
+    ordersOpen = container;
     container.addEventListener("click", (e) => {
       const btn = e.target.closest('[data-action="reorder"]');
       if (!btn) return;
@@ -953,12 +981,21 @@ window.ProfileSheet = (() => {
     }
   }
 
+  const EXTRAS_FRESH_MS = 30000;
+  let extrasPhone = ""; // the number whose open orders were read last
+  let extrasAt = 0; // ...and when
+
   /** The Track order strip must show EVERY open order, however old. "My Orders" only holds the newest page until the customer scrolls
    * down, so while there are more orders on the server, the open ones are asked for by themselves (a tiny list: New / Packed only)
    * and kept beside the held list, never inside it (so the list's paging is untouched). */
   async function loadOpenExtras(phone, state) {
     const extras = () => placedHere.forEach((e, code) => { if (e.extra) placedHere.delete(code); });
     if (!state.hasMore) { extras(); return; } // everything is held already
+    // The open orders are kept current by the live pushes while the page is visible, so a look at another tab for a moment
+    // reuses what was read last: it is asked for again only when that is older than EXTRAS_FRESH_MS (or for another number)
+    if (extrasPhone === phone && Date.now() - extrasAt < EXTRAS_FRESH_MS) return;
+    extrasPhone = phone;
+    extrasAt = Date.now(); // (set when it is ASKED, so an answer that fails is not asked for again on every look at the tab either)
     let open;
     try {
       open = await Api.get(`/api/customers/orders/open?phone=${encodeURIComponent(phone)}`);
@@ -967,14 +1004,27 @@ window.ProfileSheet = (() => {
     }
     if (getSavedPhone() !== phone || !Array.isArray(open)) return;
     if (window.OrderCancel) OrderCancel.stamp(open);
-    const held = new Set(state.orders.map((o) => o.orderCode));
     const keep = new Set();
     open.forEach((o) => {
-      if (held.has(o.orderCode)) return;
+      const mine = state.orders.find((x) => x.orderCode === o.orderCode);
+      if (mine) {
+        // an older open order the list holds (beyond the newest few, which are read separately): what the server says about
+        // cancelling it (the rules may have changed) is taken over, and its card on screen follows
+        if (mine.status !== o.status || !!mine.canCancel !== !!o.canCancel) {
+          mine.status = o.status;
+          mine.canCancel = o.canCancel;
+          mine.cancelSecs = o.cancelSecs;
+          mine.cancelBy = o.cancelBy;
+          paintStatus(o.orderCode, o.status, mine);
+        }
+        return;
+      }
       keep.add(o.orderCode);
       const now = placedHere.get(o.orderCode);
       if (now && !now.extra) return; // (placed on this page: its own, fresher, copy stays)
+      const before = now && now.extra ? now.order : null;
       placedHere.set(o.orderCode, { phone, order: { ...o }, extra: true });
+      if (before && (before.status !== o.status || !!before.canCancel !== !!o.canCancel)) paintStatus(o.orderCode, o.status, o); // (its card is on screen: the Cancel button follows the rules)
     });
     placedHere.forEach((e, code) => { if (e.extra && !keep.has(code)) placedHere.delete(code); });
   }
@@ -1163,15 +1213,36 @@ window.ProfileSheet = (() => {
       <div class="profile-order-items">${orderItemsHtml(order)}</div>
       <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${window.UpiPay ? UpiPay.forgotHtml(order) : ""}
-      <button
+      ${canReorder(order.status) ? reorderButtonHtml(order.orderCode) : ""}
+      ${window.OrderCancel ? OrderCancel.html(order) : ""}
+    </div>`;
+  }
+
+  /** "Reorder" is offered on a finished order only: DELIVERED or CANCELLED (not while it is still open). */
+  function canReorder(status) {
+    return status === "DELIVERED" || status === "CANCELLED";
+  }
+
+  function reorderButtonHtml(code) {
+    return `<button
         type="button"
         class="btn btn-gold btn-sm btn-block"
         style="margin-top:8px;"
         data-action="reorder"
-        data-order-code="${Utils.escapeHtml(order.orderCode)}"
-      >${SiteCustomize.html("reorderButtonText")}</button>
-      ${window.OrderCancel ? OrderCancel.html(order) : ""}
-    </div>`;
+        data-order-code="${Utils.escapeHtml(code)}"
+      >${SiteCustomize.html("reorderButtonText")}</button>`;
+  }
+
+  /** After a live status change: the Reorder button comes when the order turns DELIVERED or CANCELLED and goes when it is reopened. */
+  function settleReorder(card, status, code) {
+    const btn = card.querySelector('[data-action="reorder"]');
+    if (!canReorder(status)) {
+      if (btn) btn.remove();
+    } else if (!btn && !card.dataset.track) {
+      const cancel = card.querySelector(".oc-btn");
+      if (cancel) cancel.insertAdjacentHTML("beforebegin", reorderButtonHtml(code));
+      else card.insertAdjacentHTML("beforeend", reorderButtonHtml(code));
+    }
   }
 
   /** The "Edit your name and address" page, opened straight from the delivery-map button after the customer confirmed a location:

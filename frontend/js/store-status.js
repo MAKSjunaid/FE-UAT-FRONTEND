@@ -5,10 +5,11 @@
  * server-side in OrderService.placeOrder(), so this can't be bypassed by
  * skipping the banner.
  *
- * Used to poll /api/store/status every 15 seconds forever; now opens one
- * Server-Sent Events connection to /api/store/status/stream instead and
- * simply waits — the backend pushes a fresh value the moment an admin
- * actually flips the toggle, instead of the browser asking on a timer. */
+ * Used to poll /api/store/status every 15 seconds forever; now it simply
+ * listens on the page's shared live connection (live-stream.js, which
+ * replaced this file's own Server-Sent Events connection to
+ * /api/store/status/stream) — the backend pushes a fresh value the moment
+ * an admin actually flips the toggle, instead of the browser asking on a timer. */
 
 window.StoreStatus = (() => {
   const banner = document.getElementById("storeOfflineBanner");
@@ -24,26 +25,47 @@ window.StoreStatus = (() => {
     apply();
   }
 
-  function connect() {
-    if (eventSource) return;
-    eventSource = new EventSource(Api.streamUrl("/api/store/status/stream"));
-    eventSource.addEventListener("status", (e) => {
+  // Whether the shop is taking orders arrives on the page's one shared live connection (live-stream.js); only an older
+  // server, without that connection, gets this part's own stream.
+  const listeners = {
+    status: (e) => {
       try {
         applyStatus(JSON.parse(e.data));
       } catch {
         // malformed payload — keep whatever value we last knew and wait
         // for the next push rather than guessing
       }
-    });
-    // No further handling needed on error/close: EventSource retries the
-    // connection on its own, same as it does for storefront-sync.js.
+    },
+  };
+  const livePart = {
+    query: () => "status=1",
+    on: listeners,
+    legacyStart() {
+      if (eventSource) return;
+      eventSource = new EventSource(Api.streamUrl("/api/store/status/stream"));
+      eventSource.addEventListener("status", listeners.status);
+      // No further handling needed on error/close: EventSource retries the connection on its own.
+    },
+    legacyStop() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    },
+  };
+  let attached = false;
+
+  function connect() {
+    if (attached) return;
+    attached = true;
+    if (window.FreshcutzLive) window.FreshcutzLive.attach("status", livePart);
+    else livePart.legacyStart();
   }
 
   function disconnect() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
+    attached = false;
+    if (window.FreshcutzLive) window.FreshcutzLive.detach("status");
+    else livePart.legacyStop();
   }
 
   /* Same reasoning as storefront-sync.js: don't keep a live connection

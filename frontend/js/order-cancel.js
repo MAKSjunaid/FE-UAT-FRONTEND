@@ -98,8 +98,8 @@ window.OrderCancel = (() => {
     if (!can(order)) {
       if (btn) btn.remove();
     } else if (!btn) {
-      const anchor = card.querySelector('[data-action="reorder"]');
-      if (anchor) anchor.insertAdjacentHTML("afterend", html(order));
+      // at the bottom of the card (an open order has no Reorder button: that one is only on delivered orders)
+      card.insertAdjacentHTML("beforeend", html(order));
     }
   }
 
@@ -413,5 +413,8 @@ window.OrderCancel = (() => {
     open(b.dataset.oc, b);
   });
 
-  return { stamp, apply, can, html, settle };
+  /** The wording that came on the live connection (not the built-in standard one) is held: the connection need not send it again. */
+  const hasWording = () => cfgFromStream;
+
+  return { stamp, apply, can, html, settle, hasWording };
 })();
