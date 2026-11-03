@@ -9,7 +9,7 @@ window.AdminOrderMessages = (() => {
   const Kit = window.AdminNotifyKit;
   if (!Kit) return { refresh() {} };
   const SAMPLE_NAME = "Kalam";
-  const SAMPLE_CODE = "FC-20261025-007";
+  const SAMPLE_CODE = "FC1025T7K";
 
   // last answer: {types:[{key,label,ico,enabled,title,body,defaultTitle,defaultBody}], catalog:[{key,label,...,active}], maxTitle, maxBody}
   let server = null;

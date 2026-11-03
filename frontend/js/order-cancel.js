@@ -267,9 +267,11 @@ window.OrderCancel = (() => {
     let busy = false;
     let dodged = 0; // how many times "Yes, cancel" has jumped away from a tap
 
-    /** "Yes, cancel" hops to another spot on the screen (never on top of the Keep button): the first two taps only move it. */
+    /** "Yes, cancel" hops to another spot - but only inside this "Are you sure?" panel (and, on a phone, only in the lowest 40%
+     * of the screen), so the customer never loses sight of it. It never lands on the Keep button: the first two taps only move it. */
     function dodge() {
       const keep = $(".oc-keep-big").getBoundingClientRect();
+      const card = cardSure.getBoundingClientRect();
       const r = go.getBoundingClientRect();
       const w = Math.min(r.width, 150);
       const h = r.height;
@@ -280,15 +282,27 @@ window.OrderCancel = (() => {
         void go.offsetWidth; // (so the first hop starts from where the button was)
       }
       const vw = window.innerWidth, vh = window.innerHeight;
-      let x = 0, y = 0;
-      for (let i = 0; i < 40; i++) {
-        x = 10 + Math.random() * Math.max(0, vw - w - 20);
-        y = 70 + Math.random() * Math.max(0, vh - h - 90);
-        const clear = x + w < keep.left - 10 || x > keep.right + 10 || y + h < keep.top - 10 || y > keep.bottom + 10;
-        const moved = Math.abs(x - r.left) + Math.abs(y - r.top) > 220;
-        if (clear && moved) break;
+      // where it may land: inside the panel, clear of its top handle and edges
+      const left = Math.max(card.left + 10, 10);
+      const right = Math.min(card.right - 10, vw - 10);
+      const bottom = Math.min(card.bottom - 10, vh - 10);
+      let top = card.top + 26;
+      if (vh - card.bottom < 40 && bottom - Math.max(top, vh * 0.6) >= h + 24) top = Math.max(top, vh * 0.6); // (a sheet on the bottom of the screen: its lowest 40% only)
+      const gap = 10;
+      let best = null, bestScore = -1;
+      for (let i = 0; i < 80; i++) {
+        const x = left + Math.random() * Math.max(0, right - left - w);
+        const y = top + Math.random() * Math.max(0, bottom - top - h);
+        const clear = x + w < keep.left - gap || x > keep.right + gap || y + h < keep.top - gap || y > keep.bottom + gap;
+        const away = Math.abs(x - r.left) + Math.abs(y - r.top);
+        const score = (clear ? 1000 : 0) + Math.min(away, 140); // (clear of Keep first, then a good distance from where it was)
+        if (score > bestScore) { bestScore = score; best = { x, y }; }
+        if (clear && away > 120) break;
       }
-      Object.assign(go.style, { left: x + "px", top: y + "px", width: w + "px" });
+      if (best.y + h >= keep.top - gap && best.y <= keep.bottom + gap && best.x + w >= keep.left - gap && best.x <= keep.right + gap) {
+        best.y = Math.max(top, keep.top - gap - h); // (no free spot was found: rest just above Keep)
+      }
+      Object.assign(go.style, { left: best.x + "px", top: best.y + "px", width: w + "px" });
     }
 
     // Phone keyboards slide over the page without resizing it, so a sheet pinned to the bottom of the screen ends up behind
