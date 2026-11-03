@@ -25,13 +25,41 @@ window.CustomerPush = (() => {
   const SYNC_KEY = "fc_cn_synced";   // when this phone was last signed up with the server
   const PHONE_SYNC_KEY = "fc_cn_phone"; // the signed-in phone number the server last heard from this phone
   const PROFILE_KEY = "freshcutz_profile_phone"; // written by profile.js (My Account)
+  const LAST_ORDER_KEY = "fc_cn_last";   // the order this phone placed last: {id, token, at}
+  const PENDING_KEY = "fc_cn_pending";   // an order whose sign-up did not go through yet: {id, token, at}
   const DAY = 24 * 3600 * 1000;
+  const LAST_ORDER_KEEP = 14 * DAY;      // the server also links orders that are still open, so this can be long
+  const PENDING_KEEP = 3 * DAY;
 
   const lsGet = (k) => { try { return Number(localStorage.getItem(k) || 0); } catch (e) { return 0; } };
   const lsSet = (k) => { try { localStorage.setItem(k, String(Date.now())); } catch (e) { /* ignore */ } };
   const lsText = (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
   const lsPutText = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } };
   const signedInPhone = () => lsText(PROFILE_KEY).replace(/\D/g, "");
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /** A remembered {id, token, at} that is not older than `keep` (else null). */
+  function readOrderNote(key, keep) {
+    try {
+      const o = JSON.parse(lsText(key) || "null");
+      if (o && o.id != null && o.token && Date.now() - Number(o.at || 0) < keep) return o;
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+  function writeOrderNote(key, order) {
+    lsPutText(key, JSON.stringify({ id: order.id, token: order.notifyToken || order.token, at: Date.now() }));
+  }
+  function clearNote(key) { try { localStorage.removeItem(key); } catch (e) { /* ignore */ } }
+
+  /** Tries `fn` again a little later when it fails (a phone that has just woken up often has no network for a moment). */
+  async function withRetry(fn, delays) {
+    let err;
+    for (let i = 0; i <= delays.length; i++) {
+      try { return await fn(); } catch (e) { err = e; }
+      if (i < delays.length) await wait(delays[i]);
+    }
+    throw err;
+  }
 
   const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -64,17 +92,33 @@ window.CustomerPush = (() => {
     return reg;
   }
 
+  /** true when the subscription was made with `serverKey` (or the browser doesn't tell, so nothing can be said against it). */
+  function sameKey(sub, serverKey) {
+    try {
+      const have = sub.options && sub.options.applicationServerKey;
+      if (!have) return true;
+      const a = new Uint8Array(have);
+      if (a.length !== serverKey.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== serverKey[i]) return false;
+      return true;
+    } catch (e) { return true; }
+  }
+
   /** This phone's push subscription (made now if there is none). Throws on failure. */
   async function deviceSubscription() {
     const key = await Api.get("/api/customer-push/public-key");
     if (!key || !key.publicKey || key.enabled === false) throw new Error("not enabled");
     const reg = await readyRegistration();
+    const serverKey = urlBase64ToUint8Array(key.publicKey);
     let sub = await reg.pushManager.getSubscription();
+    // A sign-up made with a different key than the server signs with today (the keys were changed, or this phone was
+    // signed up to another server) is refused by the push service for ever: drop it and sign up again with today's key.
+    if (sub && !sameKey(sub, serverKey)) {
+      try { await sub.unsubscribe(); } catch (e) { /* ignore */ }
+      sub = null;
+    }
     if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(key.publicKey),
-      });
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: serverKey });
     }
     return sub;
   }
@@ -83,7 +127,15 @@ window.CustomerPush = (() => {
   async function subscribeDevice() {
     const sub = await deviceSubscription();
     const phone = signedInPhone();
-    await Api.post("/api/customer-push/subscribe-device", { subscription: sub.toJSON(), phone: phone || undefined });
+    // Not signed in? The order this phone placed last still tells the server whose phone it is (the order's own
+    // number), so a later status change (also for an order that is re-opened) reaches it.
+    const last = phone ? null : readOrderNote(LAST_ORDER_KEY, LAST_ORDER_KEEP);
+    await Api.post("/api/customer-push/subscribe-device", {
+      subscription: sub.toJSON(),
+      phone: phone || undefined,
+      orderId: last ? last.id : undefined,
+      token: last ? last.token : undefined,
+    });
     lsSet(SYNC_KEY);
     lsPutText(PHONE_SYNC_KEY, phone);
   }
@@ -97,6 +149,14 @@ window.CustomerPush = (() => {
       subscription: sub.toJSON(),
     });
     lsSet(SYNC_KEY);
+    clearNote(PENDING_KEY);
+  }
+
+  /** Follows `order` without asking anything: tries a few times now and, if the phone is offline, keeps a note so
+   * the next launch / return to the app tries again. */
+  function followQuietly(order) {
+    writeOrderNote(PENDING_KEY, order);
+    withRetry(() => subscribeFor(order), [2000, 6000, 15000]).catch(() => { /* the note stays for the next try */ });
   }
 
   function done(slot) {
@@ -106,6 +166,7 @@ window.CustomerPush = (() => {
   /** Puts the right thing (button / hint / nothing) into `slot` for this freshly placed order. */
   function mount(slot, order) {
     if (!slot || !order || !order.notifyToken || order.id == null) return;
+    writeOrderNote(LAST_ORDER_KEY, order);
     const bar = document.getElementById("cnBar"); // the "Allow" bar from opening the shop is not needed any more
     if (bar) bar.remove();
 
@@ -120,7 +181,7 @@ window.CustomerPush = (() => {
     if (perm === "granted") {
       // already allowed (for example when they opened the shop): no question and nothing on screen —
       // just quietly follow this order too
-      subscribeFor(order).catch(() => {});
+      followQuietly(order);
       return;
     }
 
@@ -138,9 +199,10 @@ window.CustomerPush = (() => {
           return;
         }
         try {
-          await subscribeFor(order);
+          await withRetry(() => subscribeFor(order), [2000, 6000]);
           done(slot);
         } catch (e) {
+          writeOrderNote(PENDING_KEY, order); // tried again on the next launch
           slot.innerHTML = `<div class="cn-box cn-hint">⚠️ <span>Couldn't turn notifications on right now. You can try again with your next order.</span></div>`;
         }
       });
@@ -165,7 +227,7 @@ window.CustomerPush = (() => {
       const asked = Notification.requestPermission();
       bar.remove();
       Promise.resolve(asked).then((result) => {
-        if (result === "granted") subscribeDevice().catch(() => {});
+        if (result === "granted") withRetry(subscribeDevice, [2000, 6000, 15000]).catch(() => {});
         else if (result === "denied") showHelp();
       });
     });
@@ -202,13 +264,26 @@ window.CustomerPush = (() => {
 
   /** Signs the phone up (again) when it may be needed: allowed, and either not told the server for a day or the
    * signed-in number changed. `force` = do it now. */
+  let syncing = false;
   function syncIfGranted(force) {
     if (!supported() || (isIos() && !isStandalone())) return;
     if (Notification.permission !== "granted") return;
     const bar = document.getElementById("cnBar"); if (bar) bar.remove();
     const help = document.getElementById("cnHelp"); if (help) help.remove();
+    if (syncing) return; // one attempt at a time (this runs on every return to the app)
+    const pending = readOrderNote(PENDING_KEY, PENDING_KEEP);
+    if (!pending) clearNote(PENDING_KEY);
     const numberChanged = signedInPhone() !== lsText(PHONE_SYNC_KEY);
-    if (force || numberChanged || Date.now() - lsGet(SYNC_KEY) > DAY) subscribeDevice().catch(() => {});
+    let job = null;
+    if (pending) {
+      // an order's sign-up that did not go through earlier: do it now (this also signs the phone up)
+      job = withRetry(() => subscribeFor({ id: pending.id, notifyToken: pending.token }), [2000, 6000]);
+    } else if (force || numberChanged || Date.now() - lsGet(SYNC_KEY) > DAY) {
+      job = withRetry(subscribeDevice, [2000, 6000]);
+    }
+    if (!job) return;
+    syncing = true;
+    job.catch(() => {}).then(() => { syncing = false; });
   }
 
   function init() {
