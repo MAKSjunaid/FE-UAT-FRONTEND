@@ -42,9 +42,13 @@
 <script>
   /* Night mode (the moon button in the header): remembered from the last visit, applied here so the page never flashes light first. */
   try {
-    var __ns = JSON.parse(localStorage.getItem("freshcutz_site_v2") || "null");
+    var __ns = null;
+    try { __ns = JSON.parse(localStorage.getItem("freshcutz_site_v2") || "null"); } catch (e) {}
     var __nOff = __ns && __ns.site && __ns.site.config && __ns.site.config.showNightMode === false; /* the shop switched the feature off: always the normal look */
-    if (!__nOff && localStorage.getItem("freshcutz_night") === "1") document.documentElement.classList.add("night");
+    var __nv = null;
+    try { __nv = localStorage.getItem("freshcutz_night"); } catch (e) {}
+    if (__nv !== "1" && __nv !== "0") { var __nm = document.cookie.match(/(?:^|; )freshcutz_night=([01])/); __nv = __nm ? __nm[1] : null; } /* the cookie backs up localStorage (see js/night-mode.js) */
+    if (!__nOff && __nv === "1") document.documentElement.classList.add("night");
   } catch (e) {}
 </script>
 <title>FreshCutz — Freshly Cut. Naturally Juicy.</title>
@@ -178,7 +182,7 @@
   <script src="js/storefront.js?v=24"></script>
   <script src="js/long-press.js?v=6"></script>
   <script src="js/storefront-header.js?v=6"></script>
-  <script src="js/night-mode.js?v=4"></script>
+  <script src="js/night-mode.js?v=5"></script>
   <script src="js/net-status.js?v=2"></script>
   <script src="js/scroll-memory.js?v=4"></script>
   <script src="js/storefront-sync.js?v=14"></script>
@@ -188,7 +192,7 @@
   <script src="js/upi-pay.js?v=27"></script>
   <script src="js/slot-time.js?v=3"></script>
   <script src="js/checkout.js?v=24"></script>
-  <script src="js/checkout-form.js?v=29"></script>
+  <script src="js/checkout-form.js?v=31"></script>
   <script src="js/order-status.js?v=3"></script>
   <script src="js/order-cancel.js?v=15"></script>
   <script src="js/profile.js?v=69"></script>
