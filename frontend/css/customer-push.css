@@ -159,3 +159,18 @@
 }
 .cn-help-x::before { transform: rotate(45deg); }
 .cn-help-x::after { transform: rotate(-45deg); }
+
+/* "Install FreshCutz" card (js/install-prompt.js). It is a .cn-bar, so it rides above the menu / cart bar like the
+   notification bar does; this only makes it a little roomier (app icon, two lines of text). */
+.cn-bar.cn-install {
+  width: min(420px, calc(100vw - 24px));
+  max-width: none;
+  box-sizing: border-box;
+  padding: 10px 10px 10px 12px;
+  border-radius: 18px;
+  gap: 10px;
+}
+.cn-inst-ico { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; object-fit: cover; }
+.cn-inst-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.cn-inst-txt b { font-size: 13.5px; font-weight: 800; }
+.cn-inst-txt small { font-size: 11.5px; font-weight: 500; opacity: 0.75; }
