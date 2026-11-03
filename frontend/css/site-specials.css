@@ -128,7 +128,7 @@
 .sp-step button:active { background: rgba(255, 255, 255, 0.15); }
 .sp-qty { flex: 1; text-align: center; font-weight: 800; font-size: calc(15px * var(--sz-buttons, 1)); }
 .sp-qty.pulse { animation: qtyPulse 320ms var(--ease-out); }
-.sp-soldout { background: #f6e3e0; color: var(--danger); border: 1.5px solid rgba(192, 57, 43, 0.35); font: inherit; font-weight: 800; font-size: 12.5px; cursor: not-allowed; }
+.sp-soldout { background: #ece8dc; color: #7a7260; border: 1.5px solid #d9d2bf; font: inherit; font-weight: 800; font-size: 12.5px; cursor: not-allowed; }
 
 /* placeholders while the row's products are on their way */
 .sp-skel { pointer-events: none; }
@@ -161,6 +161,9 @@
 /* the photo keeps the height it had when the card was wider (4:3 of the old width), so narrowing the card changes only the width */
 .sp-pop-card .sp-media { height: calc(0.75 * min(100vw - 32px, 360px)); padding-bottom: 0; }
 .sp-pop-card .sp-media img { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+/* a sold-out item's photo is faded (opacity .55); in the big card the photo has no background of its own, so the faded photo let the
+   dimmed page behind it show through (the card looked see-through). It gets the same solid backing a small card's photo has. */
+.sp-pop-card .sp-out .sp-media { background: linear-gradient(135deg, #f1ecdd, #e8e0c9); }
 .sp-pop-card .sp-name { cursor: default; display: block; -webkit-line-clamp: unset; font-size: calc(19px * var(--sz-pname, 1)); }
 .sp-pop-card .sp-desc { -webkit-line-clamp: unset; display: block; overflow: visible; font-size: calc(13.5px * var(--sz-pdesc, 1)); line-height: 1.45; }
 .sp-pop-card .sp-body { gap: 9px; padding: 14px 16px 16px; }

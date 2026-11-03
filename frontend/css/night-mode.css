@@ -294,3 +294,7 @@ html.night .dm-title, html.night .dm-fab svg, html.night .dm-search-ico, html.ni
 
 /* the cross on the item panel's close button is drawn with two bars in the dark ink colour: light ones on the dark button */
 html.night .sp-pop-x::before, html.night .sp-pop-x::after { background: var(--text-main); }
+
+/* sold-out items: a calm grey button (not red) and a solid photo backing in the big card */
+html.night .add-btn.out-of-stock-btn, html.night .out-of-stock-btn, html.night .sp-soldout { background: #26231a; color: #8f8774; border-color: #3d351f; }
+html.night .sp-pop-card .sp-out .sp-media { background: linear-gradient(135deg, #342d17, #3e351c); }

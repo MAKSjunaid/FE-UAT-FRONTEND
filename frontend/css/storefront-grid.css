@@ -235,7 +235,7 @@
 }
 
 .product-card.out-of-stock {
-  opacity: 0.72;
+  /* muted, but NOT see-through: a sold-out card is as solid as any other (opacity let the page show through it) */
   filter: saturate(0.75);
 }
 
@@ -251,13 +251,16 @@
   color: var(--text-muted);
 }
 
-.out-of-stock-btn {
+.out-of-stock-btn,
+.add-btn.out-of-stock-btn {
   flex: 1;
   padding: 12px 6px;
   border-radius: var(--r-pill);
-  background: #f6e3e0;
-  color: var(--danger);
-  border: 1.5px solid rgba(192, 57, 43, 0.35);
+  /* a plain, calm "not available" look (it used to be pink / red, which read like an error) */
+  background: #ece8dc;
+  color: #7a7260;
+  border: 1.5px solid #d9d2bf;
+  box-shadow: none;
   font-weight: 800;
   font-size: 13px;
   min-height: 44px;
