@@ -477,10 +477,40 @@
     }
   }
 
+  /** Windows shows the India flag emoji as the letters "IN", so draw it as a small picture instead (same everywhere). */
+  const INDIA_FLAG = "\u{1F1EE}\u{1F1F3}";
+
+  function indiaFlag() {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 30 20");
+    svg.setAttribute("width", "20");
+    svg.setAttribute("height", "13");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "India");
+    svg.style.verticalAlign = "-2px";
+    svg.style.borderRadius = "2px";
+    svg.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
+    const add = (tag, attrs) => {
+      const el = document.createElementNS(ns, tag);
+      Object.keys(attrs).forEach((k) => el.setAttribute(k, attrs[k]));
+      svg.appendChild(el);
+    };
+    add("rect", { width: "30", height: "6.67", y: "0", fill: "#FF9933" });
+    add("rect", { width: "30", height: "6.67", y: "6.67", fill: "#FFFFFF" });
+    add("rect", { width: "30", height: "6.67", y: "13.33", fill: "#138808" });
+    add("circle", { cx: "15", cy: "10", r: "2.6", fill: "none", stroke: "#000080", "stroke-width": "0.6" });
+    add("circle", { cx: "15", cy: "10", r: "0.5", fill: "#000080" });
+    return svg;
+  }
+
   function footerLine(parent, className, text) {
     const div = document.createElement("div");
     if (className) div.className = className;
-    div.textContent = text;
+    String(text).split(INDIA_FLAG).forEach((part, i) => {
+      if (i > 0) div.appendChild(indiaFlag());
+      if (part) div.appendChild(document.createTextNode(part));
+    });
     parent.appendChild(div);
     return div;
   }
