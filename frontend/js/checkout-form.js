@@ -33,7 +33,7 @@ window.CheckoutForm = (() => {
         <div class="acct-card acct-edit-card">
           <div class="field">
             <label for="cf-name">Your name</label>
-            <input id="cf-name" name="customerName" required autocomplete="name" placeholder="e.g. Ayesha Khan" value="${Utils.escapeHtml(prefillName)}" />
+            <input id="cf-name" name="customerName" required autocomplete="name" placeholder="Enter your name" value="${Utils.escapeHtml(prefillName)}" />
             <div class="error" data-err="customerName"></div>
           </div>
           <div class="field">

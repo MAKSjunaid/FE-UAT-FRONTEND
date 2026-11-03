@@ -10,6 +10,27 @@
   const root = document.documentElement;
   const btn = document.getElementById("nightBtn");
 
+  /* The choice is kept in three places, because a phone's "Add to Home Screen" app can refuse to save into one of them
+   * (storage full / blocked / wiped between launches): the page's own memory (for as long as it stays open), localStorage,
+   * and a cookie (also read by the <head> script of index.html before the first paint). A save that fails can therefore
+   * never switch the page back to day by itself. */
+  let choice = null; // "1" / "0" once the customer has tapped the button on this page
+  const readCookie = () => {
+    try { const m = document.cookie.match(/(?:^|; )freshcutz_night=([01])/); return m ? m[1] : null; } catch (e) { return null; }
+  };
+  const readStored = () => {
+    try { const v = localStorage.getItem(KEY); if (v === "1" || v === "0") return v; } catch (e) { /* try the next place */ }
+    const c = readCookie();
+    if (c) return c;
+    try { const v = sessionStorage.getItem(KEY); if (v === "1" || v === "0") return v; } catch (e) { /* nothing saved */ }
+    return null;
+  };
+  const store = (v) => {
+    try { localStorage.setItem(KEY, v); } catch (e) { /* the other places still keep it */ }
+    try { sessionStorage.setItem(KEY, v); } catch (e) { /* ignore */ }
+    try { document.cookie = KEY + "=" + v + "; max-age=31536000; path=/; SameSite=Lax"; } catch (e) { /* ignore */ }
+  };
+
   let busy = false;
   const isNight = () => root.classList.contains("night");
   const label = () => {
@@ -28,7 +49,11 @@
     const ok = allowed();
     btn.hidden = !ok;
     let want = false;
-    if (ok) { try { want = localStorage.getItem(KEY) === "1"; } catch (e) {} }
+    if (ok) {
+      const v = choice !== null ? choice : readStored();
+      // nothing saved anywhere (and nothing tapped): leave the page as it is - the <head> script may already have applied it
+      want = v === null ? isNight() : v === "1";
+    }
     if (want !== isNight()) root.classList.toggle("night", want);
     label();
   }
@@ -108,8 +133,9 @@
     if (busy) return;
     const toNight = !isNight();
     const apply = () => {
+      choice = toNight ? "1" : "0";
+      store(choice);
       root.classList.toggle("night", toNight);
-      try { localStorage.setItem(KEY, toNight ? "1" : "0"); } catch (e) {}
       label();
     };
     const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
