@@ -34,6 +34,40 @@ body.ro-products #piBulkBtn,
 body.ro-products #piPhotosBtn,
 body.ro-products #piSelectBtn { display: none !important; }
 
+/* ---- view only screens (see js/admin-readonly.js) ----------------------- */
+/* Fields are greyed out by the script; here the buttons that only make sense for editing disappear. */
+[data-ro] :is(input, select, textarea):disabled { opacity: 0.65; cursor: not-allowed; }
+
+/* a small note at the top of each read-only screen */
+:is(#view-customize, #view-banners, #view-map)[data-ro]::before {
+  content: "👁 View only - you can look at this screen but not change anything.";
+  display: block; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px;
+  background: #f6efd9; border: 1px solid #e6d9aa; color: #6b5413; font-size: 13px; font-weight: 600; line-height: 1.35;
+}
+body.no-customize #view-customize[data-ro]::before { content: none; }  /* only the backup card shows for a backup-only login */
+[data-ro="banners"] #reorderRoot { display: none !important; }
+
+/* Customize: everything except the look-only controls */
+[data-ro="customize"] :is(#czPublish, #czReset, #czTplClear, #czLogoRemove, .file-btn, .btn-gold, .btn-dark,
+  [data-action="badge-add"], [data-action="slot-add"], [data-action="mel-clear"], [data-action="sizes-reset"],
+  [data-action="msg-reset"], [data-action="splash-remove"], [data-action$="-reset"], [data-action$="-clear"], [data-action$="-remove"],
+  .nm-chip, .nm-del):not(#czBackupMount *):not(#czSave) { display: none !important; }
+/* The save bar only stays when the E-mail backup settings (saved with it) can still be changed. */
+body.ro-customize:is(.ro-backup, .no-backup) .cz-savebar,
+body.no-customize:is(.ro-backup, .no-backup) .cz-savebar { display: none !important; }
+/* Only the E-mail backup card for a login that has backup but not Customize */
+body.no-customize #customizeRoot > :not(details:has(#czBackupMount)):not(.cz-savebar) { display: none !important; }
+body.no-customize #czPublish, body.no-customize #czReset { display: none !important; }
+[data-ro="backup"] :is(.btn-gold, .btn-dark, .btn-ghost, .btn-outline, button) { display: none !important; }
+
+/* Banners & specials */
+[data-ro="banners"] :is(.btn-gold, .btn-dark, .btn-outline, .btn-ghost, .bn-btn, .bn-cats-btn, .bn-slide-btns, .asp-btns,
+  .mp-ed-btns, .file-btn, [data-bn], [data-asp], [data-aro]):not([data-bn="retry"]):not([data-bn="reload"]):not([data-asp="retry"]):not([data-aro="retry"]) { display: none !important; }
+
+/* Delivery map */
+[data-ro="map"] :is(#mpEdit, #mpUpload, #mpIndex, #mpRemoveTiles, .btn-gold) { display: none !important; }
+[data-ro="map"] .mp-switch { pointer-events: none; opacity: 0.6; }
+
 /* ---- Users page --------------------------------------------------------- */
 .us-head {
   display: flex;
