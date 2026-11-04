@@ -138,6 +138,7 @@
     if (!host) return;
     const s = status;
     const info = host.querySelector("#bkInfo");
+    info.style.display = "";
     const controls = host.querySelector("#bkControls");
     if (!s) {
       info.textContent = "Checking…";
@@ -151,7 +152,8 @@
       controls.hidden = true;
       host.querySelector("#bkTimes").hidden = true;
     } else {
-      info.innerHTML = `Sends an Excel file with all your data to <b>${s.to}</b>. Use <b>Email backup now</b> at the top of the screen to send one right away.`;
+      info.textContent = "";
+      info.style.display = "none";   // (the line "Sends an Excel file ..." was removed on purpose)
       controls.hidden = false;
       const tog = host.querySelector("#bkToggle");
       const freq = host.querySelector("#bkFreq");

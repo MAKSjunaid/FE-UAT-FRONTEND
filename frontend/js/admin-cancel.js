@@ -32,7 +32,7 @@ window.AdminCancel = (() => {
   let lastField = null; // the text field touched last (the emoji palette inserts there)
 
   const host = () => document.getElementById("cancelMsgRoot");
-  const allowed = () => !window.AdminAccess || AdminAccess.can("customize", "EDIT");
+  const allowed = () => !window.AdminAccess || AdminAccess.can("customize");   // View is enough: the screen is read-only for View only (see admin-readonly.js)
   const $ = (sel) => host().querySelector(sel);
   const label = (m) => (m < 60 ? `${m} minutes` : m % 60 === 0 ? `${m / 60} hour${m === 60 ? "" : "s"}` : `${m} minutes`);
 

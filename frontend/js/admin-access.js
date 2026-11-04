@@ -1,4 +1,4 @@
-/* Who iss signed  in and what they may open.
+/* Who is signed in and what they may open.
  *
  * The owner sees everything. A staff login (made in Settings -> Users) only
  * sees the tabs / buttons the owner ticked. This file only HIDES things so the
@@ -11,7 +11,7 @@
 
 window.AdminAccess = (() => {
   const KEY = "freshcutz_admin_me";
-  const KEYS = ["orders", "products", "banners", "sales", "customers", "customize", "store", "backup", "promotions", "payments"];
+  const KEYS = ["orders", "products", "banners", "sales", "customers", "customize", "store", "backup", "promotions", "payments", "map"];
   const RANK = { NONE: 0, VIEW: 1, EDIT: 2 };
 
   function full() {
@@ -44,8 +44,9 @@ window.AdminAccess = (() => {
       case "customers": return can("customers");
       case "customize": return can("customize") || can("backup");
       case "promotions": return can("promotions");
+      case "map": return can("map");
       case "users": return isAdmin();
-      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("users");
+      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("map") || canOpen("users");
       default: return isAdmin();
     }
   }
