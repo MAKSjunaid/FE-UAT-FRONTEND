@@ -1,0 +1,76 @@
+/* ==========================================================================
+   Customer bottom menu drawn as iOS-26 "liquid glass" (phones only).
+   The glass bar itself is made by js/glisse-nav.js (the glisse library, MIT, github.com/0kzh/glisse); the old menu buttons stay in
+   place, invisible, and keep doing the work. This file only places the glass bar and gives it the site's colours.
+   To undo: remove the <link> to this file and the glisse-nav.js <script> from index.html (restore the previous index.html).
+   ========================================================================== */
+@media (max-width: 719px) {
+  /* Where the bar sits above the screen edge: just a little (6px), or on phones with a home-indicator strip (iPhone, "Add to Home Screen")
+     only a little more than that strip's own height, not the whole strip on top of the bar's own margin, which left a wide empty band below it. */
+  html.has-bnav.has-glisse { --gn-gap: max(6px, calc(var(--safe-bottom) - 7px)); }
+  /* The room kept for the menu (page padding, cart bar, toasts ...) is the bar, its gap and a little air; the callers add --safe-bottom
+     themselves, so it is taken off again here. */
+  html.has-bnav.has-glisse { --bnav-h: calc(52px + var(--gn-gap) + 6px - var(--safe-bottom)); }   /* the bar floats above the screen edge: everything that sits above the menu keeps clear of it */
+
+  html.has-bnav.has-glisse .bnav {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  html.has-bnav.has-glisse .bnav::after { display: none; }
+  html.has-bnav.has-glisse .bnav-item { opacity: 0; pointer-events: none; }   /* (still there: the glass bar taps them) */
+
+  .gn-host {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    bottom: var(--gn-gap);
+    pointer-events: auto;
+  }
+  .gn-host .lg-tab-bar.gn-bar {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    --lg-tab-width: var(--gn-tab, calc((100vw - 16px) / 5));
+    --lg-tab-height: 44px;   /* a lower bar than the default 52px, and wider (edge to edge) so "Help & support" fits */
+    --lg-lens-grow-y: 14px;
+    --lg-tab-selected: var(--gold-dark, #a8821a);
+  }
+  .gn-host .lg-tab-bar.gn-bar[data-theme="dark"] { --lg-tab-selected: var(--gold-light, #f0d98a); }
+  .gn-host .lg-tab-bar.gn-bar .lg-tab { font-weight: 600; }
+  .gn-host .lg-tab-bar.gn-bar :is(.lg-tab, .lg-tab-copy, .lg-tab-label) { font-size: min(10.5px, calc(var(--gn-tab, calc((100vw - 16px) / 5)) / 7.1)); }   /* the same size as the old menu (10.5px) - only a narrow phone takes it a little smaller, so "Help & support" still fits its tab */
+  .gn-host .lg-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* the customer's name: a window about 8 letters wide that the name runs through (the same running as before: .bnav-run in bottom-nav.css) */
+  .gn-host .lg-tab-label.gn-name, .gn-host .gn-name { display: block; max-width: 9ch; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+  /* the tab in focus (under the lens, at rest or lifted) is shown a little larger than the rest, as if the lens magnified it */
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-icon { transform: scale(1.16); }
+  /* (the label is zoomed only as far as it still fits the tab - js/glisse-nav.js sets --lz per label, so "Help & support" is never cropped) */
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-label { transform: scale(var(--lz, 1)); }
+  .gn-ico { position: relative; display: flex; }
+  .gn-svg { display: flex; }
+  .gn-svg svg { width: 23px; height: 23px; display: block; }
+  .gn-badge {
+    position: absolute;
+    top: 1px;                         /* inside the icon's own top edge: the lens window clips whatever sticks out above it */
+    left: calc(50% + 4px);
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--gold, #d4a72c);
+    color: var(--ink, #17140f);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 15px;
+    text-align: center;
+  }
+}
+@media (max-width: 389px) {
+  .gn-host .lg-tab-bar.gn-bar :is(.lg-tab, .lg-tab-copy, .lg-tab-label) { font-size: min(10.5px, calc(var(--gn-tab, calc((100vw - 16px) / 5)) / 7.4)); }   /* a narrower phone: a touch smaller so "Help & support" is never cut */
+}
+@media (max-width: 359px) {
+  .gn-host .lg-tab-bar.gn-bar { font-size: 9px; }
+  .gn-host .lg-tab-bar.gn-bar :is(.lg-tab, .lg-tab-copy) { font-size: 9px; }
+}
