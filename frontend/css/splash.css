@@ -18,7 +18,8 @@ html.fc-splash-pre { background: #14110c; }
   --fc-out: 0.45s;    /* the closing fade */
   --fc-gold: var(--gold, #c9a13b);
 }
-.fc-splash.out { opacity: 0; transition: opacity var(--fc-out) ease; pointer-events: none; }
+/* (it keeps catching taps while it fades, so a tap to skip it - or one just as it ends - never lands on the page underneath) */
+.fc-splash.out { opacity: 0; transition: opacity var(--fc-out) ease; }
 
 .fc-splash canvas {
   position: absolute;

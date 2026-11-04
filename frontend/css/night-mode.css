@@ -202,7 +202,8 @@ html.night .dm-title, html.night .dm-fab svg, html.night .dm-search-ico, html.ni
 /* ==========================================================================
    The scene that plays when the moon / sun button is tapped (js/night-mode.js)
    ========================================================================== */
-.nm-fx { position: fixed; inset: 0; z-index: 3000; pointer-events: none; overflow: hidden; contain: layout paint; }
+/* the scene catches every tap while it plays (about 3 s), so nothing on the page underneath - Add to cart, say - can be triggered */
+.nm-fx { position: fixed; inset: 0; z-index: 3000; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; overflow: hidden; contain: layout paint; }
 .nm-wash {
   position: absolute; inset: 0;
   clip-path: circle(0 at var(--cx, 90%) var(--cy, 4%));
