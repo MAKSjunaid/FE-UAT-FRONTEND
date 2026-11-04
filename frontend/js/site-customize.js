@@ -146,6 +146,7 @@
       cod: t("codLabel"),
       upi: t("upiLabel"),
       proof: c.askPaymentProof !== false, // ask UPI customers for a screenshot of the payment
+      payNow: c.showPayNowButton === true, // the "Pay now" button (iPhone / iPad: the app icons) after a UPI order
       def: c.defaultPayment === "COD" ? "COD" : c.defaultPayment === "UPI" && id !== "" ? "UPI" : "", // what starts ticked ("" = nothing: the customer must choose)
       id,
       name,

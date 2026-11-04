@@ -109,7 +109,7 @@ window.UpiPay = (() => {
     const icons = APPS.map((a) => `<img src="images/upi/${a.key}.png" alt="" width="22" height="22" decoding="async" />`).join("");
     return `<div class="upi-card" data-role="upi-card" data-code="${esc(order.orderCode || "")}">
         <div class="upi-title">Pay ${esc(rupees(order.totalAmount))} by UPI</div>
-        ${isIOS ? iosAppsHtml(q) : `<a class="btn btn-gold upi-paynow" data-role="upi-paynow" href="${isPhone ? `upi://pay?${q}` : "#"}" aria-label="Pay now - opens your UPI apps"><span class="upi-paynow-text">Pay now</span><span class="upi-paynow-icons" aria-hidden="true">${icons}</span></a>`}
+        ${!p.payNow ? "" : isIOS ? iosAppsHtml(q) : `<a class="btn btn-gold upi-paynow" data-role="upi-paynow" href="${isPhone ? `upi://pay?${q}` : "#"}" aria-label="Pay now - opens your UPI apps"><span class="upi-paynow-text">Pay now</span><span class="upi-paynow-icons" aria-hidden="true">${icons}</span></a>`}
         <div class="upi-idrow"><span class="upi-id" data-role="upi-id">${esc(p.id)}</span><button type="button" class="btn btn-outline btn-sm upi-copy-main" data-role="upi-copy" data-label="Copy">Copy</button></div>
         <button type="button" class="upi-other" data-role="upi-other-toggle" aria-expanded="false">Other ways to pay <span class="upi-other-arrow" aria-hidden="true">›</span></button>
         <div class="upi-other-body" data-role="upi-other-body" hidden>
