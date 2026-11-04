@@ -393,7 +393,13 @@
 
     size();
     window.addEventListener("resize", size);
-    el.addEventListener("pointerdown", skip);
+    // A tap on the opening screen only skips it: the click that follows the tap must not reach the page underneath.
+    function swallowClicks() {
+      const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+      document.addEventListener("click", stop, true);
+      setTimeout(() => document.removeEventListener("click", stop, true), 700);
+    }
+    el.addEventListener("pointerdown", () => { swallowClicks(); skip(); });
     document.addEventListener("keydown", onKey);
 
     if (known) {
