@@ -755,6 +755,7 @@ window.AdminCustomize = (() => {
         ${textField("paymentLabel", "Heading above the choices", 60)}
         ${textField("codLabel", "Cash on delivery text", 40)}
         ${toggleRow("upiEnabled", "Let customers pay by UPI", "Switch off to offer cash on delivery only (the whole payment section is then hidden).")}
+        ${toggleRow("showPayNowButton", "Show the “Pay now” button after a UPI order")}
         ${toggleRow("askPaymentProof", "Ask UPI customers for a payment screenshot", "Shown on the Order Placed screen and in My Orders, with “This will help us serve you better and quicker.” You see it on the order (📎 button). Screenshots are removed 30 days after they are uploaded - except those of orders you mark as Fraud, which are kept.")}
         ${textField("upiLabel", "UPI text", 40)}
         ${textField("upiId", "Your UPI ID", 80, "Like name@bank. Customers are shown this ID, and their UPI app opens with it and the order total already filled in.")}
