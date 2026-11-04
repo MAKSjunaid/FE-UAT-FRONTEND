@@ -15,20 +15,23 @@ window.AdminUsers = (() => {
     { key: "payments", ico: "💳", label: "UPI payments", levels: ["VIEW", "EDIT"], def: "VIEW",
       note: "View = sees the payment screenshot and its status · View & edit = can also change the status (Verified, Rejected …)" },
     { key: "products", ico: "🍗", label: "Products", levels: ["NONE", "VIEW", "EDIT"] },
-    { key: "banners", ico: "🖼️", label: "Banners", levels: ["NONE", "EDIT"] },
+    { key: "banners", ico: "🖼️", label: "Banners", levels: ["NONE", "VIEW", "EDIT"],
+      note: "View = sees banners and specials · View & edit = can add, change and reorder them" },
     { key: "sales", ico: "📊", label: "Sales", levels: ["NONE", "VIEW"] },
     { key: "customers", ico: "👥", label: "Customers", levels: ["NONE", "VIEW"],
       note: "Shows all-time data, so it needs “All time” below" },
-    { key: "customize", ico: "🎨", label: "Customize", levels: ["NONE", "EDIT"] },
+    { key: "customize", ico: "🎨", label: "Customize", levels: ["NONE", "VIEW", "EDIT"],
+      note: "View = sees the look, texts and customer messages · View & edit = can change and publish them" },
     { key: "store", ico: "🏪", label: "Store open / closed", levels: ["NONE", "VIEW", "EDIT"],
       note: "View & edit = can switch the store on/off and set hours" },
-    { key: "backup", ico: "📧", label: "E-mail backup", levels: ["NONE", "EDIT"] },
+    { key: "backup", ico: "📧", label: "E-mail backup", levels: ["NONE", "VIEW", "EDIT"],
+      note: "View = sees the backup status · View & edit = can change the settings and send a backup" },
     { key: "promotions", ico: "📣", label: "Push notifications", levels: ["NONE", "VIEW", "EDIT"],
       note: "View = sees the page and history · View & edit = can write and send to customers" },
+    { key: "map", ico: "🗺️", label: "Delivery map", levels: ["NONE", "VIEW", "EDIT"],
+      note: "View = sees the switch and delivery areas · View & edit = can draw areas and manage the map file" },
   ];
   const LEVEL_TEXT = { NONE: "No access", VIEW: "View only", EDIT: "View & edit" };
-  // On items that only have one "yes", say it plainly.
-  const YES_TEXT = { banners: "Allowed", sales: "Allowed", customers: "Allowed", customize: "Allowed", backup: "Allowed" };
   const DAY_CHOICES = [[0, "All time"], [1, "Today only"], [3, "Last 3 days"], [7, "Last 7 days"],
     [15, "Last 15 days"], [30, "Last 30 days"], [90, "Last 90 days"]];
 
@@ -44,7 +47,7 @@ window.AdminUsers = (() => {
 
   const esc = (s) => Utils.escapeHtml(s == null ? "" : String(s));
 
-  const levelText = (key, lvl) => (lvl === "EDIT" || lvl === "VIEW") && YES_TEXT[key] ? YES_TEXT[key] : LEVEL_TEXT[lvl];
+  const levelText = (key, lvl) => LEVEL_TEXT[lvl];
   const daysText = (d) => (DAY_CHOICES.find((c) => c[0] === d) || [0, d + " days"])[1];
 
   // ---- list -------------------------------------------------------------

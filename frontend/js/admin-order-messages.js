@@ -19,7 +19,7 @@ window.AdminOrderMessages = (() => {
   const lastField = {};  // per status: the field (title / message) that was touched last
 
   const host = () => document.getElementById("orderMsgRoot");
-  const allowed = () => !window.AdminAccess || AdminAccess.can("customize", "EDIT");
+  const allowed = () => !window.AdminAccess || AdminAccess.can("customize");   // View is enough: the screen is read-only for View only (see admin-readonly.js)
   const rowsBox = () => host().querySelector("[data-rows]");
   const row = (key) => rowsBox().querySelector(`[data-group="${key}"]`);
   const shownKeys = () => [...rowsBox().querySelectorAll("[data-group]")].map((r) => r.dataset.group);
