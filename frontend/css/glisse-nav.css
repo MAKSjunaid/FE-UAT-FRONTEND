@@ -10,7 +10,7 @@
   html.has-bnav.has-glisse { --gn-gap: max(6px, calc(var(--safe-bottom) - 7px)); }
   /* The room kept for the menu (page padding, cart bar, toasts ...) is the bar, its gap and a little air; the callers add --safe-bottom
      themselves, so it is taken off again here. */
-  html.has-bnav.has-glisse { --bnav-h: calc(52px + var(--gn-gap) + 6px - var(--safe-bottom)); }   /* the bar floats above the screen edge: everything that sits above the menu keeps clear of it */
+  html.has-bnav.has-glisse { --bnav-h: calc(58px + var(--gn-gap) + 6px - var(--safe-bottom)); }   /* the bar floats above the screen edge: everything that sits above the menu keeps clear of it */
 
   html.has-bnav.has-glisse .bnav {
     background: transparent;
@@ -33,11 +33,31 @@
     width: 100%;
     box-sizing: border-box;
     --lg-tab-width: var(--gn-tab, calc((100vw - 16px) / 5));
-    --lg-tab-height: 44px;   /* a lower bar than the default 52px, and wider (edge to edge) so "Help & support" fits */
+    --lg-tab-height: 50px;   /* a lower bar than the default 52px, and wider (edge to edge) so "Help & support" fits */
     --lg-lens-grow-y: 14px;
     --lg-tab-selected: var(--gold-dark, #a8821a);
   }
   .gn-host .lg-tab-bar.gn-bar[data-theme="dark"] { --lg-tab-selected: var(--gold-light, #f0d98a); }
+  /* the whole menu swells a little while the glass is lifted (finger down, dragging, or the glass travelling to another tab) and settles back
+     when it lands - like the iOS tab bar. (Slightly more up and down than sideways: the bar already spans nearly the whole screen.) */
+  /* timing taken from the video, frame by frame: the menu swells over ~170 ms (ease-out) once the glass lifts, and goes back to its size
+     in ~170 ms (no bounce) once the glass lands. */
+  .gn-host .lg-tab-bar.gn-bar { transform-origin: 50% 55%; transition: transform 0.17s cubic-bezier(0.4, 0, 0.2, 1); }
+  .gn-host .lg-tab-bar.gn-bar[data-lifted] { transform: scale(1.022, 1.065); transition: transform 0.17s cubic-bezier(0.2, 0.8, 0.3, 1); }
+  /* no coloured fringes (black / gold edges) on the icons and text under the moving glass: the glass bends the picture without splitting its colours */
+  .gn-host .lg-tab-bar.gn-bar { --lg-tab-dispersion: 0; }
+  /* The gold copy of the menu lives in the glass's window and must show only inside it. While the whole bar is zooming, a phone's browser can
+     lose that clip and draw the gold copy of EVERY tab over the dark one, which reads as black and gold edges on the other icons and text.
+     So the window is clipped in two more, sturdier ways (a clip shape and a mask) besides its own overflow clip. */
+  .gn-host .gn-bar .lg-tab-tint {
+    clip-path: inset(0 round 999px);
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
+    contain: paint;
+  }
+  /* and what is under the lifted glass is magnified more than when it rests */
+  .gn-host .gn-bar .lg-tab-icon { transition: transform 0.17s cubic-bezier(0.4, 0, 0.2, 1); }
+  .gn-host .gn-bar[data-lifted] :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-icon { transform: scale(1.36); }
   .gn-host .lg-tab-bar.gn-bar .lg-tab { font-weight: 600; }
   .gn-host .lg-tab-bar.gn-bar :is(.lg-tab, .lg-tab-copy, .lg-tab-label) { font-size: min(10.5px, calc(var(--gn-tab, calc((100vw - 16px) / 5)) / 7.1)); }   /* the same size as the old menu (10.5px) - only a narrow phone takes it a little smaller, so "Help & support" still fits its tab */
   .gn-host .lg-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -47,9 +67,23 @@
   .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-icon { transform: scale(1.16); }
   /* (the label is zoomed only as far as it still fits the tab - js/glisse-nav.js sets --lz per label, so "Help & support" is never cropped) */
   .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-label { transform: scale(var(--lz, 1)); }
+  /* gold only on the tab that is actually under the glass: every other icon/label stays in the normal colour, even for the few milliseconds when the glass lifts or lands */
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy:nth-child(1) { --i: 0; }
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy:nth-child(2) { --i: 1; }
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy:nth-child(3) { --i: 2; }
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy:nth-child(4) { --i: 3; }
+  .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy:nth-child(5) { --i: 4; }
+  @supports (color: color-mix(in srgb, red calc(max(0, 1 - abs(0.5)) * 100%), blue)) {
+    .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) { color: var(--lg-foreground); }
+    .gn-host .gn-bar :is(.lg-tab-tint, .lg-tab-lensed) .lg-tab-copy {
+      color: color-mix(in srgb, var(--lg-tab-selected) calc(max(0, 1 - abs(var(--gn-pos, var(--lg-index, 0)) - var(--i, 0))) * 100%), var(--lg-foreground));
+    }
+  }
+  /* the refracted copy exists only while the glass is lifted (never a leftover frame after it) */
+  .gn-host .gn-bar:not([data-lensing]) .lg-tab-lensed { visibility: hidden !important; }
   .gn-ico { position: relative; display: flex; }
   .gn-svg { display: flex; }
-  .gn-svg svg { width: 23px; height: 23px; display: block; }
+  .gn-svg svg { width: 26px; height: 26px; display: block; }
   .gn-badge {
     position: absolute;
     top: 1px;                         /* inside the icon's own top edge: the lens window clips whatever sticks out above it */
