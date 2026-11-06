@@ -33,9 +33,9 @@
 .area-btn .area-txt { display: inline-block; overflow: hidden; vertical-align: middle; }
 .area-btn .area-txt.is-marquee { width: 12ch; }
 .area-marq { display: inline-block; white-space: nowrap; }
-.area-txt.is-marquee .area-marq { animation: area-marq 10s linear infinite; will-change: transform; }
+.area-txt.is-marquee .area-marq { animation: area-marq 22s linear infinite; will-change: transform; }
 .area-sep { display: inline-block; width: 2.2ch; }
-@keyframes area-marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes area-marq { 0% { transform: translateX(0); } 45%, 100% { transform: translateX(-50%); } } /* one pass (10 s, the same speed as before), then a rest - the second copy makes -50% look the same as 0 - a never-ending movement keeps the phone producing frames for good */
 @media (prefers-reduced-motion: reduce) {
   .area-txt.is-marquee .area-marq { animation: none; display: block; overflow: hidden; text-overflow: ellipsis; }
   .area-dup { display: none; }

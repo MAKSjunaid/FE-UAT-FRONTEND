@@ -22,7 +22,7 @@ window.SiteBanners = (() => {
   let order = []; // slider ids, in the admin's order
 
   const reduceMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const animationsOff = (cfg) => !!(cfg && cfg.animationsOff === true) || reduceMotion();
+  const animationsOff = (cfg) => !!(cfg && cfg.animationsOff === true) || reduceMotion() || !!window.FC_CALM;
 
   function config() {
     return (window.SiteCustomize && window.SiteCustomize.cfg && window.SiteCustomize.cfg()) || null;
@@ -144,17 +144,23 @@ window.SiteBanners = (() => {
       track.scrollTo({ left: idx * track.clientWidth, behavior: smooth && !reduceMotion() ? "smooth" : "auto" });
     }
 
-    function setActive(idx) {
+    let marked = 0; // the dot that is lit now: while the slider glides nothing is rewritten unless the picture really changed
+    function setActive(idx, force) {
       current = idx;
+      if (!force && idx === marked) return;
+      marked = idx;
       [...dots.children].forEach((d, k) => {
         d.classList.toggle("on", k === idx);
         d.setAttribute("aria-selected", k === idx ? "true" : "false");
       });
     }
 
+    let trackW = 0; // the slider's width, kept up to date by the browser (so it need not be asked for while sliding)
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver((es) => { trackW = Math.round((es[es.length - 1].contentRect || {}).width) || 0; }).observe(track);
+
     function markDots() {
       if (animating) return;
-      const w = track.clientWidth || 1;
+      const w = trackW || track.clientWidth || 1;
       setActive(Math.max(0, Math.min(count() - 1, Math.round(track.scrollLeft / w))));
     }
 
@@ -170,6 +176,7 @@ window.SiteBanners = (() => {
         return;
       }
       dots.hidden = count() < 2;
+      marked = -1;
       markDots();
       sync();
     }
@@ -183,7 +190,7 @@ window.SiteBanners = (() => {
     function sync() {
       stop();
       if (still || count() < 2 || !onScreen || touching || hovering || document.hidden) return;
-      timer = setInterval(() => go(current + 1), Math.max(2, seconds) * 1000);
+      timer = setInterval(() => { if (!window.FC_IDLE) go(current + 1); }, Math.max(2, seconds) * 1000); // (nobody has touched the page for a while: it rests, see idle-rest.js)
     }
 
     let ticking = false;

@@ -1226,10 +1226,10 @@ window.DeliveryMap = (() => {
         inner.innerHTML = one + one.replace("area-t", "area-t area-dup").replace("area-sep", "area-sep area-dup");
         inner.querySelectorAll(".area-t").forEach((n) => { n.textContent = label; });
         inner.querySelectorAll(".area-dup").forEach((n) => n.setAttribute("aria-hidden", "true"));
-        inner.style.animationDuration = Math.max(5, Math.round(label.length * 0.3)) + "s"; // (refined below, once its width is known)
+        inner.style.animationDuration = (Math.max(5, Math.round(label.length * 0.3)) * 2.2).toFixed(1) + "s"; // (one pass, then a rest: the CSS keyframes move during the first 45% of this time, so the whole is 2.2x the pass) (refined below, once its width is known)
         requestAnimationFrame(() => {
           const half = inner.scrollWidth / 2;
-          if (half > 20) inner.style.animationDuration = Math.max(5, half / 32).toFixed(1) + "s"; // ~32 px a second
+          if (half > 20) inner.style.animationDuration = (Math.max(5, half / 32) * 2.2).toFixed(1) + "s"; // ~32 px a second while it moves
         });
       } else {
         inner.textContent = label;

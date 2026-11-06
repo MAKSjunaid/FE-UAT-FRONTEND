@@ -46,6 +46,17 @@
   .gn-host .lg-tab-bar.gn-bar[data-lifted] { transform: scale(1.022, 1.065); transition: transform 0.17s cubic-bezier(0.2, 0.8, 0.3, 1); }
   /* no coloured fringes (black / gold edges) on the icons and text under the moving glass: the glass bends the picture without splitting its colours */
   .gn-host .lg-tab-bar.gn-bar { --lg-tab-dispersion: 0; }
+  /* GPU / heat: the glass bend (the SVG "displacement" behind the bar) cannot be skipped by the browser: it is redone on EVERY frame the page draws,
+     even a frame where only a tiny thing far away moved (measured: 340 ms of drawing per second with it, 28 without). So the bend is on only while
+     the glass is being touched or travelling (the same moments it matters: the lifted lens bends what it passes over). At rest the bar keeps the
+     same blur and colour boost, which the browser caches, plus a faint edge shading that stands in for the bend's soft rim, so it looks the same. */
+  .gn-host .lg-tab-bar.gn-bar:not([data-lifted]):not([data-lensing]):not([data-refracting]) .lg-tab-bar-glass {
+    -webkit-backdrop-filter: blur(var(--lg-blur, 3px)) saturate(1.5);
+    backdrop-filter: blur(var(--lg-blur, 3px)) saturate(1.5);
+  }
+  .gn-host .lg-tab-bar.gn-bar[data-light]:not([data-lifted]):not([data-lensing]):not([data-refracting]) .lg-tab-bar-glass {
+    box-shadow: inset 0 0 0 .5px var(--lg-edge), 0 1px 3px var(--lg-drop), inset 0 5px 6px -3px rgba(60, 40, 0, 0.16), inset 0 0 8px 1px rgba(60, 40, 0, 0.07);
+  }
   /* The gold copy of the menu lives in the glass's window and must show only inside it. While the whole bar is zooming, a phone's browser can
      lose that clip and draw the gold copy of EVERY tab over the dark one, which reads as black and gold edges on the other icons and text.
      So the window is clipped in two more, sturdier ways (a clip shape and a mask) besides its own overflow clip. */
