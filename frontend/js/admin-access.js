@@ -11,7 +11,7 @@
 
 window.AdminAccess = (() => {
   const KEY = "freshcutz_admin_me";
-  const KEYS = ["orders", "products", "banners", "sales", "customers", "customize", "store", "backup", "promotions", "payments", "map"];
+  const KEYS = ["orders", "products", "banners", "sales", "customers", "customize", "store", "backup", "promotions", "payments", "map", "charges"];
   const RANK = { NONE: 0, VIEW: 1, EDIT: 2 };
 
   function full() {
@@ -45,8 +45,9 @@ window.AdminAccess = (() => {
       case "customize": return can("customize") || can("backup");
       case "promotions": return can("promotions");
       case "map": return can("map");
+      case "charges": return can("charges");
       case "users": return isAdmin();
-      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("map") || canOpen("users");
+      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("map") || canOpen("charges") || canOpen("users");
       default: return isAdmin();
     }
   }

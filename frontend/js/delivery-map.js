@@ -1172,6 +1172,7 @@ window.DeliveryMap = (() => {
         latEl.value = res.lat;
         lngEl.value = res.lng;
         areaEl.value = res.addr || res.area || "";
+        document.dispatchEvent(new CustomEvent("freshcutz:pinmoved")); // (the delivery charge follows the distance: see charges.js)
         show(areaEl.value || "Pinned on the map");
         note.textContent = "";
         // with a spot on the map the building box is only for the building / apartment

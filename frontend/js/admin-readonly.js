@@ -16,6 +16,7 @@
     { key: "customize", id: "view-customize" },
     { key: "banners", id: "view-banners" },
     { key: "map", id: "view-map" },
+    { key: "charges", id: "view-charges" },
   ];
   // Things that only look or move around stay usable on a read-only screen.
   const KEEP = [
@@ -119,7 +120,7 @@
   function refresh() {
     const A = AA();
     const staff = !!A && !A.isAdmin();
-    ["customize", "banners", "map", "backup"].forEach((k) => { locked[k] = staff && isRO(k); });
+    ["customize", "banners", "map", "backup", "charges"].forEach((k) => { locked[k] = staff && isRO(k); });
     on = Object.values(locked).some(Boolean);
     if (!on && !touched) { watch(false); return; }   // owner / admin: nothing to do at all
     watch(on);

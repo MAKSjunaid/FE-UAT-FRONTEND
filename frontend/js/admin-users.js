@@ -28,6 +28,8 @@ window.AdminUsers = (() => {
       note: "View = sees the backup status · View & edit = can change the settings and send a backup" },
     { key: "promotions", ico: "📣", label: "Push notifications", levels: ["NONE", "VIEW", "EDIT"],
       note: "View = sees the page and history · View & edit = can write and send to customers" },
+    { key: "charges", ico: "🧾", label: "Delivery & other charges", levels: ["NONE", "VIEW", "EDIT"],
+      note: "View = sees the charges and the preview · View & edit = can change delivery, GST, packing and other charges" },
     { key: "map", ico: "🗺️", label: "Delivery map", levels: ["NONE", "VIEW", "EDIT"],
       note: "View = sees the switch and delivery areas · View & edit = can draw areas and manage the map file" },
   ];

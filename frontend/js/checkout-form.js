@@ -265,7 +265,7 @@ window.CheckoutForm = (() => {
     return `
       <div class="sheet-footer">
         <div class="summary-row"><span>${SiteCustomize.html("itemsLabel")}</span><span>${Cart.getLineCount()}</span></div>
-        <div class="summary-row total"><span>${SiteCustomize.html("codTotalLabel")}</span><span>${Utils.formatMoney(Cart.getTotal())}</span></div>
+        ${window.CheckoutSheet.chgSlot('data-chg-total data-chg-label="cod"', "codTotalLabel")}
         <button class="btn btn-gold btn-block" style="margin-top:10px;" id="placeOrderBtn" form="checkoutForm">
           ${Utils.escapeHtml(SiteCustomize.t("placeOrderText"))}
         </button>
@@ -332,7 +332,7 @@ window.CheckoutForm = (() => {
         <label>${SiteCustomize.html("itemsLabel")}</label>
         <div class="order-summary-list">
           ${rows}
-          <div class="summary-row total"><span>${SiteCustomize.html("totalLabel")}</span><span>${Utils.formatMoney(Cart.getTotal())}</span></div>
+          ${window.CheckoutSheet.chgSlot("")}
         </div>
       </div>`;
   }
@@ -642,6 +642,18 @@ window.CheckoutForm = (() => {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> ${SiteCustomize.html("placingOrderText")}`;
     try {
+      // the charges and the distance are brought up to date first; the total the customer is looking at goes with the order, so if the
+      // charges changed in between, the server says so instead of charging something else (see ChargesService)
+      if (window.Charges) {
+        const seen = await window.Charges.settle(form);
+        if (seen.blocked) {
+          Toast.show(seen.blocked, "error");
+          btn.disabled = false;
+          btn.textContent = SiteCustomize.t("placeOrderText");
+          return;
+        }
+        if (seen.total != null) payload.expectedTotal = seen.total;
+      }
       const order = await Api.post("/api/orders", payload);
       if (window.DeliveryMap) DeliveryMap.pinSaved(payload, true); // the address saved with this order now carries the pin
       Cart.clear();
@@ -653,6 +665,7 @@ window.CheckoutForm = (() => {
       window.CheckoutSheet.openSuccess(order);
     } catch (err) {
       Toast.msg("serverError", { message: err.message });
+      if (window.Charges && /changed/i.test(err.message || "")) window.Charges.stale(); // the screen shows the new total
       btn.disabled = false;
       btn.textContent = SiteCustomize.t("placeOrderText");
     }

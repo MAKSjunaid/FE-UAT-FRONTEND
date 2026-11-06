@@ -781,6 +781,12 @@ window.ProfileSheet = (() => {
       if (steps && card.dataset.track) steps.outerHTML = trackStepsHtml(code, status);
       const note = card.parentElement && card.parentElement.querySelector(".trk-note");
       if (note && card.dataset.track) note.outerHTML = trackNoteHtml(code, status, order);
+      if (!card.dataset.track && order) { // (My Orders: the delivered / cancelled time follows the status)
+        const old = card.querySelector(".profile-order-ended");
+        if (old) old.remove();
+        const t = card.querySelector(".profile-order-time");
+        if (t) t.insertAdjacentHTML("afterend", endedHtml({ ...order, status }, false));
+      }
       settleReorder(card, status, code); // (Reorder only on a finished order: delivered or cancelled)
       if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
@@ -909,6 +915,9 @@ window.ProfileSheet = (() => {
     announceTrack();
   });
 
+  /** When the order was cancelled, from a live status message: the server's time, else (a message that does not carry it) now - the message arrives the moment it happens. */
+  const cancelledAtOf = (d) => d.cancelledAt || (d.status === "CANCELLED" ? new Date().toISOString() : null);
+
   // The admin changed an order's status: the order held (and on screen, if the account page is open) shows it at once.
   window.addEventListener("freshcutz:orderstatus", (e) => {
     const d = (e && e.detail) || {};
@@ -916,6 +925,7 @@ window.ProfileSheet = (() => {
     if (mine) {
       mine.order.status = d.status;
       mine.order.deliveredAt = d.deliveredAt || null;
+      mine.order.cancelledAt = cancelledAtOf(d);
       if (window.OrderCancel) OrderCancel.apply(mine.order, d);
       announceTrack();
     }
@@ -928,6 +938,7 @@ window.ProfileSheet = (() => {
     }
     held.status = d.status;
     held.deliveredAt = d.deliveredAt || null;
+    held.cancelledAt = cancelledAtOf(d);
     if (window.OrderCancel) OrderCancel.apply(held, d); // (cancelling may still be allowed in the new status - or not any more)
     if (d.refresh) acct.stale = true; // (the shop refused a cancel: the next look at the orders re-reads them)
     paintStatus(d.orderCode, d.status, held);
@@ -1193,13 +1204,40 @@ window.ProfileSheet = (() => {
       .join("");
   }
 
+  // My Orders: the charges of an order sit behind a small "V" by its total (tap to open / close); the tracking panel does not show them
+  const openCharges = new Set(); // order codes whose charges are open (kept while the list redraws)
+  // a tap anywhere on the order opens / closes them (not on its own buttons, links and fields - Reorder, Cancel, UPI... - nor while text is selected)
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest && e.target.closest(".profile-order-card");
+    const box = card && card.querySelector(".profile-order-charges");
+    if (!box) return;
+    const own = e.target.closest("button, a, input, select, textarea, label, summary");
+    if (own && !own.hasAttribute("data-chg-more")) return;
+    if (window.getSelection && String(window.getSelection())) return;
+    const b = card.querySelector("[data-chg-more]");
+    const show = box.hidden;
+    box.hidden = !show;
+    b.classList.toggle("open", show);
+    b.setAttribute("aria-expanded", String(show));
+    if (show) openCharges.add(card.dataset.code); else openCharges.delete(card.dataset.code);
+  });
+
+  /** My Orders only (not the tracking panel): when a finished order was delivered / cancelled, under the time it was placed. */
+  function endedHtml(order, track) {
+    const at = order.status === "DELIVERED" ? order.deliveredAt : order.status === "CANCELLED" ? order.cancelledAt : null;
+    return !track && at ? `<div class="profile-order-time profile-order-ended">${order.status === "DELIVERED" ? "Delivered" : "Cancelled"}: ${Utils.formatDateTime(at)}</div>` : "";
+  }
+
   function orderCardHtml(order, track) {
+    const rows = !track && window.Charges ? Charges.orderRows(order) : ""; // ("" = no charges on this order, or the tracking panel)
+    const open = rows && openCharges.has(order.orderCode);
     return `
-    <div class="profile-order-card" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
+    <div class="profile-order-card${rows ? " chg-tap" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
       <div class="profile-order-head">
         <div>
           <div class="profile-order-code">${SiteCustomize.html("orderIdLabel")} ${Utils.escapeHtml(order.orderCode)}</div>
-          <div class="profile-order-time">${Utils.formatDateTime(order.createdAt)}</div>
+          <div class="profile-order-time">${track ? "" : "Placed: "}${Utils.formatDateTime(order.createdAt)}</div>
+          ${endedHtml(order, track)}
         </div>
         <span class="badge ${badgeClass(order.status, order.orderCode)}">${Utils.escapeHtml(track ? trackText(order.status, order.orderCode) : statusLabel(order.status, order.orderCode))}</span>
       </div>
@@ -1211,7 +1249,8 @@ window.ProfileSheet = (() => {
         ${order.notes ? `<br/>📝 ${Utils.escapeHtml(order.notes)}` : ""}
       </div>
       <div class="profile-order-items">${orderItemsHtml(order)}</div>
-      <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
+      ${rows ? `<div class="profile-order-charges order-summary-list"${open ? "" : " hidden"}>${rows}</div>` : ""}
+      <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}${rows ? `<button type="button" class="profile-order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${window.UpiPay ? UpiPay.forgotHtml(order) : ""}
       ${canReorder(order.status) ? reorderButtonHtml(order.orderCode) : ""}
       ${window.OrderCancel ? OrderCancel.html(order) : ""}

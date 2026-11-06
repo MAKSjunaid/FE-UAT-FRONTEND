@@ -68,6 +68,7 @@
     if (!whatsappLink.dataset.custom) whatsappLink.href = `https://wa.me/${phone}`;
     Cart.onChange(syncAllCardQuantities);
     Cart.onChange(updateCartBadges);
+    if (window.Charges) Charges.onChange(updateCartBadges); // (the free-delivery tip follows the admin's settings)
     // The first screen (category tabs + the first 12 products of the default tab) is already being fetched by
     // storefront-sync.js — one request. Show loading placeholders until it arrives.
     grid.innerHTML = skeletonCards(3);
@@ -658,7 +659,10 @@
     const barEl = document.getElementById("cartBar");
     barEl.classList.toggle("show", count > 0);
   document.documentElement.classList.toggle("has-cart-bar", count > 0);
-    document.getElementById("cartBarCount").textContent = `${count} item${count === 1 ? "" : "s"}`;
+    // (a few words about free delivery after the count - only when the admin set "free delivery above ..." - see charges.js)
+    const tip = window.Charges && count > 0 ? Charges.barTip(total) : "";
+    document.getElementById("cartBarCount").textContent = `${count} item${count === 1 ? "" : "s"}${tip ? ` · ${tip}` : ""}`;
+    if (window.Charges && count > 0) Charges.ensure(false);
     document.getElementById("cartBarTotal").textContent = Utils.formatMoney(total);
   }
 

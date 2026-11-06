@@ -167,9 +167,24 @@ window.AdminOrders = (() => {
     return `<button class="btn btn-ghost btn-sm" data-action="reopen">↺ Reopen as New</button>`;
   }
 
+  // The charges of an order sit behind a small "V" by its total: a tap on it - or anywhere on the order (not on its own buttons / links) -
+  // opens / closes them; what was opened stays open while the list redraws
+  const openCharges = new Set(); // order ids
+
+  /** The delivery / other charges this order was placed with (saved on the order; none on orders without any): items, then one line each. */
+  function chargesRows(order) {
+    const ls = Array.isArray(order.charges) ? order.charges : [];
+    if (!ls.length) return "";
+    const row = (name, amt) => `<div class="order-charge-row"><span>${name}</span><span>${amt}</span></div>`;
+    return `<div class="order-charges"${openCharges.has(order.id) ? "" : " hidden"}>${row("Items total", Utils.formatMoney(order.itemsTotal != null ? order.itemsTotal : order.totalAmount))}${ls.map((l) =>
+      row(Utils.escapeHtml(l.label), l.free ? `<s>${Utils.formatMoney(l.amount)}</s> FREE` : Utils.formatMoney(l.charged))).join("")}</div>`;
+  }
+
   function card(order) {
+    const charges = chargesRows(order);
+    const open = charges && openCharges.has(order.id);
     return `
-    <div class="order-card" data-id="${order.id}"${order.deliveryLat != null && order.deliveryLng != null ? ` data-pin="${Number(order.deliveryLat)},${Number(order.deliveryLng)}"` : ""}>
+    <div class="order-card${charges ? " chg-tap" : ""}" data-id="${order.id}"${order.deliveryLat != null && order.deliveryLng != null ? ` data-pin="${Number(order.deliveryLat)},${Number(order.deliveryLng)}"` : ""}>
       <div class="order-card-head">
         <div>
           <div class="order-code-lbl">${Utils.escapeHtml(order.orderCode)}</div>
@@ -189,7 +204,8 @@ window.AdminOrders = (() => {
       </div>
       ${order.status === "CANCELLED" && order.cancelledByCustomer ? `<div class="order-cancel-note"><strong>Cancelled by customer</strong>${order.cancelReason ? `<span>${Utils.escapeHtml(order.cancelReason)}</span>` : ""}</div>` : ""}
       <div class="order-items-list">${itemsSummary(order)}</div>
-      <div class="order-total-row"><span>Total</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
+      ${charges}
+      <div class="order-total-row"><span>Total${charges ? `<button type="button" class="order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${actionsFor(order) ? `<div class="order-actions">${actionsFor(order)}</div>` : ""}
     </div>`;
   }
@@ -642,6 +658,21 @@ window.AdminOrders = (() => {
     });
     return new Date(latest).toISOString();
   }
+
+  list.addEventListener("click", (e) => {
+    const cardEl = e.target.closest(".order-card");
+    const box = cardEl && cardEl.querySelector(".order-charges");
+    if (!box) return;
+    const own = e.target.closest("button, a, input, select, textarea, label, summary, [data-action]");
+    if (own && !own.hasAttribute("data-chg-more")) return; // (its own buttons and links do their own thing)
+    if (window.getSelection && String(window.getSelection())) return; // (text being selected to copy)
+    const show = box.hidden;
+    box.hidden = !show;
+    const b = cardEl.querySelector("[data-chg-more]");
+    b.classList.toggle("open", show);
+    b.setAttribute("aria-expanded", String(show));
+    if (show) openCharges.add(Number(cardEl.dataset.id)); else openCharges.delete(Number(cardEl.dataset.id));
+  });
 
   list.addEventListener("click", async (e) => {
     const cardEl = e.target.closest(".order-card");

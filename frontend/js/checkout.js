@@ -241,10 +241,33 @@
     // now, with the sheet's real content (every cart item, etc.) already
     // in the DOM, so the gap matches how tall this sheet actually rendered
     // instead of a fixed guess.
+    // the total areas of this screen (items + charges + total): drawn and kept right by charges.js
+    if (window.Charges) {
+      const form = root.querySelector("#checkoutForm");
+      root.querySelectorAll("[data-chg]").forEach((el) => window.Charges.mount(el, {
+        // the bar above Place Order says "Total (Cash on Delivery)" only once Cash on delivery is chosen (see upi-pay.js): the same rule
+        // whenever the charges redraw it, so a live change from the admin does not reset the wording
+        label: el.dataset.chgLabel === "cod"
+          ? () => {
+              const pay = form && form.querySelector('[data-role="payment"]');
+              const mode = pay && (pay.querySelector('input[name="paymentMode"]:checked') || {}).value;
+              return SiteCustomize.html(!pay || mode === "COD" ? "codTotalLabel" : "totalLabel");
+            }
+          : SiteCustomize.html("totalLabel"),
+        form,
+        only: el.hasAttribute("data-chg-cart") ? "cart" : el.hasAttribute("data-chg-total"),
+      }));
+    }
+
     const sheetEl = root.querySelector(".sheet");
     document.documentElement.style.setProperty("--toast-sheet-gap", `${sheetEl.getBoundingClientRect().height + 14}px`);
 
     return root;
+  }
+
+  /** Where a screen's total area goes (charges.js fills it in; without charges.js it is the plain total row). */
+  function chgSlot(attrs, labelKey = "totalLabel") {
+    return `<div data-chg ${attrs}>${window.Charges ? "" : `<div class="summary-row total"><span>${SiteCustomize.html(labelKey)}</span><span>${Utils.formatMoney(Cart.getTotal())}</span></div>`}</div>`;
   }
 
   function cartItemHtml(item) {
@@ -287,7 +310,8 @@
       row.querySelector(".qty-value").textContent = qty;
       row.querySelector(".cart-item-price").textContent = Utils.formatMoney(unitPrice * qty);
     }
-    const totalEl = sheet.querySelector(".sheet-footer .summary-row.total span:last-child");
+    // (the total area redraws itself when the cart changes - see charges.js; this is only for a page without it)
+    const totalEl = !sheet.querySelector("[data-chg]") && sheet.querySelector(".sheet-footer .summary-row.total span:last-child");
     if (totalEl) totalEl.textContent = Utils.formatMoney(Cart.getTotal());
   }
 
@@ -305,7 +329,7 @@
     const body = `
       <div class="sheet-body">${items.map(cartItemHtml).join("")}</div>
       <div class="sheet-footer">
-        <div class="summary-row total"><span>${SiteCustomize.html("totalLabel")}</span><span>${Utils.formatMoney(Cart.getTotal())}</span></div>
+        ${chgSlot("data-chg-cart")}
         <button class="btn btn-gold btn-block" style="margin-top:10px;" data-role="checkout-btn">${Utils.escapeHtml(SiteCustomize.t("checkoutButtonText"))}</button>
         <div style="text-align:center;margin-top:8px;">
           <button class="btn btn-ghost btn-sm" data-role="clear-btn">${SiteCustomize.html("clearCartText")}</button>
@@ -348,6 +372,12 @@
   }
 
   function openCheckout() {
+    // below the minimum order (or too far): the cart already says so in red; the button just says it once more
+    const why = window.Charges && window.Charges.blocked();
+    if (why) {
+      Toast.show(why, "error");
+      return;
+    }
     if (window.StoreStatus && !window.StoreStatus.isOnline()) {
       currentView = "checkout";
       renderSheet(
@@ -390,6 +420,7 @@
     return `
       <div class="order-summary-list">
         ${rows}
+        ${window.Charges ? window.Charges.orderRows(order) : ""}
         <div class="summary-row total"><span>${SiteCustomize.html("totalLabel")}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
         ${slot}
         ${notes}
@@ -441,5 +472,5 @@
     }
   });
 
-  window.CheckoutSheet = { renderSheet, closeSheet, setLeaveGuard, openCart, openSuccess, holdScroll };
+  window.CheckoutSheet = { renderSheet, closeSheet, setLeaveGuard, openCart, openSuccess, holdScroll, chgSlot };
 })();
