@@ -73,9 +73,9 @@
   /* the Account label: "Account" until a customer is signed in, then the customer's first line of name. A name that does not fit
      keeps running through the label from right to left, round and round (js/bottom-nav.js adds .is-run and the second copy). */
   .bnav-label.is-name { text-overflow: clip; max-width: 9ch; } /* (room for about 8 letters and a space: a longer name runs through this window) */
-  .bnav-run { display: inline-flex; width: max-content; animation: bnavRun var(--run-dur, 7s) linear infinite; will-change: transform; }
+  .bnav-run { display: inline-flex; width: max-content; animation: bnavRun calc(var(--run-dur, 7s) * 2.2) linear infinite; will-change: transform; }
   .bnav-run > span { flex: none; padding-right: 22px; }
-  @keyframes bnavRun { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes bnavRun { 0% { transform: translateX(0); } 45%, 100% { transform: translateX(-50%); } } /* runs one pass (the same speed as before), then rests - the two copies make -50% look the same as 0 */
   @media (prefers-reduced-motion: reduce) { .bnav-run { animation: none; } }
   .bnav-item:active { color: var(--gold-dark); }
   .bnav-item.is-active { color: var(--gold-dark); }
@@ -271,7 +271,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .trk-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; animation: trkPulse 1.6s ease-out infinite; }
+  .trk-dot { flex: none; position: relative; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; }
+  .trk-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: rgba(201, 161, 59, 0.45); opacity: 0; pointer-events: none; }
+  .trk-slide.is-cur .trk-dot::after { animation: trkRing 1.6s ease-out infinite; will-change: transform, opacity; }
+  @keyframes trkRing { 0% { transform: scale(2.1); opacity: 0.45; } 50% { transform: scale(3); opacity: 0.12; } 100% { transform: scale(2.1); opacity: 0.45; } }
   .trk-slide.is-confirmed .trk-dot, .trk-slide.is-ready .trk-dot { background: #46d6a3; }
   @keyframes trkPulse {
     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
@@ -288,12 +291,13 @@
     display: block;
     height: 100%;
     border-radius: 0 3px 3px 0;
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold));
-    background-size: 200% 100%;
-    animation: trkShine 2.4s linear infinite;
     transition: width 0.6s var(--ease-out, ease-out);
   }
-  @keyframes trkShine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+  .trk-slide.is-cur .trk-prog i::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 55%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); animation: trkSweep 2.4s linear infinite; will-change: transform; }
+  @keyframes trkSweep { from { transform: translateX(-100%); } to { transform: translateX(185%); } }
 
   /* more than one order: a row of dots under the slides (the one on screen is a longer gold pill) */
   html.has-bnav.has-track.has-track-multi { --trk-h: 54px; }
@@ -519,7 +523,7 @@ body.storefront .badge-new { text-transform: none; }
 .trk-line.is-part::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 34%; border-radius: 2px; background: var(--gold); animation: trkLineGo 0.9s var(--ease-out, ease-out) both; }
 @keyframes trkLineGo { from { width: 0; } to { width: 34%; } }
 /* The ring round the step the order is at slowly grows and fades back (switched off for people who asked their phone for less motion). */
-.trk-step.is-now i { animation: trkPulse 2.4s ease-in-out infinite; }
+#trackBar.is-open .trk-slide.is-cur .trk-step.is-now i { animation: trkPulse 2.4s ease-in-out infinite; } /* only while the order panel is opened out (it was pulsing, repainting, all the time even folded) */
 @keyframes trkPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(201, 161, 59, 0.28); } 50% { box-shadow: 0 0 0 7px rgba(201, 161, 59, 0.1); } }
 @media (prefers-reduced-motion: reduce) { .trk-step.is-now i { animation: none; } }
 .trk-steps { padding-bottom: 14px; }
