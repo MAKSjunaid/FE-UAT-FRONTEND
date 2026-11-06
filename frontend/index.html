@@ -2,6 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<script>
+/* Test switch (nothing changes unless it is asked for): open the site with ?calm=1 to stop every decorative movement (CSS animations, the sliding featured rows, banner slides) so the phone's heat can be compared with and without; ?calm=0 puts everything back. */
+try { var q = /[?&]calm=([01])\b/.exec(location.search); if (q) { if (q[1] === "1") localStorage.setItem("fc_calm", "1"); else localStorage.removeItem("fc_calm"); } if (localStorage.getItem("fc_calm") === "1") { window.FC_CALM = 1; var st = document.createElement("style"); st.textContent = "*,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}"; document.head.appendChild(st); } } catch (e) {}
+</script>
+<script>
+/* Test switch (nothing changes unless it is asked for, and nothing is remembered): add &off=rows,banner,tracker,menu,blur to the address to hide one
+   part at a time and see which one the CPU number reacts to. rows = the featured rows, banner = the banners, tracker = the order tracker,
+   menu = the running text in the bottom menu and the location bar, blur = every glass blur. */
+try { var o = /[?&]off=([a-z,]+)/.exec(location.search); if (o) { var m = { rows: ".sp{display:none !important}", banner: ".sb{display:none !important}", tracker: "#trackBar{display:none !important}", menu: ".bnav-run,.area-marq{animation:none !important}", blur: "*,*::before,*::after{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}" }, css = ""; o[1].split(",").forEach(function (k) { css += m[k] || ""; }); if (css) { var so = document.createElement("style"); so.textContent = css; document.head.appendChild(so); } } } catch (e) {}
+/* &auto=1 walks through the same parts by itself, 20 seconds each, with a small label saying which part is hidden now; read the tab's CPU in the Task Manager at the END of each step. */
+try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on", ""], ["featured rows hidden", "rows"], ["+ order tracker hidden", "tracker"], ["+ banners hidden", "banner"], ["+ menu / location text stopped", "menu"], ["+ glass blur off", "blur"]], si = 0, sa = document.createElement("style"), lab; document.head.appendChild(sa);
+  var mm = { rows: ".sp{display:none !important}", banner: ".sb{display:none !important}", tracker: "#trackBar{display:none !important}", menu: ".bnav-run,.area-marq{animation:none !important}", blur: "*,*::before,*::after{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}" };
+  var run = function () { var css = ""; for (var k = 1; k <= si; k++) css += mm[steps[k][1]]; sa.textContent = css; if (lab) lab.textContent = "step " + (si + 1) + " of " + steps.length + ": " + steps[si][0] + " (read the CPU at the end of 20 s)"; if (si < steps.length - 1) { si++; setTimeout(run, 20000); } else setTimeout(function () { lab.textContent = "done - reload without &auto=1"; }, 20000); };
+  document.addEventListener("DOMContentLoaded", function () { lab = document.createElement("div"); lab.style.cssText = "position:fixed;left:6px;top:6px;z-index:2147483647;background:#000c;color:#fff;font:600 12px/1.3 sans-serif;padding:5px 8px;border-radius:6px;pointer-events:none;max-width:90vw"; document.body.appendChild(lab); setTimeout(run, 12000); lab.textContent = "starting in 12 s... (let the page settle)"; }); } } catch (e) {}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <script>
   /* iPhone/iPad Safari re-fits the page (zooms a little) when its toolbar is hidden or shown, most visibly while a
@@ -76,12 +91,12 @@
 <link rel="stylesheet" href="css/cart-fx.css?v=2" />
 <link rel="stylesheet" href="css/customer-push.css?v=7" />
 <link rel="stylesheet" href="css/site-banners.css?v=19" />
-<link rel="stylesheet" href="css/site-specials.css?v=32" />
-<link rel="stylesheet" href="css/bottom-nav.css?v=57" />
+<link rel="stylesheet" href="css/site-specials.css?v=34" />
+<link rel="stylesheet" href="css/bottom-nav.css?v=58" />
 <link rel="stylesheet" href="css/order-cancel.css?v=11" />
-<link rel="stylesheet" href="css/delivery-map.css?v=20" />
+<link rel="stylesheet" href="css/delivery-map.css?v=21" />
 <link rel="stylesheet" href="css/night-mode.css?v=10" />
-<link rel="stylesheet" href="css/glisse-nav.css?v=17" />
+<link rel="stylesheet" href="css/glisse-nav.css?v=18" />
 </head>
 <body class="storefront">
   <script src="js/splash.js?v=2"></script>
@@ -178,8 +193,8 @@
   <script src="js/api.js?v=8"></script>
   <script src="js/cart.js"></script>
   <script src="js/cart-fx.js?v=3"></script>
-  <script src="js/site-banners.js?v=10"></script>
-  <script src="js/site-specials.js?v=53"></script>
+  <script src="js/site-banners.js?v=12"></script>
+  <script src="js/site-specials.js?v=59"></script>
   <script src="js/storefront.js?v=24"></script>
   <script src="js/long-press.js?v=6"></script>
   <script src="js/storefront-header.js?v=6"></script>
@@ -197,8 +212,10 @@
   <script src="js/order-status.js?v=3"></script>
   <script src="js/order-cancel.js?v=15"></script>
   <script src="js/profile.js?v=69"></script>
-  <script src="js/delivery-map.js?v=26"></script>
+  <script src="js/delivery-map.js?v=27"></script>
   <script src="js/bottom-nav.js?v=38"></script>
-  <script src="js/glisse-nav.js?v=8" defer></script>
+  <script src="js/motion-30.js?v=3"></script>
+  <script src="js/idle-rest.js?v=2"></script>
+  <script src="js/glisse-nav.js?v=9" defer></script>
 </body>
 </html>
