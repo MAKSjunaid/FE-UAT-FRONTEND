@@ -299,3 +299,11 @@ html.night .sp-pop-x::before, html.night .sp-pop-x::after { background: var(--te
 /* sold-out items: a calm grey button (not red) and a solid photo backing in the big card */
 html.night .add-btn.out-of-stock-btn, html.night .out-of-stock-btn, html.night .sp-soldout { background: #26231a; color: #8f8774; border-color: #3d351f; }
 html.night .sp-pop-card .sp-out .sp-media { background: linear-gradient(135deg, #342d17, #3e351c); }
+
+/* delivery & other charges (js/charges.js): the green "free" line, the red "can't order" line, the dashed divider and the little (i) */
+html.night .chg-nudge { background: #1b2a1c; color: #a9dcb4; border: 1px solid rgba(110, 200, 130, 0.22); }
+html.night .chg-nudge b { color: #d4f2da; }
+html.night .chg-free { color: #5fd27f; }
+html.night .chg-blocked { background: #4a1618; color: #ff6b63; border: 1px solid rgba(255, 90, 80, 0.55); } /* (a clear red: it is the line that says why the order cannot go yet) */
+html.night .chg-sep { border-top-color: #4a3f22; }
+html.night .chg-i[aria-expanded="true"] { background: rgba(255, 255, 255, 0.14); }
