@@ -7,7 +7,7 @@
 try { var q = /[?&]calm=([01])\b/.exec(location.search); if (q) { if (q[1] === "1") localStorage.setItem("fc_calm", "1"); else localStorage.removeItem("fc_calm"); } if (localStorage.getItem("fc_calm") === "1") { window.FC_CALM = 1; var st = document.createElement("style"); st.textContent = "*,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}"; document.head.appendChild(st); } } catch (e) {}
 </script>
 <script>
-/* Test switch (nothing changes unless it is asked for, and nothing is remembered): add &off=rows,banner,tracker,menu,blur to the address to hide one
+/* Test s witch (nothing changes unless it is asked for, and nothing is remembered): add &off=rows,banner,tracker,menu,blur to the address to hide one
    part at a time and see which one the CPU number reacts to. rows = the featured rows, banner = the banners, tracker = the order tracker,
    menu = the running text in the bottom menu and the location bar, blur = every glass blur. */
 try { var o = /[?&]off=([a-z,]+)/.exec(location.search); if (o) { var m = { rows: ".sp{display:none !important}", banner: ".sb{display:none !important}", tracker: "#trackBar{display:none !important}", menu: ".bnav-run,.area-marq{animation:none !important}", blur: "*,*::before,*::after{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}" }, css = ""; o[1].split(",").forEach(function (k) { css += m[k] || ""; }); if (css) { var so = document.createElement("style"); so.textContent = css; document.head.appendChild(so); } } } catch (e) {}
