@@ -1,0 +1,61 @@
+/* Settings -> Delivery & other charges (js/admin-charges.js). Reuses the Delivery map screen's cards, switch and pin dot (admin-map.css) and the Customize field / chip styles. */
+/* 16px in every box: a phone zooms the page in when a smaller one is tapped */
+.ch-wrap input, .ch-wrap select, .ch-wrap textarea, .ch-picker input { font-size: 16px !important; }
+/* a section that opens on a tap */
+.ch-det { padding: 0; gap: 0; }
+.ch-det > summary, .ch-other > summary { display: flex; align-items: center; gap: 10px; padding: var(--sp-4); cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.ch-other > summary { padding: 12px; }
+.ch-det > summary::-webkit-details-marker, .ch-other > summary::-webkit-details-marker { display: none; }
+.ch-sum { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ch-sum strong { font-size: 15.5px; color: var(--ink); }
+.ch-sum small { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-chev { flex: 0 0 auto; font-size: 26px; line-height: 1; color: var(--text-muted); transition: transform var(--dur-fast); }
+details[open] > summary > .ch-chev { transform: rotate(90deg); }
+.ch-det-body { display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-4); }
+.ch-other > .ch-det-body { padding: 0 12px 12px; }
+.ch-wrap .nm-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.ch-wrap input[type="text"], .ch-wrap input[type="number"], .ch-wrap input[type="time"] { width: 100%; min-height: 44px; padding: 0 12px; border: 1.5px solid #e0d6b8; border-radius: var(--r-sm); background: #fff; font: inherit; font-size: 15px; font-weight: 500; color: var(--ink); }
+.ch-wrap input:focus, .ch-wrap select:focus { outline: none; border-color: var(--gold); }
+.ch-body.is-off, .ch-sec.is-off { opacity: 0.45; pointer-events: none; }
+.ch-sec { display: flex; flex-direction: column; gap: var(--sp-3); }
+.ch-sub { display: flex; flex-direction: column; gap: var(--sp-3); padding: 12px; border-radius: var(--r-sm); background: #fbf8ee; border: 1px solid #efe5c6; }
+.ch-div { height: 1px; background: #efe5c6; margin: 2px 0; }
+.ch-check { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border: 1px solid #eee3cc; border-radius: 10px; background: #fff; font-size: 14px; font-weight: 700; line-height: 1.3; cursor: pointer; }
+.ch-check input { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--gold-dark, #a8821a); }
+.ch-check small, .ch-hint { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.ch-seg { width: 100%; }
+.ch-btns { display: flex; gap: 8px; }
+.ch-ok { color: var(--success); } .ch-bad { color: var(--danger); }
+.ch-slabs { display: flex; flex-direction: column; gap: 8px; }
+.ch-slab { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.ch-slab input { flex: 1 1 0; min-width: 0; }
+.ch-arrow { white-space: nowrap; }
+.ch-beyond { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; }
+.ch-others { display: flex; flex-direction: column; gap: 10px; }
+.ch-other { display: block; padding: 0; border: 1.5px solid #e6dcc0; border-radius: var(--r-md); background: #fbf8ee; }
+.ch-other.is-off > summary { opacity: 0.55; }
+.ch-o-head { display: flex; align-items: center; gap: 8px; }
+.ch-o-head input[type="text"] { flex: 1 1 auto; font-weight: 700; }
+.ch-o-row { display: flex; align-items: center; gap: 8px; }
+.ch-o-row > * { flex: 1 1 0; min-width: 0; }
+.ch-o-row > span { flex: 0 0 auto; font-size: 13px; font-weight: 700; }
+.ch-prev { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--r-sm); background: #faf6ea; font-size: 14px; }
+.ch-pl { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ch-pl small { display: block; font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+.ch-pl s { color: var(--text-muted); font-weight: 500; }
+.ch-free { font-style: normal; font-weight: 800; color: var(--success); }
+.ch-total { margin-top: 4px; padding-top: 8px; border-top: 1px dashed #d9cda6; font-size: 16px; }
+.ch-block { margin: 6px 0 0; color: var(--danger); font-weight: 700; font-size: 13px; }
+.ch-foot { position: sticky; bottom: calc(var(--safe-bottom, 0px) + 74px); display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(255, 255, 255, 0.96); border: 1.5px solid #e6dcc0; border-radius: var(--r-md); box-shadow: 0 -4px 16px rgba(23, 20, 15, 0.1); }
+.ch-picker .mp-ed-name { margin: 0; }
+
+/* the charges of an order, in the Orders tab (js/admin-orders.js) */
+.order-card.chg-tap { cursor: pointer; }
+.order-charges[hidden] { display: none; }
+.order-more { display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; padding: 4px 8px; border: 0; background: none; cursor: pointer; color: var(--text-muted); }
+.order-more svg { display: block; transition: transform .15s ease; }
+.order-more.open svg { transform: rotate(180deg); }
+.order-charges { margin: 6px 0 2px; padding: 6px 10px; border-radius: var(--r-sm); background: #faf6ea; font-size: 13px; }
+.order-charge-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; color: var(--text-muted); }
+.order-charge-row s { color: var(--text-muted); opacity: 0.8; }

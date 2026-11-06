@@ -742,6 +742,16 @@
     },
     // the admin changed the rules for cancelling orders: the page re-reads its orders (see profile.js)
     cancelrule: () => tell("freshcutz:cancelrule", {}),
+    // the charges this page holds are the current ones (sent when the live connection opens, see LiveController)
+    chsame: () => tell("freshcutz:chsame", {}),
+    // the admin changed the delivery / other charges: the page that holds them takes the new ones at once (see charges.js)
+    charges: (e) => {
+      try {
+        tell("freshcutz:charges", JSON.parse(e.data));
+      } catch {
+        /* malformed push - the next time the cart opens it reads them again */
+      }
+    },
     sitesame: () => {
       if (held) apply(held); // what this page saved is still current (nothing more was sent)
     },
@@ -773,6 +783,7 @@
   /** What this page says about itself each time it connects: the copy of the look it saved, and (signed in) who it is. */
   function siteQuery(path) {
     const have = heldVersion ? `&have=${encodeURIComponent(heldVersion)}` : "";
+    const chv = window.Charges && window.Charges.version() ? `&chv=${encodeURIComponent(window.Charges.version())}` : ""; // the charges this page holds (see charges.js)
     const me = who();
     streamPhone = me ? me.phone : "";
     const held = cancelV && window.OrderCancel && window.OrderCancel.hasWording && window.OrderCancel.hasWording();
@@ -780,7 +791,7 @@
       ? `&phone=${encodeURIComponent(me.phone)}${me.v ? `&uv=${encodeURIComponent(me.v)}` : ""}${held ? `&cv=${encodeURIComponent(cancelV)}` : ""}`
       : "";
     window.FreshcutzStream = { phone: streamPhone };
-    return `${path}${have}${customer}`;
+    return `${path}${have}${chv}${customer}`;
   }
 
   let attached = false; // listening (a visible tab)

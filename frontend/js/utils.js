@@ -15,12 +15,10 @@ const Utils = (() => {
   function formatDateTime(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
-    return d.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const opts = { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" };
+    // a date from an earlier (or later) year says which year: "03 Nov 2026, 12:48 pm" (this year's stay "03 Nov, 12:48 pm")
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+    return d.toLocaleString("en-IN", opts);
   }
 
   function debounce(fn, wait) {

@@ -399,7 +399,7 @@ window.OrderCancel = (() => {
           busy = false;
           close();
           // the order is Cancelled on this page at once (profile.js listens for this, as for the admin's own changes)
-          window.dispatchEvent(new CustomEvent("freshcutz:orderstatus", { detail: { orderCode: code, status: "CANCELLED", deliveredAt: null } }));
+          window.dispatchEvent(new CustomEvent("freshcutz:orderstatus", { detail: { orderCode: code, status: "CANCELLED", deliveredAt: null, cancelledAt: new Date().toISOString() } }));
           notify(cfg.cancelledToast, "success");
         } catch (err) {
           busy = false;
