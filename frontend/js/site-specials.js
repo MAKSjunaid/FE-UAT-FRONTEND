@@ -157,7 +157,7 @@ window.SiteSpecials = (() => {
   const HOLD_MS = 2500; // after a swipe / tap the row waits this long before drifting on
   const motionOff = () => {
     const c = window.SiteCustomize && window.SiteCustomize.cfg && window.SiteCustomize.cfg();
-    return !!(c && c.animationsOff === true) || !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    return !!(c && c.animationsOff === true) || !!window.FC_CALM || !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   };
 
 
@@ -214,6 +214,7 @@ window.SiteSpecials = (() => {
     function stopLoop() {
       if (!drift) return;
       cancelAnimationFrame(drift.raf);
+      clearTimeout(drift.tm);
       if (drift.anims) drift.anims.forEach((a) => a.cancel());
       el.querySelectorAll(".sp-card[data-extra]").forEach((c) => c.remove());
       const track = el.querySelector(".sp-track");
@@ -325,7 +326,16 @@ window.SiteSpecials = (() => {
     function step(now) {
       const d = drift;
       if (!d) return;
-      d.raf = requestAnimationFrame(step);
+      // The watcher only needs every frame while the customer is touching the row. While the row simply drifts (or is out of sight)
+      // it looks again a few times a second - the drift itself runs on the browser's own animation, so this costs the phone almost nothing.
+      const calm = d.anims && d.until !== Infinity && now >= d.until && !pressedAt && !mouseOver && !kbFocus;
+      const slow = calm || !!window.FC_IDLE || !(onScreen && !document.hidden); // (FC_IDLE: nobody has touched the page for a while, see idle-rest.js)
+      if (slow) d.tm = setTimeout(() => { if (drift === d) step(performance.now()); }, 250);
+      else d.raf = requestAnimationFrame(step);
+      // Reading where the cards are (scrollLeft, getBoundingClientRect) makes the browser work out every card's animated style again,
+      // so while the row just drifts (or is out of sight) it looks only once a second, and nothing is read in between.
+      if (slow && !d.resting && now - (d.lastFull || 0) < 1000) return;
+      d.lastFull = now;
       const t = d.track;
       // the customer moved it (swipe, wheel, momentum, keys): take over, then wait a moment
       if (Math.abs(t.scrollLeft - d.lastSet) > 2.5) {
@@ -333,9 +343,10 @@ window.SiteSpecials = (() => {
         d.until = now + HOLD_MS;
       }
       if (d.until === Infinity && !((pressedAt && now - pressedAt < 6000) || mouseOver || kbFocus)) d.until = now + HOLD_MS;
-      const busy = d.until === Infinity || now < d.until;
+      const busy = d.until === Infinity || now < d.until || !!window.FC_IDLE;
       const front = onScreen && !document.hidden; // (the rows keep drifting behind a sheet or a lifted-out card too)
       if (busy || !front) {
+        d.resting = true; // (paused: the next look must be a full one, so it carries on the moment it may)
         if (d.anims) d.anims.forEach((a) => a.playState === "running" && a.pause());
         d.lastSet = t.scrollLeft;
         d.probe = null;
@@ -346,6 +357,7 @@ window.SiteSpecials = (() => {
         d.probe = null;
         return;
       }
+      d.resting = false;
       d.anims.forEach((a) => a.playState === "paused" && a.play());
       if (typeof d.anims[0].currentTime === "number") d.time = d.anims[0].currentTime; // where the drift is (to carry on from it)
       // Self-healing: the page redraws (a product was switched on / off, so the grid is rebuilt and this panel is taken out
@@ -372,6 +384,7 @@ window.SiteSpecials = (() => {
       if (!drift) return;
       if (ms !== Infinity && (popUp() || document.documentElement.classList.contains("sheet-open"))) ms = 0; // a card is lifted out / a sheet is open: the row keeps drifting behind it, no waiting
       drift.until = ms === Infinity ? Infinity : performance.now() + ms;
+      drift.resting = true;
       if (drift.anims) drift.anims.forEach((a) => a.pause()); // stops at once; the watcher sets it going again when the wait is over
     }
 
@@ -561,6 +574,7 @@ window.SiteSpecials = (() => {
           entries.forEach((e) => {
             onScreen = e.isIntersecting;
             if (onScreen && !drift) refit(); // it just came into view: check again that it is measured right
+            else if (drift) { cancelAnimationFrame(drift.raf); clearTimeout(drift.tm); drift.lastFull = 0; step(performance.now()); } // in or out of sight: pause / carry on at once
           }),
         { threshold: 0 }
       );
