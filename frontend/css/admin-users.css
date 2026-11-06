@@ -39,7 +39,7 @@ body.ro-products #piSelectBtn { display: none !important; }
 [data-ro] :is(input, select, textarea):disabled { opacity: 0.65; cursor: not-allowed; }
 
 /* a small note at the top of each read-only screen */
-:is(#view-customize, #view-banners, #view-map)[data-ro]::before {
+:is(#view-customize, #view-banners, #view-map, #view-charges)[data-ro]::before {
   content: "👁 View only - you can look at this screen but not change anything.";
   display: block; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px;
   background: #f6efd9; border: 1px solid #e6d9aa; color: #6b5413; font-size: 13px; font-weight: 600; line-height: 1.35;
@@ -67,6 +67,10 @@ body.no-customize #czPublish, body.no-customize #czReset { display: none !import
 /* Delivery map */
 [data-ro="map"] :is(#mpEdit, #mpUpload, #mpIndex, #mpRemoveTiles, .btn-gold) { display: none !important; }
 [data-ro="map"] .mp-switch { pointer-events: none; opacity: 0.6; }
+
+/* Delivery & other charges */
+[data-ro="charges"] :is(.ch-foot, .btn-gold, .nm-del, .nm-chip, [data-add-o], [data-pick], [data-add-s]) { display: none !important; }
+[data-ro="charges"] .mp-switch { pointer-events: none; opacity: 0.6; }
 
 /* ---- Users page --------------------------------------------------------- */
 .us-head {
