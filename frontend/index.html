@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<style>
+/* First-paint colour: the opening screen's dark brown, painted before any stylesheet has arrived (so an iPhone home-screen app never shows grey/white first). Only while the opening animation is going to play (class set by the script below). */
+html.fc-splash-pre, html.fc-splash-pre body { background: #17140f; }
+</style>
 <script>
 /* Test switch (nothing changes unless it is asked for): open the site with ?calm=1 to stop every decorative movement (CSS animations, the sliding featured rows, banner slides) so the phone's heat can be compared with and without; ?calm=0 puts everything back. */
 try { var q = /[?&]calm=([01])\b/.exec(location.search); if (q) { if (q[1] === "1") localStorage.setItem("fc_calm", "1"); else localStorage.removeItem("fc_calm"); } if (localStorage.getItem("fc_calm") === "1") { window.FC_CALM = 1; var st = document.createElement("style"); st.textContent = "*,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}"; document.head.appendChild(st); } } catch (e) {}
@@ -49,8 +53,10 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
     var __cfg = __fc && __fc.site && __fc.site.config;
     var __pv = window.parent !== window && /[?&]preview=1(&|$)/.test(location.search);
     if (!__pv && !(__cfg && __cfg.showSplash === false)) {
-      document.documentElement.classList.add("fc-splash-pre");
+      document.documentElement.classList.add("fc-splash-pre", "fc-splash-on");
       setTimeout(function () { document.documentElement.classList.remove("fc-splash-pre"); }, 3000);
+      /* fc-splash-on keeps the page's fixed bars (bottom menu etc.) hidden while the screen is up; js/splash.js removes it when the screen fades out. If the screen never appeared, drop it here. */
+      setTimeout(function () { if (!document.querySelector(".fc-splash")) document.documentElement.classList.remove("fc-splash-on"); }, 3000);
     }
   } catch (e) {}
 </script>
@@ -79,9 +85,29 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="FreshCutz" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<!-- Fonts: loaded without blocking the first paint (they used to be an @import inside base.css, which held the whole page back -
+     and, on an iPhone home-screen app, showed a grey/white screen - until Google answered). font-display:swap shows text at once. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" /></noscript>
+<!-- Launch screens for the iPhone home-screen app: plain dark brown, so the very first frame is the same colour as the opening animation -->
+<link rel="apple-touch-startup-image" href="images/splash/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+<link rel="apple-touch-startup-image" href="images/splash/launch-1260x2736.png" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
 <link rel="stylesheet" href="css/variables.css" />
-<link rel="stylesheet" href="css/splash.css?v=2" />
-<link rel="stylesheet" href="css/base.css?v=2" />
+<link rel="stylesheet" href="css/splash.css?v=3" />
+<link rel="stylesheet" href="css/base.css?v=3" />
 <link rel="stylesheet" href="css/animations.css?v=2" />
 <link rel="stylesheet" href="css/components.css?v=10" />
 <link rel="stylesheet" href="css/storefront-header.css?v=23" />
@@ -100,7 +126,7 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
 <link rel="stylesheet" href="css/desktop.css?v=1" media="(min-width: 1024px)" /> <!-- DESKTOP: computer-screen look (delete this line to revert desktop) -->
 </head>
 <body class="storefront">
-  <script src="js/splash.js?v=2"></script>
+  <script src="js/splash.js?v=3"></script>
   <div class="net-bar" id="netBar" role="status" aria-live="polite" hidden><span id="netBarText"></span></div>
 
   <header class="site-header">
