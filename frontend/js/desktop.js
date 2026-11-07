@@ -13,6 +13,8 @@
   const mq = window.matchMedia ? window.matchMedia("(min-width: 1024px)") : null;
   if (!mq) return;
   let built = false;
+  const changeFns = [];
+  const mqChange = (f) => changeFns.push(f);
 
   const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
   const ICON = {
@@ -98,7 +100,7 @@
       '<button type="button" data-mode="grid" title="Grid view" aria-label="Grid view">' + ICON.grid + "<span>Grid</span></button>" +
       '<button type="button" data-mode="list" title="List view, one item per line" aria-label="List view">' + ICON.list + "<span>List</span></button>";
     const apply = () => {
-      grid.classList.toggle("dk-list", mode === "list");
+      grid.classList.toggle("dk-list", mq.matches && mode === "list");
       box.querySelectorAll("button").forEach((b) => {
         const on = b.dataset.mode === mode;
         b.classList.toggle("is-on", on);
@@ -118,9 +120,10 @@
     const refresh = () => {
       const shown = !window.SiteCustomize || SiteCustomize.on("showViewSwitch");
       box.hidden = !shown;
-      grid.classList.toggle("dk-list", shown && mode === "list");
+      grid.classList.toggle("dk-list", mq.matches && shown && mode === "list");
     };
     document.addEventListener("freshcutz:site", refresh);
+    mqChange(refresh);
     wrap.appendChild(box);
     apply();
     refresh();
@@ -175,6 +178,15 @@
     shell.append(bar, search, catalog);
   }
 
+  // The window got narrower than 1024px again (phone turned upright, desktop view switched off, zoomed in): put the three parts back
+  // exactly where they were, so the phone layout is the untouched one.
+  function unbuildShell() {
+    const shell = document.getElementById("dkShell");
+    if (!shell) return;
+    while (shell.firstChild) document.body.insertBefore(shell.firstChild, shell);
+    shell.remove();
+  }
+
   // After sign-in the account button shows the customer's name (the phone's Account tab does the same) instead of the word "Account".
   function buildAccountName() {
     const acct = document.getElementById("profileIconBtn");
@@ -197,9 +209,19 @@
     setTimeout(paint, 4000);
   }
 
+  // Everything this file adds is hidden again whenever the window is narrower than 1024px (their styles only exist at 1024px and up, so
+  // without this they would show unstyled after the window shrinks - e.g. a phone turned upright after landscape, or desktop view switched off).
+  function addGuardStyle() {
+    const st = document.createElement("style");
+    st.setAttribute("data-dk", "guard");
+    st.textContent = "@media (max-width:1023.98px){.dk-vt,.dk-nav-btn,.dk-hdr-sep,.dk-top{display:none !important}}";
+    document.head.appendChild(st);
+  }
+
   function build() {
     if (built || !mq.matches) return;
     built = true;
+    addGuardStyle();
     buildHeader();
     buildAccountName();
     buildViewSwitch();
@@ -207,12 +229,20 @@
     buildExtras();
   }
 
+  // follow the window crossing the 1024px line, in both directions, for as long as the page is open
+  function onCross() {
+    if (mq.matches) {
+      if (!built) build();
+      else buildShell();
+    } else {
+      unbuildShell();
+    }
+    changeFns.forEach((f) => f());
+  }
+
   const start = () => {
     build();
-    if (!built) {
-      const on = () => { if (mq.matches) { build(); if (mq.removeEventListener) mq.removeEventListener("change", on); else mq.removeListener(on); } };
-      if (mq.addEventListener) mq.addEventListener("change", on); else mq.addListener(on);
-    }
+    if (mq.addEventListener) mq.addEventListener("change", onCross); else mq.addListener(onCross);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
   else start();

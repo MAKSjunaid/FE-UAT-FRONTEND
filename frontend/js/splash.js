@@ -229,6 +229,7 @@
     function startOut(fade) {
       if (outStarted || ended) return;
       outStarted = true;
+      root.classList.remove("fc-splash-on"); // reveal the page underneath as the screen fades
       el.style.setProperty("--fc-out", fade.toFixed(2) + "s");
       el.classList.add("out");
     }
@@ -362,7 +363,7 @@
       sprites = null;
       back.width = back.height = front.width = front.height = 0;
       if (el.parentNode) el.parentNode.removeChild(el);
-      root.classList.remove("fc-splash-pre");
+      root.classList.remove("fc-splash-pre", "fc-splash-on");
       if (active === ctl) active = null;
     }
     function skip() {
@@ -423,14 +424,14 @@
 
   // Only the customer website opens with it (this file is also loaded in the admin app, which just uses play() for "Play it now").
   if (inPreview || !document.body || !document.body.classList.contains("storefront")) {
-    root.classList.remove("fc-splash-pre");
+    root.classList.remove("fc-splash-pre", "fc-splash-on");
     return;
   }
 
   const site = readCache();
   const first = settingsOf(site);
   if (site && !first.on) {
-    root.classList.remove("fc-splash-pre");
+    root.classList.remove("fc-splash-pre", "fc-splash-on");
   } else if (document.body) {
     play({ settings: first, known: !!site });
     // fresh settings arrive (or change) a moment later: follow them
