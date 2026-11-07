@@ -1,0 +1,47 @@
+/* A tiny hen and egg that play along the top edge of the opened "Track order" panel, standing ON it, outside the panel (see js/track-pets.js).
+ * No background of their own: only the two little drawings. To remove: delete this file, js/track-pets.js and their two lines in index.html. */
+
+.trk-pets {
+  position: fixed;
+  left: 0; top: 0;
+  height: 28px;
+  z-index: 692; /* just above the opened order strip (691), under the cart bar (700) and the sheets (850) */
+  pointer-events: none;
+  background: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+  will-change: transform;
+}
+.trk-pets.is-on { opacity: 1; visibility: visible; transition: opacity 0.25s ease 0.12s, visibility 0s; }
+
+.pt-hen, .pt-egg { position: absolute; left: 0; bottom: 0; will-change: transform; }
+.pt-hen { transform-origin: 50% 100%; }
+.pt-hen { width: 26px; height: 24px; }
+.pt-egg { width: 12px; height: 15px; }
+.pt-hen svg, .pt-egg svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pt-egg svg { transform-origin: 50% 60%; }
+
+/* asleep: the sitting, closed eyes and nodding head are set from js/track-pets.js; here only the little z z z. Right after she falls asleep
+   three of them float up ONE time each, one after the other, and every one finishes fully faded out; only then does she go into her still,
+   deep sleep (nothing runs at all). The animation exists only while she is in that first part (class is-zzz). */
+.pt-zzz { display: none; position: absolute; left: 66%; top: -3px; width: 0; height: 0; --zd: 1; }
+.pt-hen.face-l .pt-zzz { left: auto; right: 66%; --zd: -1; }
+.pt-hen.is-sleep .pt-zzz { display: block; }
+.pt-zzz i {
+  position: absolute; left: 0; top: 0;
+  font: italic 700 9px/1 Georgia, "Times New Roman", serif;
+  color: #6f5fb5; text-shadow: 0 0 2px #fff, 0 0 3px #fff;
+  opacity: 0;
+}
+.pt-hen.is-zzz .pt-zzz i { animation: ptZ 2.2s ease-out both; }
+.pt-hen.is-zzz .pt-zzz i:nth-child(2) { font-size: 11px; animation-delay: 0.6s; }
+.pt-hen.is-zzz .pt-zzz i:nth-child(3) { font-size: 8px; animation-delay: 1.2s; }
+@keyframes ptZ {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--zd) * 9px), -20px) scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) { .trk-pets { display: none; } }
