@@ -594,6 +594,8 @@ window.AdminCustomize = (() => {
 
       ${section("Night mode", `${toggleRow("showNightMode", "Show the night mode button")}`)}
 
+      ${section("Track order pets", `${toggleRow("showTrackPets", "Show the hen & egg")}`)}
+
       ${section(
         "Opening animation",
         `
