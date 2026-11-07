@@ -1,5 +1,12 @@
 /* The opening animation: a dark brand screen with the logo and drifting smoke (see js/splash.js). */
-html.fc-splash-pre { background: #14110c; }
+html.fc-splash-pre { background: #17140f; }
+
+/* While the opening screen is up, the page's own bars (bottom menu, order tracker, cart bar, toasts ...) stay hidden, so none of them can
+   show through or flash above it for a moment on iPhone (its glass blur layers can be painted a frame before the screen). They are
+   revealed the moment the screen starts to fade out (js/splash.js drops the class). */
+html.fc-splash-on body > :not(.fc-splash),
+html.fc-splash-on .bnav,
+html.fc-splash-on .bnav * { visibility: hidden !important; }
 
 .fc-splash {
   position: fixed;

@@ -14,7 +14,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="stylesheet" href="css/variables.css" />
-<link rel="stylesheet" href="css/base.css" />
+<!-- Fonts: loaded without blocking the first paint (they used to be an @import inside base.css, which held the whole page back -
+     and, on an iPhone home-screen app, showed a grey/white screen - until Google answered). font-display:swap shows text at once. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/base.css?v=3" />
 <link rel="stylesheet" href="css/animations.css" />
 <link rel="stylesheet" href="css/components.css?v=3" />
 <link rel="stylesheet" href="css/cart.css" />
@@ -24,7 +30,7 @@
 <link rel="stylesheet" href="css/admin-customers.css" />
 <link rel="stylesheet" href="css/admin-items.css" />
 <link rel="stylesheet" href="css/admin-customize.css?v=13" />
-<link rel="stylesheet" href="css/splash.css?v=1" />
+<link rel="stylesheet" href="css/splash.css?v=3" />
 <link rel="stylesheet" href="css/admin-bottomnav.css?v=3" />
 <link rel="stylesheet" href="css/admin-menu.css?v=5" />
 <link rel="stylesheet" href="css/admin-backup.css?v=3" />
@@ -84,7 +90,7 @@
           </button>
           <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button" aria-label="Log out" title="Log out"><span class="lo-text">Log out</span><span class="lo-icon" aria-hidden="true">⏻</span></button>
         </div>
-        <!--  New-order sound: 🔊 on / 🔇 off, kept for each login account (js/admin-sound.js). Always visible, beside the ☰. -->
+        <!-- New-order sound: 🔊 on / 🔇 off, kept for each login account (js/admin-sound.js). Always visible, beside the ☰. -->
         <button class="btn btn-ghost btn-sm sound-top-btn" id="orderSoundBtn" type="button" aria-pressed="true"><span class="sound-ico" aria-hidden="true">🔊</span></button>
         <!-- Phones: the switch, ⏰, 🔔 and Log out above live in a drop-down opened by
              this button (css/admin-menu.css + js/admin-menu.js). Hidden on wider screens. -->
@@ -329,7 +335,7 @@
   <script src="js/admin-banners.js?v=22"></script>
   <script src="js/admin-specials.js?v=5"></script>
   <script src="js/admin-reorder.js?v=8"></script>
-  <script src="js/splash.js?v=1"></script>
+  <script src="js/splash.js?v=3"></script>
   <script src="js/slot-time.js?v=3"></script>
   <script src="js/admin-customize.js?v=48"></script>
   <script src="js/delivery-map.js?v=25"></script>
