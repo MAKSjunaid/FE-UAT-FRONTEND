@@ -40,6 +40,7 @@ window.AdminStats = (() => {
   const rangeResult = document.getElementById("rangeResult");
   const exportFilteredBtn = document.getElementById("exportFilteredBtn");
   const exportAllBtn = document.getElementById("exportAllBtn");
+  const exportReady = document.getElementById("exportReady");
   const importFile = document.getElementById("importFile");
   const importResult = document.getElementById("importResult");
   let lastSummary = null; // the header numbers last received from the server
@@ -1012,17 +1013,195 @@ window.AdminStats = (() => {
       query = `?${params.join("&")}`;
       filename = `FreshCutz_${periodSlug()}_${STATUS_SLUGS[statusFilter] || "All"}_${pane.slug}.xlsx`;
     }
-    const btn = useFilters ? exportFilteredBtn : exportAllBtn;
-    btn.disabled = true;
+    if (exportBusy) return; // (one file is prepared at a time - the server only does one too)
+    exportBusy = true;
+    exportCancelled = false;
+    exportAbort = new AbortController();
+    const clickedLabel = !useFilters ? "All orders" : ({ day: "This period", customer: "Customers", item: "Items" }[PANE_EXPORT[activePane].view] || "");
+    exportFilteredBtn.disabled = true;
+    exportAllBtn.disabled = true;
+    exportFile = null; // (a file prepared earlier is replaced by this one)
+    const timeKnown = !useFilters || PANE_EXPORT[activePane].view === "day"; // (only the orders files are built page by page: those can say how long they take)
+    showExportNote("busy", timeKnown);
+    let stopWatch = () => {};
     try {
-      const { blob } = await Api.downloadBlob(`/api/admin/orders/export${query}`);
-      triggerDownload(blob, filename);
+      // A file may already be being built on the server (started before this page was refreshed, or signed in again): then this page
+      // joins that one - the same "Preparing your file…" with the live time - instead of being turned away; the finished file is
+      // collected from the server at the end. (Asked only now, when a download is clicked - nothing is checked before that.)
+      let running = null;
+      try {
+        running = await Api.get("/api/admin/orders/export/progress");
+      } catch {
+        /* no answer: just start as usual */
+      }
+      if (exportCancelled) return;
+      if (running && running.running) {
+        // (said plainly, so a download that was already running is never taken for the one that was just clicked)
+        const note = running.label && running.label !== clickedLabel
+          ? `An earlier download is still running (${running.label}), not the one you clicked. ✕ cancels it.`
+          : `Already running: ${running.label || "an earlier download"}. ✕ cancels it.`;
+        showExportNote("busy", true, note);
+        await new Promise((resolve) => { wakeWaiter = resolve; stopWatch = watchProgress(resolve, running); });
+        wakeWaiter = null;
+        stopWatch();
+        if (exportCancelled) return;
+        const got = await Api.downloadBlob("/api/admin/orders/export/last", exportAbort.signal);
+        exportFile = { blob: got.blob, filename: got.filename };
+        showExportNote("ready");
+      } else {
+        if (timeKnown) stopWatch = watchProgress();
+        const { blob } = await Api.downloadBlob(`/api/admin/orders/export${query}`, exportAbort.signal);
+        exportFile = { blob, filename };
+        showExportNote("ready");
+      }
     } catch (err) {
-      Toast.show(err.message, "error");
+      showExportNote("");
+      if (!exportCancelled && !(err && err.name === "AbortError")) Toast.show(err.message, "error"); // (a download that was cancelled is no error)
     } finally {
-      btn.disabled = false;
+      exportAbort = null;
+      wakeWaiter = null;
+      stopWatch();
+      exportBusy = false;
+      exportFilteredBtn.disabled = false;
+      exportAllBtn.disabled = false;
     }
   }
+
+  // The file is built by the server a few orders at a time (gently - the shop keeps running meanwhile), so it can take a while
+  // for a long history. Meanwhile "Preparing your file…" shows; when it is done the file waits here behind a Download button
+  // (it saves at once - the file is already in this page) and a ✕ that clears it away again.
+  let exportBusy = false;
+  let exportCancelled = false;
+  let exportAbort = null; // stops the request waiting for the file
+  let wakeWaiter = null; // ends the wait of a page that joined a download already running
+  let exportFile = null; // { blob, filename } of the prepared file
+
+  /** ✕ on "Preparing your file…": the download stops here and on the server (at its next page). Signing out does the same
+   * (the server is told by the sign-out itself), and also lets go of a finished file, so nothing of it stays in the page. */
+  function cancelExport(tellServer) {
+    if (exportBusy) {
+      exportCancelled = true;
+      if (exportAbort) exportAbort.abort();
+      if (wakeWaiter) wakeWaiter();
+      if (tellServer) Api.post("/api/admin/orders/export/cancel").catch(() => {});
+      showExportNote("");
+    }
+  }
+  document.addEventListener("freshcutz:logout", () => {
+    cancelExport(false);
+    exportFile = null;
+    showExportNote("");
+  });
+
+  /** Live "about 40 s left" beside "Preparing your file…": every 3 seconds the server says how many of how many orders are done
+   * (a tiny in-memory answer - no database), and every second the time left is worked out again from the pace so far, counting down
+   * in between. Returns the function that stops it. */
+  function watchProgress(onIdle, seed) {
+    let prog = null; // { done, total, elapsedMs, at } - the latest answer of the server
+    const marks = []; // [elapsedMs, done] of recent answers: the pace is taken from the last ~20 seconds, blended with the pace overall
+    let shown = null; // the time left as it is shown (ms) - it only ever counts DOWN, never jumps back up
+    let shownAt = 0;
+    let polling = false;
+    let fails = 0;
+    if (seed && seed.total > 0) {
+      prog = { done: seed.done, total: seed.total, elapsedMs: seed.elapsedMs, at: performance.now() };
+      marks.push([seed.elapsedMs, seed.done]);
+    }
+    const lengthOf = (ms) => {
+      const s = Math.max(1, Math.round(ms / 1000));
+      if (s < 60) return `${s} s`;
+      const m = Math.floor(s / 60);
+      return m >= 10 ? `${m} min` : `${m} min ${String(s % 60).padStart(2, "0")} s`;
+    };
+    /** The time left worked out from the pace: 60% the recent pace, 40% the pace overall (steadier than either alone). */
+    const estimate = () => {
+      const overall = prog.elapsedMs / prog.done; // ms per order since the start
+      let rate = overall;
+      const old = marks.find((m) => prog.elapsedMs - m[0] <= 20000 && prog.done > m[1]);
+      if (old) rate = 0.6 * ((prog.elapsedMs - old[0]) / (prog.done - old[1])) + 0.4 * overall;
+      return (prog.total - prog.done) * rate - (performance.now() - prog.at);
+    };
+    const paint = () => {
+      const el = exportReady.querySelector(".export-ready-eta");
+      if (!el) return;
+      if (!prog || !prog.total || !prog.done) {
+        el.textContent = "· working out the time…";
+        return;
+      }
+      const pct = Math.min(99, Math.floor((prog.done / prog.total) * 100));
+      const bar = exportReady.querySelector(".xr-bar i");
+      if (bar) bar.style.width = `${pct}%`;
+      const now = performance.now();
+      const target = Math.max(0, estimate());
+      if (shown === null) {
+        shown = target;
+      } else {
+        const next = shown - (now - shownAt); // (one second less each second)
+        // A new, longer estimate never pushes the number up: the count-down just slows to 60% speed until the estimate catches up; a
+        // shorter estimate brings it down at once.
+        shown = target < next ? target : Math.max(0, shown - 0.6 * (now - shownAt));
+      }
+      shownAt = now;
+      el.textContent = prog.done >= prog.total || shown < 3000
+        ? `· almost done (${pct}%)`
+        : `· about ${lengthOf(shown)} left (${pct}%)`;
+    };
+    const poll = async () => {
+      if (polling) return;
+      polling = true;
+      try {
+        const r = await Api.get("/api/admin/orders/export/progress");
+        fails = 0;
+        if (onIdle && r && !r.running) onIdle(); // (the file being waited for is finished)
+        if (r && r.running && r.total > 0) {
+          prog = { done: r.done, total: r.total, elapsedMs: r.elapsedMs, at: performance.now() };
+          marks.push([r.elapsedMs, r.done]);
+          if (marks.length > 12) marks.shift();
+        }
+      } catch {
+        if (onIdle && ++fails >= 5) onIdle(); // (no answer for a while: stop waiting - collecting the file says what happened)
+      } finally {
+        polling = false;
+      }
+      paint();
+    };
+    const pollTimer = setInterval(poll, 3000);
+    const paintTimer = setInterval(paint, 1000);
+    paint();
+    setTimeout(poll, 800);
+    return () => {
+      clearInterval(pollTimer);
+      clearInterval(paintTimer);
+    };
+  }
+  function showExportNote(kind, withBar, note) {
+    if (!kind) {
+      exportReady.hidden = true;
+      exportReady.innerHTML = "";
+      return;
+    }
+    exportReady.hidden = false;
+    if (kind === "busy") {
+      exportReady.innerHTML = `<div class="xr-line"><span class="spinner spinner-dark"></span><span class="xr-text"><b>Preparing your file…</b> <span class="export-ready-eta"></span></span><button class="xr-x" type="button" data-act="cancel" aria-label="Cancel">✕</button></div>` +
+        (withBar ? `<div class="xr-bar"><i style="width:0%"></i></div>` : "") +
+        (note ? `<div class="xr-sub">${Utils.escapeHtml(note)}</div>` : "");
+      return;
+    }
+    exportReady.innerHTML = `<div class="xr-line"><span class="xr-text"><b>Your file is ready</b><span class="xr-name">${Utils.escapeHtml(exportFile.filename)}</span></span>` +
+      `<button class="btn btn-gold btn-sm" type="button" data-act="get">⬇ Download</button>` +
+      `<button class="xr-x" type="button" data-act="clear" aria-label="Clear">✕</button></div>`;
+  }
+  exportReady.addEventListener("click", (e) => {
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    if (act.dataset.act === "get" && exportFile) triggerDownload(exportFile.blob, exportFile.filename);
+    if (act.dataset.act === "cancel") cancelExport(true);
+    if (act.dataset.act === "clear") {
+      exportFile = null; // (frees the file again)
+      showExportNote("");
+      Api.del("/api/admin/orders/export/last").catch(() => {}); // (and the copy the server kept for a refreshed page)
+    }
+  });
 
   async function importOrders() {
     const file = importFile.files[0];
