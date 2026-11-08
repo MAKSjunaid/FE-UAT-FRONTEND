@@ -45,3 +45,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .trk-pets { display: none; } }
+
+/* the extra eggs she lays (plain still pictures: one little drop-in, then nothing runs) and the extra hens */
+.pt-egg.pt-egg2 { will-change: auto; transform-origin: 50% 100%; animation: ptLay 0.5s ease-out; transition: opacity 0.6s ease; }
+.pt-egg2.is-out { opacity: 0; }
+@keyframes ptLay { from { transform: translateY(-10px) scale(0.3); opacity: 0; } 60% { transform: translateY(0) scale(1.12); opacity: 1; } }

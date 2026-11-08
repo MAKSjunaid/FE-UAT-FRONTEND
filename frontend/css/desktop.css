@@ -264,7 +264,7 @@
     position: fixed;
     right: var(--sp-5); /* (the same right edge as the cart bar, which sits under it while it is showing) */
     bottom: var(--sp-5);
-    width: min(380px, calc(100vw - 2 * var(--sp-5)));
+    width: min(436px, calc(100vw - 2 * var(--sp-5))); /* (wide enough for "Getting Ready" and a 5-digit total without the status pill being cut) */
     z-index: 691;
     --trk-bg: linear-gradient(100deg, #17140f 0%, #2a2214 55%, #3a2d12 100%);
     background: var(--trk-bg);
@@ -279,6 +279,9 @@
   html.has-cart-bar .trkbar { bottom: calc(var(--sp-5) + var(--bottom-bar-h) + 6px); } /* (above the cart bar, not on top of it) */
   .trkbar[hidden] { display: none; }
   .trkbar.is-on { transform: translateY(0); opacity: 1; }
+  /* opened out: nothing dark behind the orders (the row is as tall as the tallest order, so a shorter one would show an empty dark area above it); each order is its own rounded card */
+  .trkbar.is-open, .trkbar.is-closing { background: transparent; box-shadow: none; filter: drop-shadow(0 10px 22px rgba(23, 20, 15, 0.34)); }
+  .trkbar.is-open .trk-slide, .trkbar.is-closing .trk-slide { border-radius: 18px; overflow: hidden; }
   .trk-scroll {
     display: flex;
     align-items: flex-end;
@@ -330,8 +333,8 @@
   .trk-ico svg { width: 18px; height: 18px; }
   .trk-txt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
   .trk-title { font-size: 14.5px; font-weight: 700; color: var(--gold-light); }
-  .trk-status { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 3px 10px 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); font-size: 12px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; }
-  .trk-dot { flex: none; position: relative; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; }
+  .trk-status { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 3.5px 10px 2.5px 8px; line-height: 17px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); font-size: 12px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; }
+  .trk-dot { flex: none; position: relative; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; margin-top: -1px; }
   .trk-slide.is-confirmed .trk-dot, .trk-slide.is-ready .trk-dot { background: #46d6a3; }
   .trk-total { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1; font-variant-numeric: tabular-nums; }
   .trk-total small { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-light); opacity: 0.8; }
@@ -342,7 +345,7 @@
   .trk-dots { background: var(--trk-bg); display: flex; justify-content: center; align-items: center; gap: 5px; height: 12px; padding-bottom: 3px; pointer-events: none; }
   .trk-dots i { width: 5px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.35); }
   .trk-dots i.is-cur { width: 16px; background: var(--gold); }
-  .trkbar.is-open .trk-slide .trk-step.is-now i { animation: trkPulse 2.4s ease-in-out infinite; }
+  .trkbar.is-open .trk-slide .trk-step.is-now i::after { animation: trkHalo 2.4s ease-in-out infinite; will-change: transform, opacity; }
 
   /* ---- Back to the top (js/desktop.js) ------------------------------------------------------------------------------ */
   .dk-top {

@@ -98,12 +98,18 @@
   let leaveGuard = null;
   function setLeaveGuard(fn) { leaveGuard = fn || null; }
 
+  let placedCode = ""; // the order the "Order placed" page is showing
   function closeSheet() {
+    const placed = currentView === "success" ? placedCode : "";
     currentView = null;
     leaveGuard = null;
     root.innerHTML = "";
     document.documentElement.style.removeProperty("--toast-sheet-gap");
     unlockPageScroll();
+    if (placed) { // the "Order placed" page was closed (✕, swipe down, Continue shopping): its order opens out in the Track order strip
+      placedCode = "";
+      setTimeout(() => { if (currentView === null) window.dispatchEvent(new CustomEvent("freshcutz:show-order", { detail: { code: placed } })); }, 380);
+    }
   }
 
   /** The ✕ / the dark area: the sheet slides back down (right, on wide screens) the way it came up, then it is closed for
@@ -429,6 +435,7 @@
 
   function openSuccess(order) {
     currentView = "success";
+    placedCode = order && order.orderCode ? String(order.orderCode) : "";
     const body = `
       <div class="sheet-body">
         <div class="order-success">
