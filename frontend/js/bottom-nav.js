@@ -186,9 +186,14 @@
   /** Opens the strip out upwards (the order's steps and details appear in it) or folds it back. */
   let closingTimer = 0;
   let openingTimer = 0;
+  let openedAt = 0; // (when the strip last opened out)
+  let openedScrollY = 0;
+  let shieldUntil = 0; // (the strip was opened FOR the customer after an order - the "Order placed" page was just closed: nothing that is only a leftover of that closing may fold it, see showOrder)
+  const shielded = () => performance.now() < shieldUntil;
   function setOpen(open, keepInline) {
     open = !!open && !trk.hidden;
     if (open === trk.classList.contains("is-open")) return;
+    if (open) { openedAt = performance.now(); openedScrollY = window.scrollY; }
     // the panel is laid out at its full size at once and only slides (see .trk-detail in bottom-nav.css), so the size never jumps:
     // is-opening runs the rise, is-closing keeps the panel in place while it sinks (and the bar see-through: the row is as tall as the
     // tallest order, so a dark bar would show above a shorter one)
@@ -276,6 +281,7 @@
   }
 
   trk.addEventListener("click", (e) => {
+    if (shielded()) return; // (a tap that was still on its way when the strip opened after an order)
     if (!e.target.closest(".trk-slide")) { // (the see-through part above a shorter order: a tap there folds the strip like a tap anywhere else)
       if (trk.classList.contains("is-open")) setOpen(false);
       return;
@@ -392,12 +398,23 @@
   })();
 
   // tapping anywhere else folds the strip - and only that
-  veil.addEventListener("pointerup", () => setOpen(false));
-  veil.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); });
+  veil.addEventListener("pointerup", () => { if (!shielded()) setOpen(false); });
+  veil.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); if (!shielded()) setOpen(false); });
   document.addEventListener("click", (e) => {
+    if (shielded() || performance.now() - openedAt < 700) return; // (a tap that was still on its way when the strip opened - e.g. the one that closed the "Order placed" page - must not fold it again)
     if (trk.classList.contains("is-open") && !e.target.closest("#trackBar")) setOpen(false);
   });
-  window.addEventListener("scroll", () => { if (trk.classList.contains("is-open")) setOpen(false); }, { passive: true });
+  // Scrolling the page folds the strip - but only when the CUSTOMER scrolls (a finger, the wheel, a key, within the last moment). The page also scrolls by itself now and then
+  // (it is pushed up or down when the layout changes, e.g. after an order is placed and the cart bar goes away): that must not fold a strip that has just opened out.
+  let lastInput = 0;
+  ["touchstart", "touchmove", "touchend", "wheel", "keydown"].forEach((ev) => window.addEventListener(ev, () => { lastInput = performance.now(); }, { passive: true, capture: true }));
+  window.addEventListener("scroll", () => {
+    if (!trk.classList.contains("is-open")) return;
+    const t = performance.now();
+    if (shielded() || lastInput < openedAt || t - lastInput > 1500) return; // (not the customer: the page just moved)
+    if (Math.abs(window.scrollY - openedScrollY) < 24) return; // (a nudge of the page - the layout settling after the order - is not the customer scrolling)
+    setOpen(false);
+  }, { passive: true });
   new MutationObserver(() => { if (root.classList.contains("sheet-real")) setOpen(false); }).observe(root, { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("freshcutz:track", paintTrack);
   paintTrack();
@@ -410,6 +427,7 @@
     const sc = scroller();
     if (sc) sc.scrollLeft = [...trk.querySelectorAll(".trk-slide")].indexOf(slide) * sc.clientWidth;
     paintDots();
+    shieldUntil = performance.now() + 1200; // (a tap / slide that closed the page can still deliver its last events: they must not fold the strip that just opened)
     setOpen(true);
   }
   window.addEventListener("freshcutz:show-order", (e) => showOrder(e.detail && e.detail.code, 0));
