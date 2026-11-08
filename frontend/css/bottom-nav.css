@@ -262,7 +262,8 @@
     align-items: center;
     gap: 6px;
     min-width: 0;
-    padding: 3px 10px 3px 8px;
+    padding: 4px 10px 2px 8px; /* (a little more room above than below, so the letters sit in the middle of the pill; the dot is lifted back by its margin to stay exactly in the middle: the pulsing ring around it has the same gap above and below) */
+    line-height: 17px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.12);
     font-size: 11.5px;
@@ -271,7 +272,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .trk-dot { flex: none; position: relative; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; }
+  .trk-dot { flex: none; position: relative; width: 7px; height: 7px; border-radius: 50%; background: #ffb454; margin-top: -2px; }
   .trk-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: rgba(201, 161, 59, 0.45); opacity: 0; pointer-events: none; }
   .trk-slide.is-cur .trk-dot::after { animation: trkRing 1.6s ease-out infinite; will-change: transform, opacity; }
   @keyframes trkRing { 0% { transform: scale(2.1); opacity: 0.45; } 50% { transform: scale(3); opacity: 0.12; } 100% { transform: scale(2.1); opacity: 0.45; } }
@@ -523,9 +524,13 @@ body.storefront .badge-new { text-transform: none; }
 .trk-line.is-part::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 34%; border-radius: 2px; background: var(--gold); animation: trkLineGo 0.9s var(--ease-out, ease-out) both; }
 @keyframes trkLineGo { from { width: 0; } to { width: 34%; } }
 /* The ring round the step the order is at slowly grows and fades back (switched off for people who asked their phone for less motion). */
-#trackBar.is-open .trk-slide.is-cur .trk-step.is-now i { animation: trkPulse 2.4s ease-in-out infinite; } /* only while the order panel is opened out (it was pulsing, repainting, all the time even folded) */
-@keyframes trkPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(201, 161, 59, 0.28); } 50% { box-shadow: 0 0 0 7px rgba(201, 161, 59, 0.1); } }
-@media (prefers-reduced-motion: reduce) { .trk-step.is-now i { animation: none; } }
+/* the pulse is a ring that only changes size and fades (transform + opacity: runs on the GPU, no style recalculation or repaint every frame; the old one animated box-shadow, which repainted ~60 times a second) */
+.trk-step.is-now i { position: relative; }
+.trk-step.is-now i::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 3px solid rgba(201, 161, 59, 0.3); opacity: 0; pointer-events: none; }
+#trackBar.is-open .trk-slide.is-cur .trk-step.is-now i::after { animation: trkHalo 2.4s ease-in-out infinite; will-change: transform, opacity; } /* only while the order panel is opened out */
+@keyframes trkHalo { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.3); opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .trk-step.is-now i::after { animation: none !important; } }
+[data-pets-still] .trk-step.is-now i::after, [data-pets-still] .trk-dot::after, [data-pets-still] .trk-prog i::after { animation-play-state: paused !important; } /* js/track-pets.js: while the hen is fast asleep and nothing moves, the looping pulses hold still too (the page then does no work at all) */
 .trk-steps { padding-bottom: 14px; }
 .trk-steps.is-cancelled { padding: 14px; background: #fdecea; }
 .trk-cancelled { width: 100%; text-align: center; font-weight: 600; color: #b3261e; }
@@ -560,3 +565,4 @@ body.storefront .badge-new { text-transform: none; }
   @keyframes celebTick { to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .celeb-bits { display: none; } .celeb.is-in .celeb-ico, .celeb.is-in .celeb-ico svg path { animation: none; stroke-dashoffset: 0; } }
 }
+.site-header .brand { cursor: pointer; -webkit-tap-highlight-color: transparent; }
