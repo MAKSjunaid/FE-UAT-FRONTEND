@@ -402,6 +402,29 @@
   window.addEventListener("freshcutz:track", paintTrack);
   paintTrack();
 
+  // The "Order placed" page was just closed: the order that was placed opens out here, so the customer sees it at once (only then; never before).
+  function showOrder(code, tries) {
+    if (!window.matchMedia || !matchMedia("(max-width: 719px)").matches) return; // (the strip is a phone thing)
+    const slide = [...trk.querySelectorAll(".trk-slide")].find((s) => s.dataset.code === code);
+    if (!slide || trk.hidden) { if (tries < 8) setTimeout(() => showOrder(code, tries + 1), 250); return; } // (not drawn yet: it arrives a moment after the order)
+    const sc = scroller();
+    if (sc) sc.scrollLeft = [...trk.querySelectorAll(".trk-slide")].indexOf(slide) * sc.clientWidth;
+    paintDots();
+    setOpen(true);
+  }
+  window.addEventListener("freshcutz:show-order", (e) => showOrder(e.detail && e.detail.code, 0));
+
+  // The shop name + logo (top left of the header): a tap scrolls the page back to the very top.
+  const brandEl = document.querySelector(".site-header .brand");
+  if (brandEl) {
+    brandEl.setAttribute("role", "button");
+    brandEl.setAttribute("tabindex", "0");
+    brandEl.setAttribute("aria-label", "Back to the top");
+    const toTop = () => { root.classList.remove("bnav-hidden"); window.scrollTo({ top: 0, left: 0, behavior: "smooth" }); };
+    brandEl.addEventListener("click", toTop);
+    brandEl.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toTop(); } });
+  }
+
   // ---- "Delivered!" celebration ------------------------------------------------------------------------------------
   // When an order the customer was following turns Delivered while the page is open, the Track order strip does not just vanish:
   // a small card rises above the menu (also when the strip is folded) with a tick, a thank-you and a short burst of gold confetti.
