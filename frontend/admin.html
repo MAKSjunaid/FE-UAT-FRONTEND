@@ -26,7 +26,7 @@
 <link rel="stylesheet" href="css/cart.css" />
 <link rel="stylesheet" href="css/admin-shell.css?v=13" />
 <link rel="stylesheet" href="css/admin-cards.css?v=10" />
-<link rel="stylesheet" href="css/admin-sales.css?v=2" />
+<link rel="stylesheet" href="css/admin-sales.css?v=6" />
 <link rel="stylesheet" href="css/admin-customers.css" />
 <link rel="stylesheet" href="css/admin-items.css" />
 <link rel="stylesheet" href="css/admin-customize.css?v=13" />
@@ -201,6 +201,8 @@
             <input type="file" id="importFile" accept=".xlsx" hidden />
           </label>
         </div>
+          <!-- "Preparing your file…" while a download is being built, then the ready file with a Download button (and ✕ to clear it); see admin-stats.js -->
+          <div class="export-ready" id="exportReady" hidden></div>
           <div class="import-result" id="importResult" hidden></div>
       </div>
 
@@ -314,7 +316,7 @@
   <script src="js/config.js"></script>
   <script src="js/utils.js?v=4"></script>
   <script src="js/toast.js"></script>
-  <script src="js/api.js?v=8"></script>
+  <script src="js/api.js?v=9"></script>
   <script src="js/admin-access.js?v=10"></script>
   <script src="js/admin-auth.js?v=10"></script>
   <script src="js/admin-store.js?v=5"></script>
@@ -327,7 +329,7 @@
   <script src="js/admin-order-map.js?v=5"></script>
   <script src="js/admin-live.js?v=3"></script>
   <script src="js/admin-sound.js?v=5"></script>
-  <script src="js/admin-stats.js?v=9"></script>
+  <script src="js/admin-stats.js?v=14"></script>
   <script src="js/admin-customers.js?v=2"></script>
   <script src="js/admin-sales-customers.js?v=2"></script>
   <script src="js/admin-items.js?v=2"></script>
