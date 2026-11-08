@@ -184,12 +184,12 @@ const Api = (() => {
   /** Downloads a file response (e.g. the orders .xlsx export) as a Blob,
    * carrying the admin token the same way `request` does — a plain <a>
    * link can't attach an Authorization header, so this uses fetch instead. */
-  async function downloadBlob(path) {
+  async function downloadBlob(path, signal) {
     const headers = {};
     const token = adminToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const response = await fetch(`${base()}${path}`, { headers });
+    const response = await fetch(`${base()}${path}`, { headers, signal });
     if (!response.ok) {
       let message = "Could not download the file";
       try {
