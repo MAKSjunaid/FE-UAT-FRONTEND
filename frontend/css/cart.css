@@ -232,6 +232,9 @@
   font-size: 13.5px;
   color: var(--text-main);
   line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px; /* (the little picture on the left, the text beside it: a second line starts under the first line's text - see .poa-ic / .poa-tx below) */
 }
 
 .address-summary-row + .address-summary-row {
@@ -272,6 +275,9 @@
   line-height: 1.5;
   margin-bottom: 8px;
 }
+.poa-row { display: flex; align-items: flex-start; gap: 6px; }
+.poa-ic { flex: none; width: 1.3em; text-align: center; }
+.poa-tx { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; } /* (a second line starts right under the first line's text, not under the little picture) */
 
 .profile-order-items {
   font-size: 12.5px;
