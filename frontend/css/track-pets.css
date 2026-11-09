@@ -44,6 +44,32 @@
   100% { opacity: 0; transform: translate(calc(var(--zd) * 9px), -20px) scale(1.15); }
 }
 
+/* singing: now and then she stands still, lifts her head and dances (set from js/track-pets.js), the beak opens and shuts (class is-sing), and little notes float up into the sky
+   in a gentle wave, one after the other (class is-song). Nothing but CSS. The notes' animation runs a fixed number of rounds and then stops by itself: so after the song the last
+   notes still float away instead of freezing, and nothing runs afterwards. */
+.pt-sb { opacity: 0; }
+.pt-hen.is-sing .pt-sb { animation: ptBeak 0.6s steps(1, end) infinite; }
+@keyframes ptBeak { 0% { opacity: 1; } 50% { opacity: 0; } }
+.pt-song { display: none; position: absolute; left: 78%; top: -2px; width: 0; height: 0; --zd: 1; pointer-events: none; }
+.pt-hen.song-l .pt-song { left: auto; right: 78%; --zd: -1; } /* (the side is fixed when the song starts: the notes do not jump over if she turns round) */
+.pt-hen.is-song .pt-song { display: block; }
+.pt-song i { position: absolute; left: 0; top: 0; width: 6px; height: 8px; opacity: 0; --nx: 6; }
+.pt-song i svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pt-song i:nth-child(2) { width: 8.5px; height: 7.5px; --nx: 1; }
+.pt-song i:nth-child(3) { width: 5.5px; height: 7.5px; --nx: 10; }
+.pt-hen.is-song .pt-song i { animation: ptN 2.4s linear 2 both; }
+.pt-hen.is-song .pt-song i:nth-child(2) { animation-delay: 0.8s; }
+.pt-hen.is-song .pt-song i:nth-child(3) { animation-delay: 1.6s; }
+/* up into the sky (about 30px) along a gentle wave that drifts a little away from her */
+@keyframes ptN {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(calc(var(--zd) * (var(--nx) * 0.25px + 4px)), -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(calc(var(--zd) * (var(--nx) * 0.5px)), -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(calc(var(--zd) * (var(--nx) * 0.75px - 4px)), -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--zd) * (var(--nx) * 1px + 3px)), -31px) rotate(-10deg) scale(0.95); }
+}
+
 @media (prefers-reduced-motion: reduce) { .trk-pets { display: none; } }
 
 /* the extra eggs she lays (plain still pictures: one little drop-in, then nothing runs) and the extra hens */
