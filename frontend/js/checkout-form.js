@@ -364,8 +364,8 @@ window.CheckoutForm = (() => {
       <form class="sheet-body" id="checkoutForm" novalidate>
         ${backButtonHtml}
         <div class="address-summary-card">
-          <div class="address-summary-row">🏠 ${Utils.escapeHtml(prefill.flatNo)}, ${Utils.escapeHtml(addrShown)}</div>
-          ${prefill.landmark && SiteCustomize.on("showLandmarkField") ? `<div class="address-summary-row">📍 ${Utils.escapeHtml(prefill.landmark)}</div>` : ""}
+          <div class="address-summary-row"><span class="poa-ic" aria-hidden="true">🏠</span><span class="poa-tx">${Utils.escapeHtml(prefill.flatNo)}, ${Utils.escapeHtml(addrShown)}</span></div>
+          ${prefill.landmark && SiteCustomize.on("showLandmarkField") ? `<div class="address-summary-row"><span class="poa-ic" aria-hidden="true">📍</span><span class="poa-tx">${Utils.escapeHtml(prefill.landmark)}</span></div>` : ""}
           <button type="button" class="btn btn-ghost btn-sm" data-role="edit-address" style="margin-top:var(--sp-2);">✏️ Change address</button>
         </div>
         <input type="hidden" name="flatNo" value="${Utils.escapeHtml(prefill.flatNo)}" />

@@ -476,8 +476,8 @@ window.ProfileSheet = (() => {
   function addressSummaryHtml(profile) {
     return `
       <div class="address-summary-card">
-        <div class="address-summary-row">🏠 ${Utils.escapeHtml(profile.flatNo)}, ${Utils.escapeHtml(profile.addressLine)}</div>
-        ${profile.landmark && SiteCustomize.on("showLandmarkField") ? `<div class="address-summary-row">📍 ${Utils.escapeHtml(profile.landmark)}</div>` : ""}
+        <div class="address-summary-row"><span class="poa-ic" aria-hidden="true">🏠</span><span class="poa-tx">${Utils.escapeHtml(profile.flatNo)}, ${Utils.escapeHtml(profile.addressLine)}</span></div>
+        ${profile.landmark && SiteCustomize.on("showLandmarkField") ? `<div class="address-summary-row"><span class="poa-ic" aria-hidden="true">📍</span><span class="poa-tx">${Utils.escapeHtml(profile.landmark)}</span></div>` : ""}
         <button type="button" class="btn btn-ghost btn-sm" data-role="edit-address" style="margin-top:var(--sp-2);">✏️ Update name &amp; address</button>
       </div>`;
   }
@@ -1195,6 +1195,8 @@ window.ProfileSheet = (() => {
     }
   }
 
+  // one line of the order's address block: the little picture on the left, the text beside it - a long text that wraps lines up under its own first line, not under the picture
+  const addrRow = (icon, html) => `<div class="poa-row"><span class="poa-ic" aria-hidden="true">${icon}</span><span class="poa-tx">${html}</span></div>`;
   function orderItemsHtml(order) {
     return order.items
       .map(
@@ -1242,11 +1244,11 @@ window.ProfileSheet = (() => {
         <span class="badge ${badgeClass(order.status, order.orderCode)}">${Utils.escapeHtml(track ? trackText(order.status, order.orderCode) : statusLabel(order.status, order.orderCode))}</span>
       </div>
       <div class="profile-order-address">
-        🏠 ${Utils.escapeHtml(order.flatNo)}, ${Utils.escapeHtml(order.addressLine)}
-        ${order.landmark ? `<br/>📍 ${Utils.escapeHtml(order.landmark)}` : ""}
-        ${order.deliverySlot ? `<br/>🕗 Delivery time: ${Utils.escapeHtml(SlotTime.display(order.deliverySlot, order.status))}` : ""}
-        ${order.paymentMode ? `<br/>💳 Payment: ${Utils.escapeHtml(order.paymentMode === "UPI" ? SiteCustomize.t("upiLabel") : SiteCustomize.t("codLabel"))}` : ""}
-        ${order.notes ? `<br/>📝 ${Utils.escapeHtml(order.notes)}` : ""}
+        ${addrRow("🏠", `${Utils.escapeHtml(order.flatNo)}, ${Utils.escapeHtml(order.addressLine)}`)}
+        ${order.landmark ? addrRow("📍", Utils.escapeHtml(order.landmark)) : ""}
+        ${order.deliverySlot ? addrRow("🕗", `Delivery time: ${Utils.escapeHtml(SlotTime.display(order.deliverySlot, order.status))}`) : ""}
+        ${order.paymentMode ? addrRow("💳", `Payment: ${Utils.escapeHtml(order.paymentMode === "UPI" ? SiteCustomize.t("upiLabel") : SiteCustomize.t("codLabel"))}`) : ""}
+        ${order.notes ? addrRow("📝", Utils.escapeHtml(order.notes)) : ""}
       </div>
       <div class="profile-order-items">${orderItemsHtml(order)}</div>
       ${rows ? `<div class="profile-order-charges order-summary-list"${open ? "" : " hidden"}>${rows}</div>` : ""}
