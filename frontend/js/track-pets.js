@@ -14,6 +14,16 @@
     try { const c = window.SiteCustomize && SiteCustomize.cfg && SiteCustomize.cfg(); return !!(c && c.animationsOff === true); } catch (e) { return false; }
   };
 
+  // the little song (three floating notes, CSS only, running only while she sings - see css/track-pets.css)
+  const NOTE1 = (c) => '<svg viewBox="0 0 10 12"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 9.2V1.4c.8 1.6 3.2 2 3.2 4.6"/><ellipse cx="3.3" cy="9.6" rx="2.4" ry="1.8" transform="rotate(-20 3.3 9.6)"/></g><path d="M5.6 9.2V1.4c.8 1.6 3.2 2 3.2 4.6" fill="none" stroke="' + c + '" stroke-width="1.15" stroke-linecap="round"/><ellipse cx="3.3" cy="9.6" rx="2.4" ry="1.8" transform="rotate(-20 3.3 9.6)" fill="' + c + '"/></svg>';
+  const NOTE2 = (c) => '<svg viewBox="0 0 14 12"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 9.2V2.2l7-1.4v7.4M5.4 4.4l7-1.4"/><ellipse cx="3.1" cy="9.6" rx="2.4" ry="1.8" transform="rotate(-20 3.1 9.6)"/><ellipse cx="10.1" cy="8.6" rx="2.4" ry="1.8" transform="rotate(-20 10.1 8.6)"/></g><path d="M5.4 9.2V2.2l7-1.4v7.4M5.4 4.4l7-1.4" fill="none" stroke="' + c + '" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="3.1" cy="9.6" rx="2.4" ry="1.8" transform="rotate(-20 3.1 9.6)" fill="' + c + '"/><ellipse cx="10.1" cy="8.6" rx="2.4" ry="1.8" transform="rotate(-20 10.1 8.6)" fill="' + c + '"/></svg>';
+  const SONG_HTML = '<div class="pt-song" aria-hidden="true"><i>' + NOTE1("#d9467a") + "</i><i>" + NOTE2("#2f86d6") + "</i><i>" + NOTE1("#e28a12") + "</i></div>";
+  const songEnded = (e) => !!(e.target && e.target.matches && e.target.matches(".pt-song i:last-child")); // (the last note has floated away: the song is over)
+  // The little dance that goes with the song (poses change 10 times a second, so it is a chunky 6-step beat of 0.6 s): a hop on every beat, a sway from side to side every
+  // two beats, the legs stepping in place, the wing fluttering and the tail wagging. k = how far into the dance she is (0..1, eased), f = the frame count (+ her own offset).
+  const danceOf = (f, k) => { const b = f % 6, h = Math.floor(f / 6) & 1;
+    return { hop: [0, 1, 2, 1, 0, 0][b] * k, sway: 6 * Math.sin(f * Math.PI / 6) * k, leg: (h ? 18 : -18) * k, wing: b === 1 || b === 2, wag: (b < 3 ? 9 : -9) * k, nod: 3 * Math.sin(f * Math.PI / 3) * k }; };
+  const SING_HEAD = 26, SING_LEAN = 5; // (singing: how far the head lifts up, and how far she leans back, in degrees)
   const HEN_W = 26, EGG_W = 12, G = 260; // sizes in px; gravity in px/s^2
   const HEN_SVG =
     "<svg viewBox=\"0 0 28 26\" aria-hidden=\"true\" focusable=\"false\">" +
@@ -38,6 +48,8 @@
     "<g fill=\"#e0412f\" stroke=\"#a82518\" stroke-width=\".7\"><circle cx=\"18.1\" cy=\"5.2\" r=\"1.45\"/><circle cx=\"20.1\" cy=\"4.2\" r=\"1.55\"/><circle cx=\"22\" cy=\"5.2\" r=\"1.4\"/></g>" +
     "<circle cx=\"20\" cy=\"8.7\" r=\"4.3\" fill=\"#fffaf0\" stroke=\"#9b7440\" stroke-width=\"1\"/>" +
     "<path d=\"M24 8.1l2.8.9-2.8 1.1Z\" fill=\"#f5a623\" stroke=\"#c9801a\" stroke-width=\".6\" stroke-linejoin=\"round\"/>" +
+    // the open beak (shown only while she sings, flickering open / closed): a dark mouth between a raised upper and a lowered lower beak
+    "<g class=\"pt-sb\"><path d=\"M23.8 8.3L27 8.6 26.3 10.9 23.8 10.7Z\" fill=\"#9c2f1f\"/><path d=\"M24 8.1L26.9 7.6 24 9.3Z\" fill=\"#f5a623\" stroke=\"#c9801a\" stroke-width=\".5\" stroke-linejoin=\"round\"/><path d=\"M24 10.3L26.6 11 24 11.9Z\" fill=\"#f5a623\" stroke=\"#c9801a\" stroke-width=\".5\" stroke-linejoin=\"round\"/></g>" +
     "<circle cx=\"20.3\" cy=\"10.4\" r=\".95\" fill=\"#f7b9a6\" opacity=\".8\"/>" +
     "<g class=\"pt-eye\"><circle cx=\"21.4\" cy=\"8.2\" r=\"1\" fill=\"#2b1d0e\"/><circle cx=\"21.7\" cy=\"7.9\" r=\".35\" fill=\"#fff\"/></g>" +
     "<path class=\"pt-eyez\" opacity=\"0\" d=\"M20.3 8.4q1.2 1.1 2.4 0\" fill=\"none\" stroke=\"#2b1d0e\" stroke-width=\".8\" stroke-linecap=\"round\"/>" +
@@ -63,8 +75,8 @@
   // corners), so each part can be tried out quickly. false = the normal, calm pace. Only this one line decides.
   const FAST = false;
   const P = FAST
-    ? { cool0: 1, climbCool: [3, 6], climbP: 0.7, flyCool0: 6, flyCool: [12, 20], flyP: 0.25, sideCool0: 3, sideCool: [5, 9], sleepCool0: 3, sleepCool: 12, nap: [9, 11], eggHop: [3, 6], eggT0: [2, 4], modeT: [5, 8], modes: ["wander", "follow", "chase"], spawn0: 6, spawn: [5, 9], modesR: ["wander", "follow", "chase"], kickWait: [6, 9], thr: [0.3, 0.4, 0.55, 0.75, 0.92] }
-    : { cool0: 20, climbCool: [40, 65], climbP: 0.6, flyCool0: 25, flyCool: [40, 70], flyP: 0.2, sideCool0: 35, sideCool: [50, 80], sleepCool0: 30, sleepCool: 70, nap: [12, 20], eggHop: [18, 35], eggT0: [15, 25], modeT: [9, 15], modes: ["wander", "wander", "wander", "wander", "wander", "wander", "wander", "follow", "chase"], spawn0: 50, spawn: [124, 186], modesR: ["wander", "wander", "wander", "follow", "follow", "chase"], kickWait: [14, 22], thr: [0.5, 0.72, 0.84, 0.92, 0.98] };
+    ? { cool0: 1, climbCool: [3, 6], climbP: 0.7, flyCool0: 6, flyCool: [12, 20], flyP: 0.25, sideCool0: 3, sideCool: [5, 9], sleepCool0: 3, sleepCool: 12, singCool0: 3, singCool: [10, 16], sing: [4.6, 5.6], nap: [9, 11], eggHop: [3, 6], eggT0: [2, 4], modeT: [5, 8], modes: ["wander", "follow", "chase"], spawn0: 6, spawn: [5, 9], modesR: ["wander", "follow", "chase"], kickWait: [6, 9], thr: [0.3, 0.4, 0.55, 0.75, 0.92] }
+    : { cool0: 20, climbCool: [40, 65], climbP: 0.6, flyCool0: 25, flyCool: [40, 70], flyP: 0.2, sideCool0: 35, sideCool: [50, 80], sleepCool0: 30, sleepCool: 70, singCool0: 22, singCool: [45, 90], sing: [4.6, 6.2], nap: [12, 20], eggHop: [18, 35], eggT0: [15, 25], modeT: [9, 15], modes: ["wander", "wander", "wander", "wander", "wander", "wander", "wander", "follow", "chase"], spawn0: 50, spawn: [124, 186], modesR: ["wander", "wander", "wander", "follow", "follow", "chase"], kickWait: [14, 22], thr: [0.5, 0.72, 0.84, 0.92, 0.98] };
 
   // ---- the little world: one strip of pets, fixed on screen, standing on the top edge of the opened panel ----
   const LAYER_H = 28;
@@ -73,7 +85,8 @@
   layer.setAttribute("aria-hidden", "true");
   const henEl = document.createElement("div");
   henEl.className = "pt-hen";
-  henEl.innerHTML = HEN_SVG + '<div class="pt-zzz" aria-hidden="true"><i>z</i><i>Z</i><i>z</i></div>';
+  henEl.innerHTML = HEN_SVG + '<div class="pt-zzz" aria-hidden="true"><i>z</i><i>Z</i><i>z</i></div>' + SONG_HTML;
+  henEl.addEventListener("animationend", (e) => { if (songEnded(e)) { world.h.song = false; henEl.classList.remove("is-song", "song-l"); } });
   const eggEl = document.createElement("div");
   eggEl.className = "pt-egg";
   eggEl.innerHTML = EGG_SVG;
@@ -82,10 +95,10 @@
 
   const world = {
     hen: henEl, egg: eggEl, henSvg: henEl.firstChild, eggSvg: eggEl.firstChild, W: 300, frames: 0, r: 20, roomL: 0, roomR: 0, topY: 200,
-    h: { x: 100, dir: 1, act: "idle", t: 0.4, speed: 24, y: 0, vy: 0, vx: 0, air: false, flap: 0, ph: "", side: -1, px: 0, px0: 0, rot: 0, rotT: 0, out: false, H: 60, slip: false, slipT: 0, graze: false, vcur: 0, afterHide: false, dip0: 0, slide: 0, sleepAge: 0, dt: 0, ditem: 0, toSide: false, xfer: null, sideCool: P.sideCool0, flyCool: P.flyCool0, cool: P.cool0, sleepCool: P.sleepCool0, toCorner: false },
+    h: { x: 100, dir: 1, act: "idle", t: 0.4, speed: 24, y: 0, vy: 0, vx: 0, air: false, flap: 0, ph: "", side: -1, px: 0, px0: 0, rot: 0, rotT: 0, out: false, H: 60, slip: false, slipT: 0, graze: false, vcur: 0, afterHide: false, dip0: 0, slide: 0, sleepAge: 0, dt: 0, ditem: 0, toSide: false, xfer: null, sideCool: P.sideCool0, flyCool: P.flyCool0, cool: P.cool0, sleepCool: P.sleepCool0, toCorner: false, sing: false, song: false, songL: false, singCool: P.singCool0 },
     e: { x: 134, y: 0, vx: 0, vy: 0, rot: 0, t: rand(P.eggT0[0], P.eggT0[1]), kick: 0 },
     mode: "wander", modeT: rand(3, 6),
-    naps: 0, napsSince: 0, eggNeed: 5, rest: 0, layEgg: false, spawnCool: P.spawn0, deep: false, wakeAt: 0, sm: { sit: 0, tl: 0, lie: 0, leg: 1, hd: 0, eye: 0, walk: 0, cap: 0, scarf: 0, bag: 0, jack: 0, gl: 0, tool: 0, settled: true },
+    naps: 0, napsSince: 0, eggNeed: 5, rest: 0, wait: 0, layEgg: false, spawnCool: P.spawn0, deep: false, wakeAt: 0, sm: { sit: 0, tl: 0, lie: 0, leg: 1, hd: 0, eye: 0, walk: 0, cap: 0, scarf: 0, bag: 0, jack: 0, gl: 0, tool: 0, sg: 0, settled: true },
     anchorCode: "", anchorIdx: 0, carry: false, domSince: 0, n: 0, chk: false, // (which order's panel they stand on: they ride along with it, and when the other order takes over the screen they fly across to it, the egg in her feet)
     ready: false, wasReady: false, since: 0, readyT: 0, dressStep: 0, dressGap: 1.2, // (the order on screen is Packed / "getting ready": she gets dressed for it)
     pose: {}, // (the last pose drawn, so a part is only touched when it actually changed)
@@ -135,13 +148,14 @@
     const id = "ptbx" + (++xSeq);
     const el = document.createElement("div");
     el.className = "pt-hen pt-xhen";
-    el.innerHTML = HEN_SVG.split("ptbc").join(id); // (the very same hen)
+    el.innerHTML = HEN_SVG.split("ptbc").join(id) + SONG_HTML; // (the very same hen, with the same little song)
     el.style.opacity = "0";
     layer.insertBefore(el, henEl);
+    el.addEventListener("animationend", (e) => { if (!songEnded(e)) return; const o = extras.find((q) => q.el === el); if (o) { o.song = false; o.snc = 0; } el.classList.remove("is-song", "song-l"); });
     const q = (s) => el.querySelector(s), left = Math.random() < 0.5;
     extras.push({
       el, svg: el.firstChild, x: (left ? -4 : w.W + 4) - HEN_W / 2, dir: left ? 1 : -1, act: "walk", t: 2, speed: 22, vcur: 14, s: 0, a: 0, enter: true, leave: false, graze: false,
-      sd: Math.floor(Math.random() * 4), ph: Math.random() * 6, nc: rand(20, 50), dn: 0, dg: rand(2, 7), dd: 0, di: 0, pm: false, dm: { scarf: 0, jack: 0, bag: 0, gl: 0, cap: 0, tool: 0 }, // (her own costume: the same pieces in the same order as the first hen's, but at her own time)
+      sd: Math.floor(Math.random() * 4), ph: Math.random() * 6, nc: rand(20, 50), sing: false, song: false, songL: false, snc: 0, sg: 0, sgc: false, sc: rand(14, 40), dn: 0, dg: rand(2, 7), dd: 0, di: 0, pm: false, dm: { scarf: 0, jack: 0, bag: 0, gl: 0, cap: 0, tool: 0 }, // (her own costume: the same pieces in the same order as the first hen's, but at her own time)
       moving: false, pt: -1, flip: "", tf: "", op: "0", ez: "0", pose: {},
       parts: { l1: q(".pt-l1"), l2: q(".pt-l2"), head: q(".pt-head"), tail: q(".pt-tail"), eye: q(".pt-eye"), eyez: q(".pt-eyez"), all: q(".pt-all"), wing: q(".pt-wing"), cap: q(".pt-cap"), scarf: q(".pt-scarf"), bag: q(".pt-bag"), jack: q(".pt-jack"), gl: q(".pt-gl"), tool: q(".pt-tool") },
     });
@@ -151,7 +165,8 @@
     for (let i = extras.length - 1; i >= 0; i--) {
       const x = extras[i];
       if (x.a < 1) x.a = Math.min(1, x.a + dt * 1.6);
-      x.nc -= dt;
+      x.nc -= dt; x.sc -= dt;
+      if (x.sing && x.act !== "idle") x.sing = false; // (the song only belongs to a stand-still)
       const dressing = w.ready && x.dn < DRESS_N; // (Packed: she gets dressed like the first hen - she stops walking for each piece - but at her own time)
       if (!w.ready) { x.dn = 0; x.dg = rand(2, 7); if (x.act === "dress") { x.act = "idle"; x.t = 0.5; } }
       else if (dressing && x.act !== "dress" && !x.enter && !x.leave && x.act !== "sleep") x.dg -= dt;
@@ -170,10 +185,11 @@
       }
       x.t -= dt;
       if (x.t <= 0) {
+        x.sing = false;
         if (x.enter || x.leave) x.t = 1;
         else if (x.nc <= 0 && !dressing && Math.random() < 0.1) { x.act = "sleep"; x.graze = false; x.t = rand(10, 18); x.nc = rand(50, 90); } // (now and then she has a nap of her own)
         else if (Math.random() < 0.5) { x.act = "walk"; x.graze = Math.random() < 0.3; x.speed = x.graze ? rand(8, 13) : rand(14, 26); x.t = rand(1.6, 4); if (Math.random() < 0.4) x.dir = -x.dir; }
-        else { x.act = "idle"; x.graze = false; x.t = rand(1, 3); }
+        else { x.act = "idle"; x.graze = false; x.t = rand(1, 3); if (x.sc <= 0 && !dressing && Math.random() < 0.5) { x.sing = true; x.song = true; x.songL = x.dir < 0; x.t = rand(P.sing[0], P.sing[1]); x.sc = rand(P.singCool[0], P.singCool[1]); } } // (now and then she lifts her head and sings a little song, at her own time)
       }
       const vt = x.act === "walk" || x.enter || x.leave ? x.speed : 0;
       x.vcur += (vt - x.vcur) * Math.min(1, dt * 5);
@@ -187,7 +203,7 @@
       }
     }
     w.spawnCool -= dt;
-    if (w.spawnCool <= 0 && w.layerOn && !quiet && !w.h.xfer && w.W >= 160 && (extras.length > 0 || (w.rest >= 5 && (!w.ready || w.dressStep >= DRESS_N)))) { // (the SECOND hen only comes when the first one has waited a while: five naps, and - if the order is Packed - once she has put on her whole costume; after that, more come at random) // (now and then: one more hen walks in; when there are plenty, the oldest one walks off)
+    if (w.spawnCool <= 0 && w.layerOn && !quiet && !w.h.xfer && w.W >= 160 && (extras.length > 0 || (w.rest >= 1 && w.wait >= 90 && (!w.ready || w.dressStep >= DRESS_N)))) { // (the SECOND hen only comes when the first one has had a little time to herself: one nap AND at least 90 seconds - about a minute and a half to two minutes - and, if the order is Packed, once she has put on her whole costume; after that, more come at random) // (now and then: one more hen walks in; when there are plenty, the oldest one walks off)
       w.spawnCool = rand(P.spawn[0], P.spawn[1]) * (1 + 0.01 * extras.length); // (never stops: about 20 hens in the first hour, some 18 more in the next, and the wait for the next one keeps getting a little longer)
       const live = extras.filter((x) => !x.leave);
       if (live.length >= MAX_XHEN) { const o = live[0]; o.leave = true; o.enter = false; o.act = "walk"; o.speed = 24; o.graze = false; o.dir = o.x + HEN_W / 2 < W / 2 ? -1 : 1; }
@@ -199,7 +215,7 @@
   function extrasCatchUp(sk) {
     egT -= sk;
     for (const x of extras) {
-      x.nc -= sk;
+      x.nc -= sk; x.sc -= sk;
       if (x.act === "sleep" || (x.act === "idle" && x.vcur === 0)) { const rest = x.t - sk; x.t = rest > 0.05 ? rest : rand(0.1, x.act === "sleep" ? 4 : 2.5); }
     }
   }
@@ -232,13 +248,18 @@
       if (cand.length) { const g = pick(cand); g.hop = true; g.y = 0; g.vy = rand(20, 28) * (w.ready ? 1.3 : 1); g.vx = (Math.random() < 0.5 ? -1 : 1) * rand(0, 16); g.dx = 0; g.spin = 0; g.tf = ""; g.rt = ""; egActive++; }
     }
   }
-  const extrasDown = () => !egActive && extras.every((x) => x.vcur === 0 && !x.enter && !x.leave && x.a >= 1 && !x.pm && (x.act === "idle" || (x.act === "sleep" && x.s >= 0.999))); // (nobody is walking: the ones standing or lying just stay as they are while the loop is stopped) // (everyone lying still: the loop may stop altogether)
-  const extrasIdle = () => !egActive && extras.every((x) => x.vcur === 0 && x.a >= 1 && !x.enter && !x.leave && !x.pm && ((x.act === "idle" && x.t > 0.4) || (x.act === "sleep" && x.s >= 0.999)));
+  const extrasDown = () => !egActive && extras.every((x) => x.vcur === 0 && !x.enter && !x.leave && x.a >= 1 && !x.pm && ((x.act === "idle" && !x.sing) || (x.act === "sleep" && x.s >= 0.999))); // (nobody is walking: the ones standing or lying just stay as they are while the loop is stopped) // (everyone lying still: the loop may stop altogether)
+  const extrasIdle = () => !egActive && extras.every((x) => x.vcur === 0 && x.a >= 1 && !x.enter && !x.leave && !x.pm && ((x.act === "idle" && x.t > 0.4 && !x.sing && x.sg === 0) || (x.act === "sleep" && x.s >= 0.999)));
   function drawExtras(w, now, dt) {
     const a = 1 - Math.exp(-dt * 3), ap = 1 - Math.exp(-dt * 1.4), pt = Math.floor(now / 100), tn = pt * 100;
     for (const x of extras) {
       const cx = x.x + HEN_W / 2, sl = x.act === "sleep", d = (sl ? 1 : 0) - x.s;
       x.moving = Math.abs(d) > 0.02; x.s = x.moving ? x.s + d * a : (sl ? 1 : 0);
+      const sg = x.act === "idle" && x.sing ? 1 : 0, dg = sg - x.sg; // (singing: the head lifts up smoothly, and eases back down)
+      if (Math.abs(dg) > 0.02) { x.sg += dg * a; x.moving = true; } else x.sg = sg;
+      if (x.sgc !== !!sg) { x.sgc = !!sg; x.el.classList.toggle("is-sing", !!sg); }
+      const sn = x.song ? (x.songL ? 2 : 1) : 0; // (the notes stay on the side she sang towards, even if she turns round while they float away)
+      if (x.snc !== sn) { x.snc = sn; x.el.classList.toggle("is-song", sn > 0); x.el.classList.toggle("song-l", sn === 2); }
       x.pm = false; // (the costume pieces ease on slowly, like the first hen's)
       for (const k in x.dm) {
         const ix = DRESS_KEYS.indexOf(k === "tool" ? "comb" : k), dr = x.act === "dress" && x.di === ix;
@@ -253,11 +274,11 @@
       const o = Math.min(x.a, Math.max(0, Math.min(1, (Math.min(cx, w.W - cx) + 14) / 10))), os = o >= 0.97 ? "" : o.toFixed(1);
       if (x.op !== os) { x.op = os; x.el.style.opacity = os; }
       const fl = x.dir < 0 ? "scaleX(-1)" : "";
-      if (x.flip !== fl) { x.flip = fl; x.svg.style.transform = fl; }
+      if (x.flip !== fl) { x.flip = fl; x.svg.style.transform = fl; x.el.classList.toggle("face-l", !!fl); }
       if (!x.moving && x.pt === pt) continue; // (the poses change 10 times a second, like the first hen's)
       x.pt = pt;
       const k = Math.min(1, x.vcur / 12), stride = walking ? [1, 0, -1, 0][(pt + x.sd) & 3] * 24 * k : 0;
-      let head = 13 * x.s, dy = 0, tilt = 0, wing = 0;
+      let head = 13 * x.s - SING_HEAD * x.sg, dy = 0, tilt = -SING_LEAN * x.sg, wing = 0, hop = 0, wag = 0, dl = 0;
       if (x.act === "dress") { // (the little show for each piece: the same moves as the first hen's)
         const t = x.dd, it = x.di;
         if (it === 0) { if (t < 0.8) { wing = pt & 1; tilt = -3; } else if (t < 1.5) head += 12; }
@@ -267,12 +288,13 @@
         else if (it === 4) { if (t < 1) head += 16; else { head -= 6; tilt = -4; } }
         else if (t < 1) head -= 10; else if (t < 1.7) head += 12; else if (t < 2.6) head += 8; else { head -= 8; tilt = -6; wing = t < 3.2 ? pt & 1 : 0; }
       }
+      else if (x.sg > 0.02) { const d = danceOf(pt + x.sd * 2, x.sg); dl = d.leg; wing = d.wing ? 1 : 0; hop = -d.hop; tilt += d.sway; head += d.nod; wag = d.wag; } // (singing: she dances too, in her own beat)
       else if (x.act === "walk" && x.graze) { const g = eatK(tn + x.sd * 300, 1200); head += 40 * g; dy = 4 * g; tilt = 30 * g; } // (eats as she goes on)
-      setPart(x, "l1", legTf(stride, 11.6, 1 - x.s));
-      setPart(x, "l2", legTf(-stride, 15.8, 1 - x.s));
-      setPart(x, "tail", x.s < 0.01 ? "" : "rotate(" + R(-TAIL_DROP * x.s) + " 8.5 12.5)");
+      setPart(x, "l1", legTf(stride + dl, 11.6, 1 - x.s));
+      setPart(x, "l2", legTf(-stride - dl, 15.8, 1 - x.s));
+      setPart(x, "tail", x.s < 0.01 && !wag ? "" : "rotate(" + R(-TAIL_DROP * x.s + wag) + " 8.5 12.5)");
       setPart(x, "head", "translate(0 " + R(dy) + ") rotate(" + R(head) + " 18 11)");
-      setPart(x, "all", "rotate(" + R(tilt) + " 14 24.5)");
+      setPart(x, "all", (hop ? "translate(0 " + R(hop) + ") " : "") + "rotate(" + R(tilt) + " 14 24.5)");
       setPart(x, "wing", "translate(16.5 13) rotate(" + (wing ? 52 : 0) + ") scale(" + (wing ? 1.2 : 1) + ") translate(-16.5 -13)");
       setPart(x, "eye", "translate(21.4 8.2) scale(1 " + Math.max(0.05, 1 - x.s).toFixed(2) + ") translate(-21.4 -8.2)");
       const m = x.dm; // (her own costume)
@@ -326,11 +348,15 @@
   }
   function newAct(w) { // (the order is Packed: she is more lively - shorter stand-stills; see also her speed and the egg)
     newAct0(w);
-    if (w.ready && w.h.act === "idle") w.h.t *= 0.55;
+    if (w.ready && w.h.act === "idle" && !w.h.sing) w.h.t *= 0.55;
+  }
+  function trySing(h) { // (now and then, instead of a plain stand-still, she lifts her head and sings a little song: the head up, the beak open and shut, notes floating up)
+    if (h.singCool > 0 || Math.random() > 0.6) return;
+    h.sing = true; h.song = true; h.songL = h.dir < 0; h.t = rand(P.sing[0], P.sing[1]); h.singCool = rand(P.singCool[0], P.singCool[1]);
   }
   function newAct0(w) {
     const h = w.h;
-    h.toCorner = false; h.toSide = false;
+    h.toCorner = false; h.toSide = false; h.sing = false;
     const cxNow = h.x + HEN_W / 2;
     if (h.afterHide || Math.min(cxNow, w.W - cxNow) < w.r + 6) { // (coming back from over the edge, or still on the curve: walk back onto the flat top)
       h.afterHide = false; h.dir = cxNow < w.W / 2 ? 1 : -1; h.graze = false;
@@ -352,7 +378,7 @@
       if (room < 30 || Math.random() < 0.22) h.dir = -h.dir;
       h.graze = Math.random() < 0.2; // (only some walks are spent pecking at the ground)
       h.act = "walk"; h.t = rand(1.4, 4); h.speed = h.graze ? rand(11, 18) : rand(18, 30);
-    } else if (r < P.thr[1]) { h.act = "idle"; h.t = rand(0.7, 2); }
+    } else if (r < P.thr[1]) { h.act = "idle"; h.t = rand(0.7, 2); trySing(h); }
     else if (r < P.thr[2]) { h.act = "walk"; h.graze = true; h.t = rand(1.8, 3.4); h.speed = rand(8, 13); if (room < w.r + 30 || Math.random() < 0.25) h.dir = -h.dir; } // (eats for a good while, but moves on slowly while she does: she does not stop there)
     else if (r < P.thr[3] && ((CLIMB && canCorner) || (EDGE_TRIPS && sideOpen(w, h.x + HEN_W / 2 < w.W / 2 ? -1 : 1) && h.sideCool <= 0 && w.W >= 160))) { // (rare) off to the nearest end of the panel: to try climbing up its side, or to walk on over the corner and down it (out of sight), coming back later
       h.dir = h.x + HEN_W / 2 < w.W / 2 ? -1 : 1;
@@ -362,7 +388,7 @@
     } else if (r < P.thr[4] && h.sleepCool <= 0) { // (rare) a nap, with z z z
       if (++w.napsSince >= w.eggNeed) { w.layEgg = true; w.napsSince = 0; } /* nothing new at first: the first extra egg - and the second hen - only after five naps, so the customer has time to watch her; after that, a different number of naps each time, and it takes longer and longer */ h.lie = Math.random() < 0.67; h.act = "sleep"; h.t = rand(P.nap[0], P.nap[1]) + 1.2; h.sleepCool = P.sleepCool; h.sleepAge = -1.2; // (she first slows down and stands still for a moment, then settles down: see posture)
     } else if (r > 0.985 && cxNow > w.r + 16 && cxNow < w.W - w.r - 16) { smallFly(h); // (very rarely: she flaps up and flies a short way on, then floats down onto the panel)
-    } else { h.act = "idle"; h.t = rand(0.7, 1.6); }
+    } else { h.act = "idle"; h.t = rand(0.7, 1.6); trySing(h); }
   }
 
   // The hen at the left / right end of the panel: she hops onto the side line of the panel, turns upright against it (on a phone, where the panel
@@ -444,9 +470,10 @@
   function step(w, dt) {
     const h = w.h, e = w.e, W = w.W, r = w.r;
     w.modeT -= dt;
-    if (w.modeT <= 0) { w.mode = pick(w.ready ? P.modesR : P.modes); w.modeT = rand(P.modeT[0], P.modeT[1]) * (w.ready ? 0.65 : 1); if (h.act !== "sleep" && h.act !== "dress" && !h.toSide && !h.toCorner) h.t = 0; }
+    if (w.modeT <= 0) { w.mode = pick(w.ready ? P.modesR : P.modes); w.modeT = rand(P.modeT[0], P.modeT[1]) * (w.ready ? 0.65 : 1); if (h.act !== "sleep" && h.act !== "dress" && !h.toSide && !h.toCorner && !h.sing) h.t = 0; }
     e.kick -= dt;
-    h.cool -= dt; h.sleepCool -= dt; h.flyCool -= dt; h.sideCool -= dt;
+    h.cool -= dt; h.sleepCool -= dt; h.singCool -= dt; h.flyCool -= dt; h.sideCool -= dt;
+    if (h.sing && h.act !== "idle") h.sing = false; // (the song only belongs to a stand-still)
     { const cq = h.x + HEN_W / 2; // (the other hens rest while she sleeps or is out of sight down the side)
       eggsStep(w, dt);
       extrasStep(w, dt, h.act === "sleep" || (h.act === "corner" && (h.ph === "down" || h.ph === "hold")) || (h.afterHide && h.act === "idle" && (cq <= -7 || cq >= W + 7))); }
@@ -454,13 +481,13 @@
       w.dressGap = 1.2;
       if (w.dressStep > 0 || h.act === "dress") { w.dressStep = 0; if (h.act === "dress") { h.act = "idle"; h.t = 0.5; } }
     } else if (w.dressStep < DRESS_N && h.act !== "dress" && !h.air && h.act !== "corner" && h.act !== "sleep") w.dressGap -= dt;
-    w.since += dt;
+    w.since += dt; w.wait += dt;
     if (w.ready && !w.wasReady) { // the order is Packed: if the panel was just opened (a reload, or opened again) she is already wearing the first few pieces - a different start every time
       const n = w.since < 2.5 ? pick([0, 0, 1, 2, 2, 3, 3, 4]) : 0; // (a status that turns Packed while she is on screen: she starts from nothing)
       w.dressStep = n; w.dressGap = n ? rand(1.5, 4) : 1.2;
       DRESS_KEYS.forEach((k, i) => { if (i < n && k in w.sm) w.sm[k] = 1; });
     }
-    if (w.ready !== w.wasReady) w.rest = 0; // (the order turned Packed / is no longer: the waiting for the second hen starts again)
+    if (w.ready !== w.wasReady) { w.rest = 0; w.wait = 0; } // (the order turned Packed / is no longer: the waiting for the second hen starts again)
     w.wasReady = w.ready;
     const dressNow = w.ready && w.dressStep < DRESS_N && (w.dressGap <= 0 || h.act === "sleep" && w.dressGap < 0.6);
 
@@ -470,7 +497,7 @@
       h.t -= dt; h.sleepAge += dt;
       if (h.vcur > 0.3) { h.vcur -= h.vcur * Math.min(1, dt * 4.5); h.x += h.dir * h.vcur * dt; } else h.vcur = 0; // (she does not stop dead: she slows down on the spot)
       if (w.ready && w.dressStep < DRESS_N) { w.dressGap -= dt; if (w.dressGap <= 0) h.t = 0; } // (the order is getting ready: she wakes up to get dressed)
-      if (h.t <= 0) { h.act = "idle"; h.t = 0.9; h.sleepAge = 0; w.deep = false; if (++w.rest === 5) w.spawnCool = Math.max(w.spawnCool, rand(3, 8)); } // wakes: the pose eases back (see posture)
+      if (h.t <= 0) { h.act = "idle"; h.t = 0.9; h.sleepAge = 0; w.deep = false; if (++w.rest === 1) w.spawnCool = Math.max(w.spawnCool, rand(3, 8)); } // wakes: the pose eases back (see posture)
       else if (!w.deep && h.sleepAge > 4.7 && w.sm.settled && e.y <= 0 && Math.abs(e.vy) < 1 && Math.abs(e.vx) < 2 && extrasDown()) w.deep = true; // deep sleep: nothing moves, nothing is drawn
     } else if (h.air) airStep(w, dt);
     else if (h.act === "corner") cornerStep(w, dt);
@@ -585,18 +612,19 @@
     const slp = h.act === "sleep", sl = slp && h.sleepAge >= 0, wk = h.act === "walk" || h.act === "corner" || (slp && !sl && h.vcur > 1.5);
     const dr = h.act === "dress", on = (i) => i < w.dressStep || (dr && h.ditem === i && h.dt >= DRESS_AT[i]) ? 1 : 0;
     const a = 1 - Math.exp(-dt * 8), ap = 1 - Math.exp(-dt * 1.4), as = 1 - Math.exp(-dt * 3); // (the outfit eases on slowly; so does settling down to sleep)
-    const T = { sit: sl ? 1 : 0, tl: sl ? 1 : 0, lie: sl && h.lie ? 1 : 0, leg: sl ? 0 : 1, hd: sl ? 13 : 0, eye: sl ? 1 : 0, walk: wk ? 1 : 0, scarf: on(0), jack: on(1), bag: on(2), gl: on(4), cap: on(5), tool: dr && h.ditem === 3 && h.dt > 0.2 && h.dt < 4 ? 1 : 0 };
+    const T = { sit: sl ? 1 : 0, tl: sl ? 1 : 0, lie: sl && h.lie ? 1 : 0, leg: sl ? 0 : 1, hd: sl ? 13 : 0, eye: sl ? 1 : 0, walk: wk ? 1 : 0, scarf: on(0), jack: on(1), bag: on(2), gl: on(4), cap: on(5), tool: dr && h.ditem === 3 && h.dt > 0.2 && h.dt < 4 ? 1 : 0, sg: h.act === "idle" && h.sing ? 1 : 0 };
     let moving = false;
     for (const k in T) {
       const d = T[k] - sm[k];
       if (Math.abs(d) > 0.02) { sm[k] += d * (PROPS[k] ? ap : sl && SLEEPK[k] ? as : a); moving = true; } else sm[k] = T[k];
     }
+    if (sm.sg > 0.02) moving = true; // (dancing: the poses keep changing, so the loop keeps running)
     sm.settled = !moving;
     // otherwise the poses change in small steps, 10 times a second (a chunky little "pixel pet" feel, and each change costs a bit)
     const pt = Math.floor(now / 100), tn = pt * 100;
     if (!moving && w.poseTick === pt) return;
     w.poseTick = pt;
-    let l1 = 0, l2 = 0, wing = 0, head = sm.hd + LIE_HEAD * sm.lie, dy = LIE_DY * sm.lie, tilt = 0; // (sometimes she sleeps with her head right down on the ground)
+    let l1 = 0, l2 = 0, wing = 0, hop = 0, wag = 0, head = sm.hd + LIE_HEAD * sm.lie - SING_HEAD * sm.sg, dy = LIE_DY * sm.lie, tilt = -SING_LEAN * sm.sg; // (sometimes she sleeps with her head right down on the ground)
     const stride = [1, 0, -1, 0][pt & 3] * 24 * sm.walk;
     if (sl) head += 3 * Math.max(0, Math.min(1, (4.2 - h.sleepAge) / 0.8)) * Math.sin(tn / 413); // (nods while the z z z are showing, then is still)
     else if (dr) { // (the getting-dressed show: a different little move for each piece)
@@ -608,6 +636,7 @@
       else if (it === 4) { if (t < 1) head += 16; else { head -= 6; tilt = -4; } } // sunglasses, then the cool pose
       else if (t < 1) head -= 10; else if (t < 1.7) head += 12; else if (t < 2.6) head += 8; else { head -= 8; tilt = -6; wing = t < 3.2 ? pt & 1 : 0; } // the cap drops on, then she is done - proud
     }
+    else if (sm.sg > 0.02) { const d = danceOf(pt, sm.sg); l1 = d.leg; l2 = -d.leg; wing = d.wing ? 1 : 0; hop = -d.hop; tilt += d.sway; head += d.nod; wag = d.wag; } // (singing: she dances too)
     else if (h.air) { l1 = 38; l2 = -28; wing = pt & 1; }
     else if (h.act === "corner") {
       l1 = stride; l2 = -stride;
@@ -621,7 +650,7 @@
     }
     setPart(w, "l1", legTf(l1, 11.6, sm.leg));
     setPart(w, "l2", legTf(l2, 15.8, sm.leg));
-    setPart(w, "tail", sm.tl < 0.01 ? "" : "rotate(" + R(-TAIL_DROP * sm.tl) + " 8.5 12.5)"); // (asleep, the back feathers droop down)
+    setPart(w, "tail", sm.tl < 0.01 && !wag ? "" : "rotate(" + R(-TAIL_DROP * sm.tl + wag) + " 8.5 12.5)"); // (asleep, the back feathers droop down)
     setPart(w, "wing", "translate(16.5 13) rotate(" + (wing ? 52 : 0) + ") scale(" + (wing ? 1.2 : 1) + ") translate(-16.5 -13)");
     setPart(w, "head", "translate(0 " + R(dy) + ") rotate(" + R(head) + " 18 11)");
     setPart(w, "cap", "translate(0 " + R(-(1 - sm.cap) * 8) + ") translate(20 6.9) scale(" + Math.max(0.001, sm.cap).toFixed(2) + ") translate(-20 -6.9)");
@@ -630,7 +659,7 @@
     setPart(w, "tool", sm.tool < 0.01 ? "scale(0.001)" : "translate(" + R(18.6 + 3.4 * Math.sin(tn / 90) * sm.tool + 1.5) + " " + R(1.6 + 1.2 * Math.cos(tn / 150)) + ") rotate(-22) scale(" + Math.max(0.001, sm.tool).toFixed(2) + ")"); // (the comb: only wiggles while it is in use, otherwise one fixed hidden pose - nothing to redraw)
     setPart(w, "scarf", "translate(19 12.5) scale(" + Math.max(0.001, sm.scarf).toFixed(2) + ") translate(-19 -12.5)");
     setPart(w, "bag", "translate(12 18.5) scale(" + Math.max(0.001, sm.bag).toFixed(2) + ") translate(-12 -18.5)");
-    setPart(w, "all", "rotate(" + R(tilt) + " 14 24.5)");
+    setPart(w, "all", (hop ? "translate(0 " + R(hop) + ") " : "") + "rotate(" + R(tilt) + " 14 24.5)");
     setPart(w, "eye", "translate(21.4 8.2) scale(1 " + Math.max(0.05, 1 - sm.eye).toFixed(2) + ") translate(-21.4 -8.2)");
     const ez = sm.eye > 0.5 ? "1" : "0";
     if (w.eyez !== ez) { w.eyez = ez; w.parts.eyez.setAttribute("opacity", ez); }
@@ -656,6 +685,8 @@
     if (w.flip !== flip) { w.henSvg.style.transform = flip; w.flip = flip; }
     let cls = "pt-hen";
     if (h.act === "sleep") cls += " is-sleep" + (h.sleepAge > 0.6 && h.sleepAge < 4.4 ? " is-zzz" : "");
+    if (h.act === "idle" && h.sing) cls += " is-sing";
+    if (h.song) cls += h.songL ? " is-song song-l" : " is-song"; // (the notes keep floating away until the last one is gone, even after the song itself is over)
     if (h.dir < 0) cls += " face-l";
     if (w.cls !== cls) { w.hen.className = cls; w.cls = cls; }
     posture(w, now, dt);
@@ -809,7 +840,7 @@
     if (!w.napAt) return false;
     const sk = Math.max(0, Math.min((performance.now() - w.napAt) / 1000, w.napDur + 0.1)), h = w.h;
     w.napAt = 0;
-    h.t -= sk; w.e.t -= sk; h.sideCool -= sk; h.flyCool -= sk; h.cool -= sk; h.sleepCool -= sk; w.modeT -= sk; w.dressGap -= sk; w.since += sk; w.spawnCool -= sk; extrasCatchUp(sk);
+    h.t -= sk; w.e.t -= sk; h.sideCool -= sk; h.flyCool -= sk; h.cool -= sk; h.sleepCool -= sk; h.singCool -= sk; w.modeT -= sk; w.dressGap -= sk; w.since += sk; w.wait += sk; w.spawnCool -= sk; extrasCatchUp(sk);
     return true;
   }
   function start() {
@@ -844,7 +875,7 @@
     layEggs.length = 0; egActive = 0; egT = rand(8, 14);
     try { localStorage.removeItem(EGG_KEY); } catch (e) {}
     const w = world;
-    w.naps = 0; w.napsSince = 0; w.eggNeed = 5; w.rest = 0; w.layEgg = false; w.spawnCool = P.spawn0;
+    w.naps = 0; w.napsSince = 0; w.eggNeed = 5; w.rest = 0; w.wait = 0; w.layEgg = false; w.spawnCool = P.spawn0;
   }
   function checkSignOut() { const has = !!phoneNow(); if (hadPhone && !has) clearAll(); hadPhone = has; }
   ["freshcutz:who", "freshcutz:name", "freshcutz:profile"].forEach((ev) => window.addEventListener(ev, checkSignOut));
