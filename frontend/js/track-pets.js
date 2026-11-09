@@ -86,7 +86,7 @@
   const henEl = document.createElement("div");
   henEl.className = "pt-hen";
   henEl.innerHTML = HEN_SVG + '<div class="pt-zzz" aria-hidden="true"><i>z</i><i>Z</i><i>z</i></div>' + SONG_HTML;
-  henEl.addEventListener("animationend", (e) => { if (songEnded(e)) { world.h.song = false; henEl.classList.remove("is-song", "song-l"); } });
+  henEl.addEventListener("animationend", (e) => { if (songEnded(e)) { world.h.song = false; world.cls = null; henEl.classList.remove("is-song", "song-l"); } });
   const eggEl = document.createElement("div");
   eggEl.className = "pt-egg";
   eggEl.innerHTML = EGG_SVG;
@@ -167,6 +167,7 @@
       if (x.a < 1) x.a = Math.min(1, x.a + dt * 1.6);
       x.nc -= dt; x.sc -= dt;
       if (x.sing && x.act !== "idle") x.sing = false; // (the song only belongs to a stand-still)
+      else if (x.sing && !x.song) { x.song = true; x.songL = x.dir < 0; } // (new notes if the old ones have floated off meanwhile)
       const dressing = w.ready && x.dn < DRESS_N; // (Packed: she gets dressed like the first hen - she stops walking for each piece - but at her own time)
       if (!w.ready) { x.dn = 0; x.dg = rand(2, 7); if (x.act === "dress") { x.act = "idle"; x.t = 0.5; } }
       else if (dressing && x.act !== "dress" && !x.enter && !x.leave && x.act !== "sleep") x.dg -= dt;
@@ -248,7 +249,7 @@
       if (cand.length) { const g = pick(cand); g.hop = true; g.y = 0; g.vy = rand(20, 28) * (w.ready ? 1.3 : 1); g.vx = (Math.random() < 0.5 ? -1 : 1) * rand(0, 16); g.dx = 0; g.spin = 0; g.tf = ""; g.rt = ""; egActive++; }
     }
   }
-  const extrasDown = () => !egActive && extras.every((x) => x.vcur === 0 && !x.enter && !x.leave && x.a >= 1 && !x.pm && ((x.act === "idle" && !x.sing) || (x.act === "sleep" && x.s >= 0.999))); // (nobody is walking: the ones standing or lying just stay as they are while the loop is stopped) // (everyone lying still: the loop may stop altogether)
+  const extrasDown = () => !egActive && extras.every((x) => x.vcur === 0 && !x.enter && !x.leave && x.a >= 1 && !x.pm && (x.act === "sleep" && x.s >= 0.999)); // (the loop may only stop altogether - deep sleep, waiting out of sight down the side - when the OTHER hens are all lying asleep too: otherwise they would all freeze on the spot, with the eggs, for ten seconds or more)
   const extrasIdle = () => !egActive && extras.every((x) => x.vcur === 0 && x.a >= 1 && !x.enter && !x.leave && !x.pm && ((x.act === "idle" && x.t > 0.4 && !x.sing && x.sg === 0) || (x.act === "sleep" && x.s >= 0.999)));
   function drawExtras(w, now, dt) {
     const a = 1 - Math.exp(-dt * 3), ap = 1 - Math.exp(-dt * 1.4), pt = Math.floor(now / 100), tn = pt * 100;
@@ -474,6 +475,7 @@
     e.kick -= dt;
     h.cool -= dt; h.sleepCool -= dt; h.singCool -= dt; h.flyCool -= dt; h.sideCool -= dt;
     if (h.sing && h.act !== "idle") h.sing = false; // (the song only belongs to a stand-still)
+    else if (h.sing && !h.song) { h.song = true; h.songL = h.dir < 0; } // (still singing, but the notes have floated off while the panel was folded: new notes)
     { const cq = h.x + HEN_W / 2; // (the other hens rest while she sleeps or is out of sight down the side)
       eggsStep(w, dt);
       extrasStep(w, dt, h.act === "sleep" || (h.act === "corner" && (h.ph === "down" || h.ph === "hold")) || (h.afterHide && h.act === "idle" && (cq <= -7 || cq >= W + 7))); }

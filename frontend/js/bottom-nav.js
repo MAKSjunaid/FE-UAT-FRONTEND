@@ -397,6 +397,23 @@
     trk.addEventListener("touchcancel", end, { passive: true });
   })();
 
+  // A finger moving up / down on the opened-out panel must never scroll the page behind it (and so fold the strip): when the panel has no text of its own to scroll that way
+  // (everything fits, or it is already at its end), the move is simply swallowed. A sideways swipe (to the next order) is not touched, and neither is the panel's own scrolling.
+  (function keepPageStill() {
+    let sx = 0, sy = 0, axis = "";
+    trk.addEventListener("touchstart", (e) => { if (e.touches.length === 1) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; axis = ""; } else axis = "x"; }, { passive: true });
+    trk.addEventListener("touchmove", (e) => {
+      if (e.touches.length !== 1 || !(trk.classList.contains("is-open") || trk.classList.contains("is-closing"))) return;
+      const t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (!axis) { if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return; axis = Math.abs(dy) > Math.abs(dx) ? "y" : "x"; }
+      if (axis !== "y" || !e.cancelable) return;
+      const inner = e.target.closest && e.target.closest(".trk-detail-in");
+      const room = inner ? inner.scrollHeight - inner.clientHeight : 0;
+      const canScroll = inner && room > 1 && (dy < 0 ? inner.scrollTop < room - 1 : inner.scrollTop > 0); // (finger up: more text below; finger down: text above)
+      if (!canScroll) e.preventDefault();
+    }, { passive: false });
+  })();
+
   // tapping anywhere else folds the strip - and only that
   veil.addEventListener("pointerup", () => { if (!shielded()) setOpen(false); });
   veil.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); if (!shielded()) setOpen(false); });
