@@ -1,0 +1,186 @@
+/* Rewards on the customer website (js/rewards.js): the home strip, the offer card of the Final Step, "My rewards" in the account screen,
+ * and the green discount line in the bill. Mobile first; night mode at the end. */
+
+.rw-home { padding-top: 10px; padding-bottom: 2px; }
+.rw-home[hidden], .rw-slot-empty { display: none; }
+/* chosen "among the products": takes the full width of the product grid, like a banner */
+.product-grid > .rw-home.rw-in-grid { grid-column: 1 / -1; padding: 0; margin: 0; max-width: none; width: auto; }
+.rw-wrap { display: grid; gap: 8px; margin: 0 0 var(--sp-3, 12px); }
+.rw-slot { display: block; }
+/* on the Final Step the form already puts 12px between its blocks, so the card / "Have a code?" adds none of its own (it was 24px below it) */
+[data-rewards] > .rw-wrap { margin-bottom: 0; }
+
+.rw-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #fffaf0; border: 1px solid #ecd9a4; box-shadow: var(--shadow-sm); position: relative; }
+.rw-card.is-on { background: #f3f8ee; border-color: #b9dcc2; }
+.rw-card.is-claim { background: linear-gradient(135deg, #fff8e6, #fff1cf); border-color: #e6c86a; }
+.rw-ic { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; background: rgba(201, 161, 59, 0.16); }
+.rw-card.is-on .rw-ic { background: rgba(47, 143, 91, 0.16); }
+.rw-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.rw-title { font-size: 14px; line-height: 1.25; color: var(--text-main, #201c14); overflow-wrap: anywhere; }
+.rw-note { font-size: 12.5px; line-height: 1.35; color: var(--text-muted, #6f6656); overflow-wrap: anywhere; }
+.rw-sub { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 2px; font-size: 11.5px; line-height: 1.3; color: var(--text-muted, #6f6656); }
+.rw-sub > span { padding: 2px 8px; border-radius: 999px; background: rgba(120, 100, 40, 0.09); max-width: 100%; overflow-wrap: anywhere; }
+.rw-why.rw-soft { font-weight: 400; }
+.rw-why.rw-off { font-weight: 600; color: var(--text-muted, #6f6656); }
+.rw-pop { animation: rw-pop 0.9s ease-out; }
+@keyframes rw-pop { 0% { box-shadow: 0 0 0 0 rgba(47, 143, 91, 0.55); transform: scale(0.985); } 60% { box-shadow: 0 0 0 9px rgba(47, 143, 91, 0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(47, 143, 91, 0); } }
+@media (prefers-reduced-motion: reduce) { .rw-pop { animation: none; } }
+.rw-left { font-weight: 700; color: #8a6a14; }
+.rw-left.is-low { color: #c0392b; }
+.rw-ends b, .rw-hold b { font-weight: 400; font-variant-numeric: tabular-nums; color: var(--text-main, #201c14); } /* timers are plain text, not bold */
+.rw-hold { font-size: 12px; font-weight: 400; color: #2a6b3f; }
+.rw-why { font-size: 12px; color: #b3561e; font-weight: 600; line-height: 1.35; }
+.rw-save { flex: none; font-weight: 800; font-size: 15px; color: #2a6b3f; white-space: nowrap; }
+.rw-btn { flex: none; border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 800; font-size: 13px; color: #fff; background: var(--ink, #17140f); cursor: pointer; min-height: 38px; }
+.rw-btn:disabled { opacity: 0.6; }
+.rw-btn-ghost { background: transparent; color: var(--text-main, #201c14); border: 1.5px solid var(--gold, #c9a13b); }
+.rw-link { border: 0; background: none; padding: 2px 0; font-size: 12px; font-weight: 700; color: var(--gold-dark, #9c7a26); text-decoration: underline; cursor: pointer; }
+.rw-code { display: flex; gap: 8px; align-items: center; }
+.rw-code-in { flex: 1 1 auto; min-width: 0; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid #d9cfb4; background: #fff; font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; } /* 16px: an iPhone does not zoom the page in when the box is tapped */
+.rw-code-open { justify-self: start; }
+.rw-code-box { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; } /* (minmax: the box shrinks to a narrow screen instead of pushing "Apply" out of sight) */
+.rw-code-msg { margin: 0; font-size: 12.5px; line-height: 1.35; font-weight: 400; color: #b3361e; overflow-wrap: anywhere; }
+
+/* the bill: a reward taken off */
+.chg-offer { color: #2a6b3f; font-weight: 700; }
+.chg-offer span:last-child { color: #2a6b3f; }
+
+/* "You saved ₹X" on the order-placed screen */
+.rw-saved { margin: 10px auto 0; max-width: 340px; padding: 8px 12px; border-radius: 12px; background: #f3f8ee; color: #2a6b3f; font-size: 13.5px; text-align: center; }
+
+
+html.night .rw-card { background: #2a2418; border-color: rgba(201, 161, 59, 0.35); }
+html.night .rw-card.is-on { background: #1b2a1c; border-color: rgba(110, 200, 130, 0.3); }
+html.night .rw-card.is-claim { background: #33291a; border-color: rgba(230, 200, 106, 0.45); }
+html.night .rw-title, html.night .rw-ends b, html.night .rw-hold b { color: #f6f1e3; }
+html.night .rw-sub, html.night .rw-note, html.night .rw-why.rw-off { color: #c9bfa3; }
+html.night .rw-sub > span { background: rgba(255, 255, 255, 0.08); }
+html.night .rw-left { color: #f0d98a; }
+html.night .rw-left.is-low, html.night .rw-why { color: #ff8a80; }
+html.night .rw-hold, html.night .rw-save, html.night .chg-offer, html.night .chg-offer span:last-child { color: #7fe29b; }
+html.night .rw-btn { background: var(--gold, #c9a13b); color: #17140f; }
+html.night .rw-btn-ghost { background: transparent; color: #f6f1e3; }
+html.night .rw-code-in { background: #1c1810; border-color: rgba(201, 161, 59, 0.4); color: #f6f1e3; }
+html.night .rw-saved { background: #1b2a1c; color: #a9dcb4; border: 1px solid rgba(110, 200, 130, 0.22); }
+
+/* Final Step: the rest of the offers */
+.rw-more { justify-self: start; padding: 4px 2px; }
+.rw-card.is-spent { background: rgba(0, 0, 0, 0.035); border-color: rgba(0, 0, 0, 0.1); box-shadow: none; }
+.rw-card.is-spent .rw-ic { filter: grayscale(1); opacity: 0.6; }
+.rw-card.is-spent .rw-title, .rw-card.is-spent .rw-sub { opacity: 0.65; }
+
+/* home offers slider: one offer at a time, like the banners (swipe, dots, slides by itself) */
+.rw-bn { position: relative; border-radius: var(--r-md, 14px); overflow: hidden; box-shadow: var(--shadow-md, 0 6px 18px rgba(0, 0, 0, 0.1)); isolation: isolate; background: #fff6dc; }
+.rw-track { border-radius: inherit; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior-x: contain; }
+.rw-track::-webkit-scrollbar { display: none; }
+.rw-slide { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 16px; min-height: 124px; background: linear-gradient(135deg, #fff8e6, #ffe9b3); border: 1px solid #e6c86a; border-radius: inherit; }
+.rw-bn.rw-multi .rw-slide { padding-bottom: 30px; }
+.rw-slide.is-on { background: linear-gradient(135deg, #f3f8ee, #dcefd9); border-color: #b9dcc2; }
+.rw-tag { font-size: 11px; font-weight: 800; letter-spacing: 0.03em; padding: 3px 10px; border-radius: 999px; background: rgba(23, 20, 15, 0.08); color: var(--text-main, #201c14); }
+.rw-sl-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; width: 100%; }
+.rw-sl-text { flex: 1 1 170px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rw-sl-value { font-size: 22px; line-height: 1.15; font-weight: 800; color: var(--text-main, #201c14); overflow-wrap: anywhere; }
+.rw-sl-name { font-size: 14px; font-weight: 700; color: var(--text-main, #201c14); overflow-wrap: anywhere; }
+.rw-sl-name.is-big { font-size: 20px; line-height: 1.2; font-weight: 800; } /* no big line: the name leads */
+.rw-slide .rw-sub { margin-top: 0; }
+.rw-slide .rw-sub > span { background: rgba(120, 100, 40, 0.12); }
+.rw-dots { position: absolute; left: 0; right: 0; bottom: 9px; display: flex; justify-content: center; gap: 7px; pointer-events: none; }
+.rw-dot { pointer-events: auto; position: relative; width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: rgba(23, 20, 15, 0.25); cursor: pointer; transition: width 220ms ease, background 220ms ease; }
+.rw-dot::after { content: ""; position: absolute; inset: -9px -4px; }
+.rw-dot.on { width: 20px; background: var(--gold, #c9a13b); }
+@media (min-width: 768px) { .rw-slide { min-height: 110px; padding: 16px 22px; } .rw-bn.rw-multi .rw-slide { padding-bottom: 32px; } }
+@media (prefers-reduced-motion: reduce) { .rw-dot { transition: none; } }
+
+/* the owner's own picture on a home banner: "picture only" (a tap claims it) and "picture + details" */
+.rw-slide.rw-img { position: relative; display: block; padding: 0; min-height: 0; aspect-ratio: 16 / 7; background: #efe6cf; border: 0; cursor: pointer; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.rw-bn.rw-multi .rw-slide.rw-img { padding-bottom: 0; }
+.rw-slide.rw-img:focus-visible { outline: 2px solid var(--gold, #c9a13b); outline-offset: -3px; }
+.rw-pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
+.rw-rib { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 24px); box-sizing: border-box; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; background: rgba(20, 16, 8, 0.78); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); pointer-events: none; }
+.rw-rib.is-ok { background: rgba(32, 110, 60, 0.94); }
+.rw-rib.is-msg { background: rgba(160, 50, 30, 0.94); white-space: normal; text-align: center; }
+.rw-slide.rw-over { position: relative; overflow: hidden; border-color: transparent; background: #2b2416; justify-content: flex-end; }
+.rw-slide.rw-over::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.18)); pointer-events: none; }
+.rw-slide.rw-over > :not(.rw-pic) { position: relative; z-index: 1; }
+.rw-slide.rw-over .rw-tag { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.rw-slide.rw-over .rw-sl-value, .rw-slide.rw-over .rw-sl-name, .rw-slide.rw-over .rw-note, .rw-slide.rw-over .rw-hold, .rw-slide.rw-over .rw-why, .rw-slide.rw-over .rw-sub { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); }
+.rw-slide.rw-over .rw-sub > span { background: rgba(0, 0, 0, 0.38); color: #fff; }
+.rw-slide.rw-over .rw-ends b, .rw-slide.rw-over .rw-hold b, .rw-slide.rw-over .rw-left, html.night .rw-slide.rw-over .rw-ends b, html.night .rw-slide.rw-over .rw-hold b, html.night .rw-slide.rw-over .rw-left { color: #fff; }
+.rw-slide.rw-over .rw-left.is-low, html.night .rw-slide.rw-over .rw-left.is-low { color: #ffb4a8; }
+.rw-slide.rw-over .rw-hold, html.night .rw-slide.rw-over .rw-hold { color: #b9f0c9; }
+/* the dots must show over a picture as well as over the cream cards */
+.rw-bn.rw-hasimg .rw-dot:not(.on) { background: rgba(255, 255, 255, 0.7); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28); }
+@media (min-width: 768px) { .rw-slide.rw-img { aspect-ratio: 3 / 1; } }
+/* a picture-only slide beside a taller text slide is stretched to the same height: on a phone show the WHOLE picture (nothing of the owner's
+   writing is trimmed off the sides) and fill the thin gap with a blurred copy of the same picture */
+.rw-bk { display: none; }
+@media (max-width: 767px) {
+  .rw-slide.rw-img .rw-pic { object-fit: contain; }
+  .rw-slide.rw-img .rw-bk { display: block; position: absolute; inset: -16px; background-position: center; background-size: cover; background-repeat: no-repeat; filter: blur(14px); pointer-events: none; }
+}
+html.night .rw-slide.rw-img { background: #2a2418; }
+html.night .rw-slide.rw-over { background: #1d1a12; }
+html.night .rw-slide.rw-over .rw-sl-value, html.night .rw-slide.rw-over .rw-sl-name { color: #fff; }
+html.night .rw-slide.rw-over .rw-sub > span { background: rgba(0, 0, 0, 0.45); }
+
+/* My rewards: History */
+.rw-hist { border: 1px solid #ecd9a4; border-radius: 14px; background: #fffaf0; padding: 0 12px; }
+.rw-hist > summary { cursor: pointer; padding: 11px 0; font-size: 13.5px; font-weight: 800; color: var(--text-main, #201c14); }
+.rw-hrow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(160, 130, 40, 0.15); }
+.rw-hic { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: rgba(0, 0, 0, 0.06); color: var(--text-muted, #6f6656); }
+.rw-hic.is-used { background: rgba(47, 143, 91, 0.16); color: #2a6b3f; font-weight: 800; }
+.rw-hmain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.rw-hmain b { font-size: 13.5px; color: var(--text-main, #201c14); overflow-wrap: anywhere; }
+.rw-hmain small { font-size: 12px; color: var(--text-muted, #6f6656); }
+.rw-hamt { flex: none; font-size: 13.5px; font-weight: 700; color: var(--text-muted, #6f6656); }
+.rw-hamt.is-used { color: #2a6b3f; }
+.rw-hnote { margin: 0; padding: 4px 0 12px; font-size: 12.5px; color: var(--text-muted, #6f6656); }
+html.night .rw-hist { background: #2a2418; border-color: rgba(201, 161, 59, 0.35); }
+html.night .rw-hist > summary, html.night .rw-hmain b { color: #f6f1e3; }
+html.night .rw-hmain small, html.night .rw-hamt, html.night .rw-hnote { color: #c9bfa3; }
+html.night .rw-hic { background: rgba(255, 255, 255, 0.08); }
+html.night .rw-hic.is-used, html.night .rw-hamt.is-used { background: rgba(110, 200, 130, 0.18); color: #7fe29b; }
+html.night .rw-hamt.is-used { background: none; }
+
+/* My rewards in the account screen: one row that opens and closes */
+.rw-acc { padding-top: 10px; padding-bottom: 10px; }
+.rw-acc .rw-acc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 0; min-height: 36px; border: 0; background: none; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rw-acc .rw-acc-head[aria-expanded="true"] { margin-bottom: var(--sp-2, 8px); }
+.rw-chev { flex: none; width: 9px; height: 9px; margin-right: 4px; border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
+.rw-acc-head[aria-expanded="true"] .rw-chev { transform: rotate(-135deg) translateY(-2px); }
+.rw-acc-head:focus-visible { outline: 2px solid var(--gold, #c9a13b); outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .rw-chev { transition: none; } }
+
+/* night mode: the home slider */
+html.night .rw-bn { background: #33291a; }
+html.night .rw-slide { background: linear-gradient(135deg, #33291a, #2a2418); border-color: rgba(230, 200, 106, 0.45); }
+html.night .rw-slide.is-on { background: linear-gradient(135deg, #1f3022, #1b2a1c); border-color: rgba(110, 200, 130, 0.35); }
+html.night .rw-tag { background: rgba(255, 255, 255, 0.1); color: #f6f1e3; }
+html.night .rw-sl-value, html.night .rw-sl-name { color: #f6f1e3; }
+html.night .rw-slide .rw-sub > span { background: rgba(255, 255, 255, 0.09); }
+html.night .rw-dot { background: rgba(255, 255, 255, 0.3); }
+html.night .rw-dot.on { background: #e6c86a; }
+html.night .rw-card.is-spent { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.12); }
+
+/* night mode: links, the code box, the "applied" glow, and History lines tuned for the dark cards */
+html.night .rw-link, html.night .rw-more { color: #e6c86a; }
+html.night .rw-btn-ghost { border-color: rgba(230, 200, 106, 0.75); }
+html.night .rw-code-msg { color: #ff8a80; }
+html.night .rw-code-in::placeholder { color: #8f866e; opacity: 1; }
+html.night .rw-code-in { caret-color: #e6c86a; }
+html.night .rw-code-in:focus { outline: none; border-color: #e6c86a; box-shadow: 0 0 0 3px rgba(230, 200, 106, 0.2); }
+html.night .rw-pop { animation-name: rw-pop-night; }
+@keyframes rw-pop-night { 0% { box-shadow: 0 0 0 0 rgba(127, 226, 155, 0.5); transform: scale(0.985); } 60% { box-shadow: 0 0 0 9px rgba(127, 226, 155, 0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(127, 226, 155, 0); } }
+html.night .rw-hrow { border-top-color: rgba(230, 200, 106, 0.16); }
+html.night .rw-card.is-on .rw-ic { background: rgba(110, 200, 130, 0.18); }
+html.night .rw-card.is-claim .rw-ic, html.night .rw-card .rw-ic { background: rgba(230, 200, 106, 0.14); }
+html.night .rw-card.is-on .rw-ic { background: rgba(110, 200, 130, 0.18); }
+html.night .rw-card { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+html.night .rw-saved { border-color: rgba(110, 200, 130, 0.3); }
+@media (prefers-reduced-motion: reduce) { html.night .rw-pop { animation: none; } }
+/* older phones with no aspect-ratio: the picture slide gets its height from padding instead (16:7, and 3:1 on wide screens) */
+@supports not (aspect-ratio: 1 / 1) {
+  .rw-slide.rw-img { height: 0; padding: 43.75% 0 0; }
+  .rw-bn.rw-multi .rw-slide.rw-img { padding-bottom: 0; }
+}
+@supports not (aspect-ratio: 1 / 1) { @media (min-width: 768px) { .rw-slide.rw-img { padding-top: 33.34%; } } }

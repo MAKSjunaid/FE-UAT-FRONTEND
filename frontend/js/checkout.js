@@ -247,6 +247,8 @@
     // now, with the sheet's real content (every cart item, etc.) already
     // in the DOM, so the gap matches how tall this sheet actually rendered
     // instead of a fixed guess.
+    // the reward card of the Final Step (offers to claim, the one applied): drawn and kept right by rewards.js
+    if (window.Rewards) root.querySelectorAll("[data-rewards]").forEach((el) => window.Rewards.mount(el));
     // the total areas of this screen (items + charges + total): drawn and kept right by charges.js
     if (window.Charges) {
       const form = root.querySelector("#checkoutForm");
@@ -446,6 +448,7 @@
             <span class="order-id-label">${SiteCustomize.html("orderIdLabel")}</span>
             <span class="order-id-value">${Utils.escapeHtml(order.orderCode)}</span>
           </div>
+          ${window.Rewards ? window.Rewards.savedHtml(order) : ""}
         </div>
         <div class="anim-fade-up" style="animation-delay:300ms;">${orderSummaryHtml(order)}</div>
         ${window.UpiPay && order.paymentMode === "UPI" ? `<div class="anim-fade-up" style="animation-delay:340ms;">${UpiPay.cardHtml(order)}</div>` : ""}

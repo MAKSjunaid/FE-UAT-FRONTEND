@@ -177,7 +177,8 @@ window.AdminOrders = (() => {
     if (!ls.length) return "";
     const row = (name, amt) => `<div class="order-charge-row"><span>${name}</span><span>${amt}</span></div>`;
     return `<div class="order-charges"${openCharges.has(order.id) ? "" : " hidden"}>${row("Items total", Utils.formatMoney(order.itemsTotal != null ? order.itemsTotal : order.totalAmount))}${ls.map((l) =>
-      row(Utils.escapeHtml(l.label), l.free ? `<s>${Utils.formatMoney(l.amount)}</s> FREE` : Utils.formatMoney(l.charged))).join("")}</div>`;
+      l.key === "offer" ? row("🎁 " + Utils.escapeHtml(l.label) + (l.note ? `<small class="order-reward-note">${Utils.escapeHtml(l.note)}</small>` : ""), "−" + Utils.formatMoney(-l.charged)) // (a reward taken off the bill)
+        : row(Utils.escapeHtml(l.label), l.free ? `<s>${Utils.formatMoney(l.amount)}</s> FREE` : Utils.formatMoney(l.charged))).join("")}</div>`;
   }
 
   function card(order) {

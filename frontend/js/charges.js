@@ -133,8 +133,20 @@ window.Charges = (() => {
     return a < b ? minute >= a && minute < b : minute >= a || minute < b;
   }
 
-  /** {lines:[{label,note,amount,charged,free}] (paise), items, charges, grand, blocked, need (paise more for free delivery), pending} */
+  /** {lines:[{label,note,amount,charged,free}] (paise), items, charges, grand, blocked, need (paise more for free delivery), pending, reward} -
+   * the charges (baseQuote) with the customer's reward taken off (see rewards.js; the server works the same thing out when the order is placed). */
   function quote(itemsRupees, pin) {
+    const q = baseQuote(itemsRupees, pin);
+    const r = window.Rewards && Rewards.discountFor(q);
+    if (r && r.paise > 0) {
+      q.lines = q.lines.concat([{ key: "offer", label: r.label, note: "", amount: -r.paise, charged: -r.paise, free: false }]);
+      q.grand = q.items + q.charges - r.paise;
+      q.reward = r;
+    }
+    return q;
+  }
+
+  function baseQuote(itemsRupees, pin) {
     const items = paise(itemsRupees);
     const c = data && data.config;
     const out = { lines: [], items, charges: 0, grand: items, blocked: "", need: 0, pending: false };
@@ -198,6 +210,9 @@ window.Charges = (() => {
 
   /** One charge, as a row: its name, the small line under it, and its amount (a waived one: the real amount struck through + FREE). */
   function rowHtml(l) {
+    if (l.key === "offer") { // a reward taken off the bill: a green line with the amount saved
+      return `<div class="summary-row chg-row chg-offer"><span>🎁 ${esc(l.label)}</span><span>−${money(-l.charged)}</span></div>`;
+    }
     const amt = l.free
       ? `<s class="chg-strike">${money(l.amount)}</s> <b class="chg-free">FREE</b>`
       : money(l.charged);
@@ -340,17 +355,27 @@ window.Charges = (() => {
       while (quote(Cart.getTotal(), pin).pending && Date.now() - t0 < 4000) await new Promise((r) => setTimeout(r, 120));
     }
     const q = quote(Cart.getTotal(), pin);
-    return { total: data ? Math.round(q.grand) / 100 : undefined, blocked: on() ? q.blocked : "" };
+    return { total: data ? Math.round(q.grand) / 100 : undefined, blocked: on() ? q.blocked : "", reward: q.reward || null };
   }
 
   /** The server refused because what the page showed is out of date: read everything again so the screen shows the right total. */
   function stale() {
     kmCache.clear();
     kmBust = "&_=" + Date.now();
-    return ensure(true).then(renderAll);
+    return Promise.all([ensure(true), window.Rewards ? Rewards.refresh(true) : null]).then(renderAll);
   }
+
+  /** The bill as the open screen shows it (the pin of its form), for the reward card. */
+  function current() {
+    let form = null;
+    for (const m of mounts) if (m.el.isConnected && m.form && m.form.isConnected) { form = m.form; break; }
+    return quote(Cart.getTotal(), pinOf(form));
+  }
+
+  /** Draws the open totals again (the customer's reward changed). */
+  const redraw = () => { if (mounts.size) renderAll(); };
 
   const version = () => (data && data.v) || "";
 
-  return { version, mount, html, orderRows, blocked, settle, stale, ensure, on, rowHtml, quote, barTip, onChange };
+  return { version, mount, html, orderRows, blocked, settle, stale, ensure, on, rowHtml, quote, barTip, onChange, current, redraw };
 })();

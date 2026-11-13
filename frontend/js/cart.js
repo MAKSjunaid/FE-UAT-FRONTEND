@@ -71,7 +71,7 @@ const Cart = (() => {
       ) {
         changed = true;
       }
-      kept.push({ ...item, name: product.name, imageUrl: product.imageUrl, variantLabel: label, unitPrice: price });
+      kept.push({ ...item, name: product.name, imageUrl: product.imageUrl, variantLabel: label, unitPrice: price, category: product.category || "" }); // (category: for a reward that counts only some categories - rewards.js)
     }
 
     if (!changed) return { changed: false, removedNames: [] };
@@ -112,6 +112,7 @@ const Cart = (() => {
         variant,
         variantLabel: variantInfo.label,
         unitPrice: variantInfo.price,
+        category: product.category || "",
         quantity,
       });
     }

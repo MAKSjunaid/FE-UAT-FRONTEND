@@ -530,6 +530,10 @@ window.ProfileSheet = (() => {
         ${addressSummaryHtml(profile)}
       </div>
 
+      <div class="acct-card rw-acc" data-rewards-card hidden>
+        <div data-rewards-account></div>
+      </div>
+
       <div class="acct-card acct-rows">
         ${row("acct-orders", "🧾", SiteCustomize.html("myOrdersTitle"))}
         ${row("acct-help", "💬", "Help &amp; support")}
@@ -575,6 +579,7 @@ window.ProfileSheet = (() => {
       dlg.classList.add("sheet-acct");
       dlg.setAttribute("aria-label", "My Account");
       sheet.querySelector('[data-role="acct-x"]').addEventListener("click", () => sheet.querySelector('.sheet-header [data-role="close"]').click());
+      if (window.Rewards) window.Rewards.mountAccount(sheet.querySelector("[data-rewards-account]")); // (the card shows itself only when there is something in it)
     }
 
     if (showDetails) {

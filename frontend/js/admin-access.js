@@ -44,10 +44,11 @@ window.AdminAccess = (() => {
       case "customers": return can("customers");
       case "customize": return can("customize") || can("backup");
       case "promotions": return can("promotions");
+      case "rewards": return can("promotions"); // (Rewards & offers follow the Push notifications access)
       case "map": return can("map");
       case "charges": return can("charges");
       case "users": return isAdmin();
-      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("map") || canOpen("charges") || canOpen("users");
+      case "settings": return canOpen("customers") || canOpen("customize") || canOpen("promotions") || canOpen("rewards") || canOpen("map") || canOpen("charges") || canOpen("users");
       default: return isAdmin();
     }
   }

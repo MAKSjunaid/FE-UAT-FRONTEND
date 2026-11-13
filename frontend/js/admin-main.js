@@ -26,7 +26,7 @@
 
   // Customers and Customize now live inside the Settings tab (a menu list
   // with a back arrow), so the Settings tab stays highlighted on all three.
-  const SETTINGS_PAGES = ["settings", "customers", "customize", "promotions", "users", "map", "charges"];
+  const SETTINGS_PAGES = ["settings", "customers", "customize", "promotions", "rewards", "users", "map", "charges"];
   const access = () => window.AdminAccess;
 
   /** Shows one screen (and highlights its tab) without loading anything. */
@@ -48,6 +48,7 @@
     if (viewName === "customize" && window.AdminCustomize) window.AdminCustomize.refresh();
     if (viewName === "customize" && window.AdminOrderMessages) window.AdminOrderMessages.refresh();
     if (viewName === "promotions" && window.AdminPromotions) window.AdminPromotions.refresh();
+    if (viewName === "rewards" && window.AdminRewards) window.AdminRewards.refresh();
     if (viewName === "users" && window.AdminUsers) window.AdminUsers.refresh();
     if (viewName === "map" && window.AdminMap) window.AdminMap.refresh();
     if (viewName === "charges" && window.AdminCharges) window.AdminCharges.refresh();
