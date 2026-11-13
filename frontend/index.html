@@ -114,6 +114,7 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
 <link rel="stylesheet" href="css/storefront-grid.css?v=12" />
 <link rel="stylesheet" href="css/storefront-compact.css?v=6" />
 <link rel="stylesheet" href="css/cart.css?v=46" />
+<link rel="stylesheet" href="css/rewards.css?v=17" />
 <link rel="stylesheet" href="css/cart-fx.css?v=2" />
 <link rel="stylesheet" href="css/customer-push.css?v=7" />
 <link rel="stylesheet" href="css/site-banners.css?v=19" />
@@ -173,7 +174,9 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
        changes, so a saved copy from the last visit shows before first paint. -->
   <script src="js/site-elements.js?v=15"></script>
   <script src="js/live-stream.js?v=4"></script>
-  <script src="js/site-customize.js?v=39"></script>
+  <script src="js/site-customize.js?v=40"></script>
+
+  <div class="rw-home container" id="rewardsHome" hidden></div> <!-- REWARDS: offers strip (js/rewards.js; delete with the rewards files to revert) -->
 
   <nav class="category-bar" id="categoryBar">
     <div class="category-scroll" id="categoryScroll"></div>
@@ -219,12 +222,13 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
   <script src="js/utils.js?v=4"></script>
   <script src="js/toast.js?v=2"></script>
   <script src="js/api.js?v=8"></script>
-  <script src="js/cart.js"></script>
-  <script src="js/charges.js?v=25"></script>
+  <script src="js/cart.js?v=2"></script>
+  <script src="js/charges.js?v=26"></script>
+  <script src="js/rewards.js?v=32"></script> <!-- REWARDS -->
   <script src="js/cart-fx.js?v=3"></script>
   <script src="js/site-banners.js?v=12"></script>
   <script src="js/site-specials.js?v=59"></script>
-  <script src="js/storefront.js?v=25"></script>
+  <script src="js/storefront.js?v=27"></script>
   <script src="js/long-press.js?v=6"></script>
   <script src="js/storefront-header.js?v=6"></script>
   <script src="js/night-mode.js?v=5"></script>
@@ -236,11 +240,11 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
   <script src="js/install-prompt.js?v=1"></script>
   <script src="js/upi-pay.js?v=28"></script>
   <script src="js/slot-time.js?v=3"></script>
-  <script src="js/checkout.js?v=28"></script>
-  <script src="js/checkout-form.js?v=33"></script>
+  <script src="js/checkout.js?v=29"></script>
+  <script src="js/checkout-form.js?v=34"></script>
   <script src="js/order-status.js?v=3"></script>
   <script src="js/order-cancel.js?v=16"></script>
-  <script src="js/profile.js?v=77"></script>
+  <script src="js/profile.js?v=79"></script>
   <script src="js/delivery-map.js?v=28"></script>
   <script src="js/bottom-nav.js?v=42"></script>
   <script src="js/motion-30.js?v=3"></script>
