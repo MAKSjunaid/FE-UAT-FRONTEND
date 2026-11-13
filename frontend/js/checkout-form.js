@@ -273,6 +273,7 @@ window.CheckoutForm = (() => {
   }
 
   function openDeliveryStep(customerName, phone, existing) {
+    if (window.Rewards) window.Rewards.setPhone(phone); // the offers of this number (the Final Step card)
     const prefill = existing && existing.found ? existing : null;
     if (hasSavedAddress(prefill)) {
       renderAddressSummary(customerName, phone, prefill);
@@ -290,6 +291,7 @@ window.CheckoutForm = (() => {
    * itself uses. */
   async function openFinalStep(phone) {
     const S = window.CheckoutSheet;
+    if (window.Rewards) window.Rewards.setPhone(phone);
     S.renderSheet(
       `<div class="sheet-body"><div class="empty-state"><div class="icon">🛒</div><p>${SiteCustomize.html("loadingDetailsText")}</p></div></div>`,
       "Final Step"
@@ -328,6 +330,7 @@ window.CheckoutForm = (() => {
       )
       .join("");
     return `
+      <div data-rewards></div>
       <div class="field">
         <label>${SiteCustomize.html("itemsLabel")}</label>
         <div class="order-summary-list">
@@ -653,6 +656,7 @@ window.CheckoutForm = (() => {
           return;
         }
         if (seen.total != null) payload.expectedTotal = seen.total;
+        if (window.Rewards) Object.assign(payload, window.Rewards.payload(seen.reward)); // the offer / voucher the bill shows (the server checks it again)
       }
       const order = await Api.post("/api/orders", payload);
       if (window.DeliveryMap) DeliveryMap.pinSaved(payload, true); // the address saved with this order now carries the pin
@@ -662,10 +666,12 @@ window.CheckoutForm = (() => {
       // "My Orders"/"My Address" are ready for them next time without a
       // separate login step.
       window.ProfileSheet && window.ProfileSheet.savePhone(phone, order);
+      if (window.Rewards) window.Rewards.afterOrder(); // what the order used is gone from the customer's list
       window.CheckoutSheet.openSuccess(order);
     } catch (err) {
       Toast.msg("serverError", { message: err.message });
       if (window.Charges && /changed/i.test(err.message || "")) window.Charges.stale(); // the screen shows the new total
+      else if (window.Rewards && /offer|voucher|hold|run out|claim/i.test(err.message || "")) window.Rewards.refresh(true); // an offer was refused: the card shows how it stands now
       btn.disabled = false;
       btn.textContent = SiteCustomize.t("placeOrderText");
     }

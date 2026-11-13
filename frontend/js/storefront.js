@@ -160,13 +160,14 @@
         finished: drawn >= list.length && !moreAvailable(list),
       });
     }
-    if (!window.SiteBanners) return;
-    SiteBanners.place({
+    const ctx = {
       grid,
       hidden: !ready || !!searchTerm,
       category: activeCategory,
       finished: drawn >= list.length && !moreAvailable(list),
-    });
+    };
+    if (window.SiteBanners) SiteBanners.place(ctx);
+    if (window.Rewards && Rewards.place) Rewards.place(ctx); // the offers slider, when the owner chose "among the products" (rewards.js)
   }
 
   /** Adds cards to the end of the grid without touching the ones already there (no flash, scroll stays put). */
@@ -619,7 +620,9 @@
       cancelAnimationFrame(alignRaf);
       alignRaf = requestAnimationFrame(alignText);
     };
-    if (window.MutationObserver) new MutationObserver(scheduleAlign).observe(grid, { childList: true, subtree: true, characterData: true });
+    // (changes inside the offers slider - its countdown ticks every second - never change a product card's text height, so they do not re-measure the grid)
+    const inOffers = (n) => { const el = n && (n.nodeType === 1 ? n : n.parentElement); return !!(el && el.closest && el.closest("#rewardsHome")); };
+    if (window.MutationObserver) new MutationObserver((list) => { if (list.some((m) => !inOffers(m.target))) scheduleAlign(); }).observe(grid, { childList: true, subtree: true, characterData: true });
     window.addEventListener("resize", scheduleAlign);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleAlign);
     wrap.classList.add("has-vt");

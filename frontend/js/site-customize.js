@@ -740,6 +740,8 @@
         /* malformed push — the standard wording stays */
       }
     },
+    // the admin changed an offer: the page that shows offers asks again after a moment (see rewards.js)
+    rewards: () => tell("freshcutz:rewards", {}),
     // the admin changed the rules for cancelling orders: the page re-reads its orders (see profile.js)
     cancelrule: () => tell("freshcutz:cancelrule", {}),
     // the charges this page holds are the current ones (sent when the live connection opens, see LiveController)
