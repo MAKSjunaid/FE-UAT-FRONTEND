@@ -344,6 +344,7 @@
     const price = variant === "variant2" ? p.variant2Price : p.variant1Price;
     const mrp = variant === "variant2" ? p.variant2Mrp : p.variant1Mrp;
     const discount = Utils.discountPercent(price, mrp);
+    const saving = Utils.savingAmount(price, mrp);
     const img = Utils.mediumImageUrl(p.imageUrl); // the ~25 KB card-size photo, not the full-size original
 
     return `
@@ -366,9 +367,10 @@
           <button data-action="variant" data-variant="variant1" class="${variant === "variant1" ? "active" : ""}">${Utils.escapeHtml(p.variant1Label)}</button>
           <button data-action="variant" data-variant="variant2" class="${variant === "variant2" ? "active" : ""}">${Utils.escapeHtml(p.variant2Label)}</button>
         </div>` : `<div class="variant-toggle"><button class="active" disabled>${Utils.escapeHtml(p.variant1Label)}</button></div>`}
-        <div class="price-row">
+        <div class="price-row" ${Utils.priceLong(price, mrp) ? "data-long" : ""}>
           <span class="price-now" data-role="price-now">${Utils.formatMoney(price)}</span>
           <span class="price-mrp" data-role="price-mrp" ${discount > 0 ? "" : "hidden"}>${Utils.formatMoney(mrp)}</span>
+          <span class="price-save" data-role="price-save" ${saving > 0 && !p.outOfStock ? "" : "hidden"}>Save ${Utils.formatMoney(saving)}</span>
         </div>
       </div>
     </div>`;
@@ -386,6 +388,14 @@
     card.querySelector('[data-role="price-now"]').textContent = Utils.formatMoney(price);
     card.querySelector('[data-role="price-mrp"]').textContent = Utils.formatMoney(mrp);
     card.querySelector('[data-role="price-mrp"]').hidden = discount <= 0;
+    const saveEl = card.querySelector('[data-role="price-save"]');
+    const prow = card.querySelector(".price-row");
+    if (prow) prow.toggleAttribute("data-long", Utils.priceLong(price, mrp));
+    if (saveEl) {
+      const saving = Utils.savingAmount(price, mrp);
+      saveEl.textContent = `Save ${Utils.formatMoney(saving)}`;
+      saveEl.hidden = saving <= 0 || product.outOfStock;
+    }
     const badge = card.querySelector(".discount-badge");
     badge.textContent = `${discount}% OFF`;
     badge.hidden = discount <= 0 || product.outOfStock;

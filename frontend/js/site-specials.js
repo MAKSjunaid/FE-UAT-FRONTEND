@@ -101,6 +101,7 @@ window.SiteSpecials = (() => {
     const price = priceOf(p, v);
     const mrp = mrpOf(p, v);
     const off = Utils.discountPercent(price, mrp);
+    const saving = Utils.savingAmount(price, mrp);
     const qty = Cart.quantityOf(p.id, v);
     const showDesc = !!(full && p.description && SiteCustomize.on("showProductDescription")); // the short row has none; the "View all" sheet does
     const two = !!p.variant2Label;
@@ -131,7 +132,7 @@ window.SiteSpecials = (() => {
           <button type="button" class="sp-name" data-sp="open">${esc(p.name)}</button>
           ${showDesc ? `<div class="sp-desc">${esc(p.description)}</div>` : ""}
           ${variants}
-          <div class="sp-price"><span class="sp-now" data-sp-now>${Utils.formatMoney(price)}</span><span class="sp-mrp" data-sp-mrp ${off > 0 ? "" : "hidden"}>${Utils.formatMoney(mrp)}</span></div>
+          <div class="sp-price" ${Utils.priceLong(price, mrp) ? "data-long" : ""}><span class="sp-now" data-sp-now>${Utils.formatMoney(price)}</span><span class="sp-mrp" data-sp-mrp ${off > 0 ? "" : "hidden"}>${Utils.formatMoney(mrp)}</span><span class="sp-save" data-sp-save ${saving > 0 && !p.outOfStock ? "" : "hidden"}>Save ${Utils.formatMoney(saving)}</span></div>
         </div>
       </article>`;
   }
@@ -657,6 +658,14 @@ window.SiteSpecials = (() => {
     if (was) {
       was.textContent = Utils.formatMoney(mrp);
       was.hidden = off <= 0;
+    }
+    const saveEl = card.querySelector("[data-sp-save]");
+    const prow = card.querySelector(".sp-price");
+    if (prow) prow.toggleAttribute("data-long", Utils.priceLong(price, mrp));
+    if (saveEl) {
+      const saving = Utils.savingAmount(price, mrp);
+      saveEl.textContent = `Save ${Utils.formatMoney(saving)}`;
+      saveEl.hidden = saving <= 0 || !!p.outOfStock;
     }
     const badge = card.querySelector(".sp-off");
     if (badge) {

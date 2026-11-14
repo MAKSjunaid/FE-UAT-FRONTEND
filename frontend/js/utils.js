@@ -46,6 +46,23 @@ const Utils = (() => {
     return Math.round(((m - p) / m) * 100);
   }
 
+  /** Rupees saved against the MRP ("Save ₹30"); 0 when there is no discount. */
+  function savingAmount(price, mrp) {
+    const p = Number(price);
+    const m = Number(mrp);
+    if (!m || m <= p) return 0;
+    return Math.round(m - p);
+  }
+
+  /** True when price + crossed-out MRP + "Save" tag are too many characters to share one narrow line (the MRP is then
+   *  dropped on narrow cards - the Save tag says it already). */
+  function priceLong(price, mrp) {
+    const s = savingAmount(price, mrp);
+    if (!s) return false;
+    const n = (v) => "₹" + Number(v).toLocaleString("en-IN");
+    return n(price).length + n(mrp).length + n(s).length >= 14;
+  }
+
   function resolveImageUrl(imageUrl) {
     if (!imageUrl) return "";
     if (imageUrl.startsWith("http")) return imageUrl;
@@ -116,6 +133,8 @@ const Utils = (() => {
     debounce,
     escapeHtml,
     discountPercent,
+    savingAmount,
+    priceLong,
     resolveImageUrl,
     mediumImageUrl,
     validatePhone,
