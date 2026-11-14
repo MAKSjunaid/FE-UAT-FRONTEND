@@ -684,6 +684,7 @@ window.ProfileSheet = (() => {
   }
 
   /** Draws the first part of the orders held in memory, and starts watching for the end of the list. */
+  const staggered = new WeakSet();
   function drawOrders(container, state) {
     if (!container.isConnected) return;
     if (moreObserver) {
@@ -698,6 +699,11 @@ window.ProfileSheet = (() => {
         ? BottomNav.emptyHtml("🧾", "Your orders will appear here", SiteCustomize.html("noOrdersText"))
         : `<div class="empty-state"><p>${SiteCustomize.html("noOrdersText")}</p></div>`;
     watchEnd(container, state);
+    if (list.length && !staggered.has(container)) { // the first time the list is drawn the cards slide in one after another
+      staggered.add(container);
+      container.classList.add("ord-stagger");
+      setTimeout(() => container.classList.remove("ord-stagger"), 900);
+    }
     fillOrderThumbs(container);
   }
 
@@ -860,8 +866,9 @@ window.ProfileSheet = (() => {
     container.addEventListener("click", (e) => {
       const btn = e.target.closest('[data-action="reorder"]');
       if (!btn) return;
+      if (btn.classList.contains("is-added")) return; // (already added: no second tap while it says "Added")
       const order = state.orders.find((o) => o.orderCode === btn.dataset.orderCode);
-      if (order) reorder(order);
+      if (order) reorder(order, btn);
     });
     if (state.loaded) {
       drawOrders(container, state); // kept from earlier on this visit: no request
@@ -1149,7 +1156,7 @@ window.ProfileSheet = (() => {
    *  longer sold, out of stock, or missing the size it was ordered in gets
    *  skipped and rolled into one summary toast instead of failing silently
    *  or one toast per item. */
-  async function reorder(order) {
+  async function reorder(order, btn) {
     // The products of an old order may not be on the page (the shop loads a few at a time): fetch just those.
     try {
       await window.Storefront.ensureProducts(order.items.map((i) => i.productId));
@@ -1190,6 +1197,7 @@ window.ProfileSheet = (() => {
       toAdd.forEach(({ product, variant, quantity }) => {
         Cart.setQuantity(product, variant, quantity);
       });
+      if (btn) await flashAdded(btn); // (the pill says "Added" for a beat, then the cart opens)
       window.CheckoutSheet.openCart();
       Toast.msg("reorderAdded");
     }
@@ -1236,11 +1244,13 @@ window.ProfileSheet = (() => {
     return !track && at ? `<div class="profile-order-time profile-order-ended">${order.status === "DELIVERED" ? "Delivered" : "Cancelled"}: ${Utils.formatDateTime(at)}</div>` : "";
   }
 
+  const orderIndex = new Map(); // order code -> order, so a card can be checked for unavailable items after it is drawn
   function orderCardHtml(order, track) {
+    orderIndex.set(order.orderCode, order);
     const rows = !track && window.Charges ? Charges.orderRows(order) : ""; // ("" = no charges on this order, or the tracking panel)
     const open = rows && openCharges.has(order.orderCode);
     return `
-    <div class="profile-order-card${rows ? " chg-tap" : ""}${canReorder(order.status) ? " has-reorder" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
+    <div class="profile-order-card${rows ? " chg-tap" : ""}${canReorder(order.status) ? " has-reorder" : ""}${order.status === "CANCELLED" ? " ord-cancelled" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
       <div class="profile-order-head">
         <div>
           <div class="profile-order-code">${SiteCustomize.html("orderIdLabel")} ${Utils.escapeHtml(order.orderCode)}</div>
@@ -1275,10 +1285,10 @@ window.ProfileSheet = (() => {
    * until fillOrderThumbs() has them. */
   function reorderButtonHtml(code, order) {
     const lines = (order && order.items) || [];
-    const units = lines.reduce((n, i) => n + (+i.quantity || 0), 0);
+    const units = lines.length; // (one line = one item, however many of it were ordered - the same way the cart counts)
     const th = lines
       .slice(0, 3)
-      .map((i) => `<span class="ord-th" data-pid="${+i.productId || 0}" data-nm="${Utils.escapeHtml((i.productName || "?").trim().charAt(0).toUpperCase())}">${orderThumbInner(i)}</span>`)
+      .map((i) => `<span class="ord-th" data-pid="${+i.productId || 0}" data-nm="${Utils.escapeHtml((i.productName || "?").trim().charAt(0).toUpperCase())}"><span class="ord-ph">${orderThumbInner(i)}</span>${+i.quantity > 1 ? `<b class="ord-q">×${+i.quantity > 99 ? "99+" : +i.quantity}</b>` : ""}</span>`)
       .join("");
     const more = lines.length > 3 ? `<span class="ord-th ord-more">+${lines.length - 3}</span>` : "";
     const left = lines.length ? `<span class="ord-left">${th}${more}<span class="ord-count">${units} ${units === 1 ? "item" : "items"}</span></span>` : "";
@@ -1287,7 +1297,7 @@ window.ProfileSheet = (() => {
         class="ord-re"
         data-action="reorder"
         data-order-code="${Utils.escapeHtml(code)}"
-      ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/></svg><span>${SiteCustomize.html("reorderButtonText")}</span></button></div>`;
+      ><svg class="ic-re" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/></svg><svg class="ic-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>${SiteCustomize.html("reorderButtonText")}</span></button></div>`;
   }
 
   /** One round photo of an order line: the product's card-size photo when the product is known, else its first letter. */
@@ -1299,24 +1309,109 @@ window.ProfileSheet = (() => {
       : Utils.escapeHtml((item.productName || "?").trim().charAt(0).toUpperCase());
   }
 
+  // Each product is looked up at most once per page visit (products the shop no longer sells are never found, so without this they
+  // would be asked for again every time the list is drawn). Products the shop already holds cost no request at all.
+  const askedIds = new Map(); // product id -> the request that is looking it up
+  function ensureOnce(ids) {
+    const wait = [];
+    const todo = [];
+    ids.forEach((id) => {
+      if (!id) return;
+      if (askedIds.has(id)) wait.push(askedIds.get(id));
+      else if (!window.Storefront.getProduct(id)) todo.push(id);
+    });
+    if (todo.length) {
+      const pr = Promise.resolve(window.Storefront.ensureProducts(todo)).catch((e) => {
+        todo.forEach((id) => askedIds.delete(id)); // (offline: may be asked again next time)
+        throw e;
+      });
+      todo.forEach((id) => askedIds.set(id, pr));
+      wait.push(pr);
+    }
+    return Promise.all(wait);
+  }
+
   /** Swaps the letters for photos once the products are known. One request at most for all the orders drawn (and none when the shop
-   * already holds them), so the list costs the server nothing extra. */
+   * already holds them), so the list costs the server nothing extra. Then flags the items that can't be reordered right now. */
   function fillOrderThumbs(root) {
     if (!root || !window.Storefront) return;
-    const slots = [...root.querySelectorAll(".ord-th[data-pid]:not(:has(img))")];
+    const slots = [...root.querySelectorAll(".ord-th[data-pid]:not([data-bad])")].filter((el) => !el.querySelector("img"));
     const ids = [...new Set(slots.map((el) => +el.dataset.pid).filter(Boolean))];
-    if (!ids.length) return;
     const paint = () => {
       slots.forEach((el) => {
-        if (!el.isConnected || el.querySelector("img")) return;
+        const ph = el.querySelector(".ord-ph");
+        if (!ph || !el.isConnected || ph.querySelector("img")) return;
         let p = null;
         try { p = window.Storefront.getProduct(+el.dataset.pid); } catch (_) { /* skip */ }
-        if (p && p.imageUrl) el.innerHTML = `<img src="${Utils.escapeHtml(Utils.mediumImageUrl(p.imageUrl))}" alt="" loading="lazy" decoding="async">`;
+        if (p && p.imageUrl) ph.innerHTML = `<img src="${Utils.escapeHtml(Utils.mediumImageUrl(p.imageUrl))}" alt="" loading="lazy" decoding="async">`;
       });
     };
     paint();
-    if (!slots.some((el) => !el.querySelector("img"))) return;
-    Promise.resolve(window.Storefront.ensureProducts(ids)).then(paint).catch(() => {});
+    if (ids.length && slots.some((el) => !el.querySelector("img"))) ensureOnce(ids).then(paint).catch(() => {});
+    markUnavailable(root);
+  }
+
+  // a photo that fails to load (file gone / broken) falls back to the item's first letter instead of a broken-image mark
+  document.addEventListener(
+    "error",
+    (e) => {
+      const im = e.target;
+      if (!im || im.tagName !== "IMG" || !im.closest) return;
+      const ph = im.closest(".ord-ph");
+      if (!ph) return;
+      const th = ph.parentNode;
+      th.setAttribute("data-bad", "1");
+      ph.textContent = th.dataset.nm || "?";
+    },
+    true
+  );
+
+  /** Lines of an order that "Order again" can't add right now - same rules reorder() uses (product gone, out of stock, size no longer sold). */
+  function unavailableLines(order) {
+    return (order.items || []).filter((item) => {
+      const p = window.Storefront.getProduct(item.productId);
+      if (!p) return true;
+      let v = item.variant;
+      if (v !== "variant1" && v !== "variant2") v = item.variantLabel === p.variant2Label ? "variant2" : "variant1";
+      return p.outOfStock || (v === "variant2" && !p.variant2Price);
+    });
+  }
+
+  /** A small note above the bottom strip when some of the order's items are unavailable now (asked once for all the cards drawn). */
+  function markUnavailable(root) {
+    const cards = [...root.querySelectorAll(".profile-order-card.has-reorder[data-code]")].filter((c) => !c.dataset.track && orderIndex.get(c.dataset.code));
+    if (!cards.length) return;
+    const ids = [...new Set(cards.flatMap((c) => orderIndex.get(c.dataset.code).items.map((i) => i.productId)).filter(Boolean))];
+    const apply = () => {
+      cards.forEach((card) => {
+        if (!card.isConnected) return;
+        const order = orderIndex.get(card.dataset.code);
+        const n = unavailableLines(order).length;
+        const old = card.querySelector(".ord-note");
+        if (old) old.remove();
+        card.classList.toggle("ord-none", n > 0 && n === order.items.length);
+        const foot = card.querySelector(".ord-foot");
+        if (!n || !foot) return;
+        const all = n === order.items.length;
+        const txt = all ? "No items available right now" : `${n} ${n === 1 ? "item is" : "items are"} unavailable right now`;
+        foot.insertAdjacentHTML("beforebegin", `<div class="ord-note" role="note">${txt}</div>`);
+      });
+    };
+    ensureOnce(ids).then(apply).catch(() => {});
+  }
+
+  /** The pill answers a tap: it turns into "✓ Added" for a moment (the cart opens right after). Resolves when it is time to open the cart. */
+  function flashAdded(btn) {
+    const label = btn.querySelector("span");
+    if (!label) return Promise.resolve();
+    const keep = label.innerHTML;
+    btn.classList.add("is-added");
+    label.textContent = "Added";
+    setTimeout(() => {
+      btn.classList.remove("is-added");
+      label.innerHTML = keep;
+    }, 1700);
+    return new Promise((r) => setTimeout(r, 450));
   }
 
   /** After a live status change: the Reorder button comes when the order turns DELIVERED or CANCELLED and goes when it is reopened. */
@@ -1329,6 +1424,12 @@ window.ProfileSheet = (() => {
       card.classList.add("has-reorder");
       card.insertAdjacentHTML("beforeend", reorderButtonHtml(code, order));
       fillOrderThumbs(card);
+    }
+    card.classList.toggle("ord-cancelled", status === "CANCELLED");
+    if (!canReorder(status)) {
+      card.classList.remove("ord-none");
+      const note = card.querySelector(".ord-note");
+      if (note) note.remove();
     }
   }
 
