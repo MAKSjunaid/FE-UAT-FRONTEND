@@ -114,22 +114,24 @@ window.SiteSpecials = (() => {
         : "";
     const foot = p.outOfStock
       ? `<button type="button" class="sp-soldout" disabled>${esc(SiteCustomize.t("outOfStockText"))}</button>`
-      : `<button type="button" class="sp-add ${qty > 0 ? "hide" : ""}" data-sp="add">${esc(SiteCustomize.t("addToCartText"))}</button>
+      : `<button type="button" class="sp-add ${qty > 0 ? "hide" : ""}" data-sp="add" aria-label="${esc(SiteCustomize.t("addToCartText"))}" title="${esc(SiteCustomize.t("addToCartText"))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
          <div class="sp-step ${qty > 0 ? "show" : ""}">
-           <button type="button" data-sp="dec" aria-label="Decrease">−</button><span class="sp-qty">${qty}</span><button type="button" data-sp="inc" aria-label="Increase">+</button>
+           <button type="button" data-sp="dec" aria-label="Decrease"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><span class="sp-qty">${qty}</span><button type="button" data-sp="inc" aria-label="Increase"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
          </div>`;
     return `
       <article class="sp-card ${p.outOfStock ? "sp-out" : ""}" data-id="${p.id}">
-        <button type="button" class="sp-media" data-sp="open" aria-label="${esc(p.name)} - view item">
-          <img src="${esc(Utils.mediumImageUrl(p.imageUrl))}" alt="" decoding="async" draggable="false" onerror="this.style.opacity=0" />
-          <span class="sp-off" ${off > 0 && !p.outOfStock ? "" : "hidden"}>${off}% OFF</span>
-        </button>
+        <div class="sp-photo">
+          <button type="button" class="sp-media" data-sp="open" aria-label="${esc(p.name)} - view item">
+            <img src="${esc(Utils.mediumImageUrl(p.imageUrl))}" alt="" decoding="async" draggable="false" onerror="this.style.opacity=0" />
+            <span class="sp-off" ${off > 0 && !p.outOfStock ? "" : "hidden"}>${off}% OFF</span>
+          </button>
+          <div class="sp-foot">${foot}</div>
+        </div>
         <div class="sp-body">
           <button type="button" class="sp-name" data-sp="open">${esc(p.name)}</button>
           ${showDesc ? `<div class="sp-desc">${esc(p.description)}</div>` : ""}
           ${variants}
           <div class="sp-price"><span class="sp-now" data-sp-now>${Utils.formatMoney(price)}</span><span class="sp-mrp" data-sp-mrp ${off > 0 ? "" : "hidden"}>${Utils.formatMoney(mrp)}</span></div>
-          <div class="sp-foot">${foot}</div>
         </div>
       </article>`;
   }
@@ -615,7 +617,14 @@ window.SiteSpecials = (() => {
       variantOf[id] = btn.dataset.v;
       document.querySelectorAll(`.sp-card[data-id="${id}"]`).forEach((c) => patchCard(c)); // the row, its repeat and the sheet
     } else if (what === "add" || what === "inc") {
+      try { navigator.vibrate && navigator.vibrate(8); } catch (_) { /* a tiny tap buzz where the phone allows it */ }
       const from = btn.getBoundingClientRect(); // before the button hides itself
+      // the pill opens with a little animation only when the customer has just added the item - never again when the strip's cards
+      // are moved around (tapping another card turns the drift into a real scroll and re-inserts cards, which would replay it)
+      document.querySelectorAll(`.sp-card[data-id="${id}"] .sp-step:not(.show)`).forEach((st) => {
+        st.classList.add("opening");
+        st.addEventListener("animationend", (e) => { if (e.target === st) st.classList.remove("opening"); });
+      });
       Cart.setQuantity(p, v, what === "add" ? 1 : Cart.quantityOf(id, v) + 1);
       pulse(id);
       if (what === "add") Toast.msg("addedToCart", { name: p.name });

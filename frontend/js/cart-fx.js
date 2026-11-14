@@ -57,6 +57,8 @@ window.CartFx = (() => {
     const mx = (sx + ex) / 2;
     const my = Math.min(sy, ey) - 70; // the arc's peak
 
+    const s0 = Math.max(0.5, Math.min(1, fromRect.width / size)); // starts exactly the size of the little round button it leaves (it used to pop out bigger)
+
     const ghost = document.createElement("div");
     ghost.className = "fx-fly";
     const img = card && card.querySelector(".product-media-frame img");
@@ -68,8 +70,8 @@ window.CartFx = (() => {
 
     const anim = ghost.animate(
       [
-        { transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, offset: 0 },
-        { transform: `translate(${mx}px, ${my}px) scale(0.85)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${sx}px, ${sy}px) scale(${s0})`, opacity: 1, offset: 0 },
+        { transform: `translate(${mx}px, ${my}px) scale(${Math.min(0.85, s0)})`, opacity: 1, offset: 0.5 },
         { transform: `translate(${ex}px, ${ey}px) scale(0.2)`, opacity: 0.9, offset: 1 },
       ],
       { duration: 620, easing: "cubic-bezier(0.45, 0.05, 0.55, 0.95)", fill: "forwards" }
@@ -109,6 +111,8 @@ window.CartFx = (() => {
     const mx = (sx + ex) / 2;
     const my = Math.min(sy, ey) - 70; // the arc's peak
 
+    const s1 = Math.max(0.5, Math.min(1, toRect.width / size)); // lands at the size of the button it returns to
+
     const ghost = document.createElement("div");
     ghost.className = "fx-fly";
     const img = card && card.querySelector(".product-media-frame img");
@@ -123,8 +127,8 @@ window.CartFx = (() => {
       [
         { transform: `translate(${sx}px, ${sy}px) scale(0.3)`, opacity: 0.9, offset: 0 },
         { transform: `translate(${mx}px, ${my}px) scale(0.85)`, opacity: 1, offset: 0.5 },
-        { transform: `translate(${ex}px, ${ey}px) scale(1)`, opacity: 1, offset: 0.85 },
-        { transform: `translate(${ex}px, ${ey}px) scale(0.6)`, opacity: 0, offset: 1 },
+        { transform: `translate(${ex}px, ${ey}px) scale(${s1})`, opacity: 1, offset: 0.85 },
+        { transform: `translate(${ex}px, ${ey}px) scale(${s1 * 0.6})`, opacity: 0, offset: 1 },
       ],
       { duration: 620, easing: "cubic-bezier(0.45, 0.05, 0.55, 0.95)", fill: "forwards" }
     );

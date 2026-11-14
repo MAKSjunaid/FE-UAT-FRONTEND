@@ -325,16 +325,16 @@
    * their place — kept separate from renderCard so a poll picking up a
    * stock change can just swap this one piece (see storefront-sync.js). */
   function footerHtml(p, variant) {
-    if (p.outOfStock) {
-      return `<button class="add-btn out-of-stock-btn" disabled>${Utils.escapeHtml(SiteCustomize.t("outOfStockText"))}</button>`;
-    }
+    if (p.outOfStock) return ""; // (the "Out of stock" tag on the photo already says it - no control to draw)
     const qty = Cart.quantityOf(p.id, variant);
+    const label = Utils.escapeHtml(SiteCustomize.t("addToCartText"));
+    // a round "+" that sits on the photo; once something is in the cart it becomes the  −  1  +  pill (css/storefront-grid.css, "round add button")
     return `
-      <button class="add-btn ${qty > 0 ? "hide" : ""}" data-action="add">${Utils.escapeHtml(SiteCustomize.t("addToCartText"))}</button>
+      <button class="add-btn ${qty > 0 ? "hide" : ""}" data-action="add" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       <div class="qty-stepper ${qty > 0 ? "show" : ""}">
-        <button data-action="dec" aria-label="Decrease">−</button>
+        <button data-action="dec" aria-label="Decrease"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
         <span class="qty-value">${qty}</span>
-        <button data-action="inc" aria-label="Increase">+</button>
+        <button data-action="inc" aria-label="Increase"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>`;
   }
 
@@ -354,6 +354,7 @@
           <span class="discount-badge" ${discount > 0 && !p.outOfStock ? "" : "hidden"}>${discount}% OFF</span>
           <span class="out-of-stock-badge" ${p.outOfStock ? "" : "hidden"}>${Utils.escapeHtml(SiteCustomize.t("outOfStockText"))}</span>
         </div>
+        <div class="product-footer">${footerHtml(p, variant)}</div>
       </div>
       <div class="product-body">
         <div class="product-text">
@@ -369,7 +370,6 @@
           <span class="price-now" data-role="price-now">${Utils.formatMoney(price)}</span>
           <span class="price-mrp" data-role="price-mrp" ${discount > 0 ? "" : "hidden"}>${Utils.formatMoney(mrp)}</span>
         </div>
-        <div class="product-footer">${footerHtml(p, variant)}</div>
       </div>
     </div>`;
   }
@@ -520,13 +520,20 @@
       patchVariantUI(card, product, cardVariant[productId]);
       patchQtyUI(card, productId, cardVariant[productId], false);
     } else if (addBtn) {
+      try { navigator.vibrate && navigator.vibrate(8); } catch (_) { /* a tiny tap buzz where the phone allows it */ }
       const variant = cardVariant[productId] || "variant1";
       const fromRect = addBtn.getBoundingClientRect(); // before the button hides itself
+      const pill = card.querySelector(".qty-stepper"); // its opening animation plays only now, never when the card is merely re-shown
+      if (pill && !pill.classList.contains("show")) {
+        pill.classList.add("opening");
+        pill.addEventListener("animationend", (e) => { if (e.target === pill) pill.classList.remove("opening"); });
+      }
       Cart.setQuantity(product, variant, 1);
       patchQtyUI(card, productId, variant, true);
       Toast.msg("addedToCart", { name: product.name });
       if (window.CartFx) CartFx.fly(fromRect, card);
     } else if (incBtn) {
+      try { navigator.vibrate && navigator.vibrate(8); } catch (_) { /* (same tap buzz) */ }
       const variant = cardVariant[productId] || "variant1";
       const fromRect = incBtn.getBoundingClientRect();
       Cart.setQuantity(product, variant, Cart.quantityOf(productId, variant) + 1);
