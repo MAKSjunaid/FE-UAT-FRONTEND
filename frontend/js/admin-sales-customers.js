@@ -107,6 +107,14 @@ window.AdminSalesCustomers = (() => {
 
   const badgeClass = { NEW: "badge-new", PACKED: "badge-packed", DELIVERED: "badge-delivered", CANCELLED: "badge-cancelled" };
 
+  /** The time shown on an order row: when it was delivered / cancelled for a finished order (that is what the Sales
+   *  numbers are counted by), otherwise when it was placed. Falls back to the placed time if the other is missing. */
+  function orderWhen(order) {
+    const at = order.status === "DELIVERED" ? order.deliveredAt : order.status === "CANCELLED" ? order.cancelledAt : null;
+    if (at) return `${order.status === "DELIVERED" ? "Delivered" : "Cancelled"} ${Utils.formatDateTime(at)}`;
+    return Utils.formatDateTime(order.createdAt);
+  }
+
   function orderRow(order) {
     const itemsSummary = (order.items || [])
       .map((i) => `${i.quantity} × ${Utils.escapeHtml(i.productName)}`)
@@ -117,7 +125,7 @@ window.AdminSalesCustomers = (() => {
           <span class="order-code-lbl">${Utils.escapeHtml(order.orderCode)}</span>
           <span class="badge ${badgeClass[order.status] || ""}">${order.status}</span>
         </div>
-        <div class="customer-order-meta">${Utils.formatDateTime(order.createdAt)} · ${Utils.formatMoney(order.totalAmount)}</div>
+        <div class="customer-order-meta">${orderWhen(order)} · ${Utils.formatMoney(order.totalAmount)}</div>
         ${itemsSummary ? `<div class="customer-order-items">${Utils.escapeHtml(itemsSummary)}</div>` : ""}
       </div>`;
   }
