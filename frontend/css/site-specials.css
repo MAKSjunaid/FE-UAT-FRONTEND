@@ -241,3 +241,69 @@
   font: inherit; font-weight: 800; font-size: calc(12.5px * var(--sz-buttons, 1)); touch-action: manipulation;
 }
 .ro-sign-btn:active { transform: scale(0.95); }
+
+/* ---- Round "add" button set into the photo's corner (same as the product cards - see storefront-grid.css) -------------------
+   A smooth scoop in the photo's bottom-right edge holds the round +; a tap turns it into a  −  1  +  pill and the scoop stretches.
+   (The big pop-up card gets the same scoop; its photo is backed by the card colour so the scoop shows the card, not the dimmed page.) */
+:root { --bw: 1px; }
+@media (min-resolution: 2dppx) { :root { --bw: 1.33px; } }
+.sp-photo {
+  position: relative; flex: 0 0 auto;
+  --d: 30px; --h: 8px; --pw: 84px; --wc: 25px; --ht: 27px; --cx: 20px; --fr: 6px;
+  --capF: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='6' viewBox='0 0 7 6'%3E%3Cpath d='M0,0 L7.000,0 A6.000,6.000 0 0 1 1,6.000 L0,6.000 Z' fill='black'/%3E%3C/svg%3E");
+  --capL: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' height='28' viewBox='0 0 25 28'%3E%3Cpath d='M0,0 L25.000,0 L25.000,1.000 A19.000,19.000 0 0 0 6.061,21.520 A6.000,6.000 0 0 1 0.080,28.000 L0,28.000 Z' fill='black'/%3E%3C/svg%3E");
+  --nx: 0px;
+  transition: --nx 260ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.sp-mini .sp-photo {
+  --d: 26px; --h: 9px; --pw: 74px; --wc: 21px; --ht: 25px; --cx: 17px; --fr: 5px;
+  --capF: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='5' viewBox='0 0 6 5'%3E%3Cpath d='M0,0 L6.000,0 A5.000,5.000 0 0 1 1,5.000 L0,5.000 Z' fill='black'/%3E%3C/svg%3E");
+  --capL: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='21' height='26' viewBox='0 0 21 26'%3E%3Cpath d='M0,0 L21.000,0 L21.000,1.000 A16.000,16.000 0 0 0 5.293,20.048 A5.000,5.000 0 0 1 0.384,26.000 L0,26.000 Z' fill='black'/%3E%3C/svg%3E");
+}
+.sp-photo:has(.sp-step.show) { --nx: calc(var(--pw) - var(--d)); }
+.sp-photo > .sp-foot { position: absolute; right: calc(var(--cx) - var(--d) / 2); bottom: calc(var(--h) - var(--d) / 2); z-index: 3; margin: 0; display: flex; align-items: center; justify-content: flex-end; }
+.sp-photo:has(.sp-add) > .sp-media {
+  -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000), linear-gradient(#000, #000), var(--capF), var(--capL);
+  mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000), linear-gradient(#000, #000), var(--capF), var(--capL);
+  -webkit-mask-size: 100% calc(100% - var(--ht) - var(--fr) + 1px), calc(100% - var(--fr) + 1px) calc(100% - var(--ht)), calc(100% - var(--cx) - var(--nx) - var(--wc) + 1px) 100%, calc(var(--fr) + 1px) var(--fr), var(--wc) calc(var(--ht) + 1px);
+  mask-size: 100% calc(100% - var(--ht) - var(--fr) + 1px), calc(100% - var(--fr) + 1px) calc(100% - var(--ht)), calc(100% - var(--cx) - var(--nx) - var(--wc) + 1px) 100%, calc(var(--fr) + 1px) var(--fr), var(--wc) calc(var(--ht) + 1px);
+  -webkit-mask-position: 0 0, 0 0, 0 0, right 0 bottom var(--ht), right calc(var(--cx) + var(--nx)) bottom 0;
+  mask-position: 0 0, 0 0, 0 0, right 0 bottom var(--ht), right calc(var(--cx) + var(--nx)) bottom 0;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+.sp-photo .sp-add {
+  flex: 0 0 auto; width: var(--d); height: var(--d); min-height: 0; padding: 0; display: grid; place-items: center;
+  border-radius: 50%; border: 0; background: #fff; color: var(--gold-dark);
+  box-shadow: inset 0 0 0 var(--bw, 1px) var(--gold), 0 3px 10px rgba(23, 20, 15, 0.18); -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast, 150ms) var(--ease-out, ease), background var(--dur-fast, 150ms), color var(--dur-fast, 150ms);
+}
+.sp-photo .sp-add.hide { display: none; }
+.sp-photo .sp-add svg { width: calc(var(--d) * 0.44); height: calc(var(--d) * 0.44); fill: none; stroke: currentColor; stroke-width: 2.7; stroke-linecap: round; display: block; }
+.sp-photo .sp-add:active { transform: scale(0.9); }
+.sp-photo .sp-step {
+  flex: 0 0 auto; width: var(--pw); height: var(--d); min-height: 0; border-radius: 999px; border: 0; justify-content: flex-end;
+  background: #fff; color: #241c0c; box-shadow: inset 0 0 0 var(--bw, 1px) var(--gold), 0 3px 10px rgba(23, 20, 15, 0.18);
+}
+.sp-photo .sp-step.show { animation: none; }
+.sp-photo .sp-step.show.opening { animation: pillOpen 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both; transform-origin: 100% 50%; }
+.sp-photo .sp-step button { width: var(--d); color: var(--gold-dark); font-size: calc(17px * var(--sz-buttons, 1)); font-weight: 700; line-height: 1; }
+.sp-photo .sp-step button { display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+.sp-photo .sp-step button svg { width: calc(var(--d) * 0.44); height: calc(var(--d) * 0.44); fill: none; stroke: currentColor; stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; display: block; pointer-events: none; flex: none; }
+.sp-photo .sp-step button:active { background: rgba(201, 161, 59, 0.22); }
+.sp-photo .sp-qty { flex: 0 0 calc(var(--pw) - 2 * var(--d)); min-width: 0; color: #241c0c; font-family: "Nunito", Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; font-size: calc(15px * var(--sz-buttons, 1)); }
+.sp-mini .sp-photo .sp-step button { font-size: 15px; }
+.sp-mini .sp-photo .sp-qty { font-size: 13.5px; }
+.sp-photo .sp-soldout { flex: 0 0 auto; min-height: 26px; height: 26px; padding: 0 10px; font-size: 11px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+/* the big pop-up card: plain round button on the photo (no scoop) */
+.sp-big .sp-photo {
+  --d: 44px; --h: 12px; --pw: 124px; --wc: 37px; --ht: 40px; --cx: 30px; --fr: 9px;
+  --capF: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='9' viewBox='0 0 10 9'%3E%3Cpath d='M0,0 L10.000,0 A9.000,9.000 0 0 1 1,9.000 L0,9.000 Z' fill='black'/%3E%3C/svg%3E");
+  --capL: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='37' height='41' viewBox='0 0 37 41'%3E%3Cpath d='M0,0 L37.000,0 L37.000,1.000 A28.000,28.000 0 0 0 9.092,31.270 A9.000,9.000 0 0 1 0.122,41.000 L0,41.000 Z' fill='black'/%3E%3C/svg%3E");
+}
+.sp-pop-card .sp-photo { background: var(--bg-card); } /* the card's own colour is what shows in the scoop */
+.sp-big .sp-photo .sp-qty { font-size: calc(22px * var(--sz-buttons, 1)); }
+.sp-big .sp-photo .sp-soldout { margin: 0; }
+@keyframes pillOpen { from { max-width: var(--d); } to { max-width: var(--pw); } }

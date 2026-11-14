@@ -68,9 +68,12 @@
   .pg-compact .price-mrp { font-size: calc(11.5px * var(--sz-price, 1)); }
 
   .pg-compact .product-footer { margin-top: auto; padding-top: 2px; gap: 6px; }
-  .pg-compact .add-btn,
-  .pg-compact .out-of-stock-btn { min-height: 38px; padding: 8px 4px; font-size: calc(13px * var(--sz-buttons, 1)); }
-  .pg-compact .qty-stepper { height: 38px; }
-  .pg-compact .qty-stepper button { width: 34px; font-size: calc(17px * var(--sz-buttons, 1)); }
-  .pg-compact .qty-stepper .qty-value { font-size: calc(14px * var(--sz-buttons, 1)); }
+  /* the round add button / quantity pill and the scoop in the photo's edge: a little smaller here (see storefront-grid.css) */
+  .pg-compact .product-media {
+    --d: 34px; --h: 10px; --pw: 92px; --wc: 27px; --ht: 31px; --cx: 22px; --fr: 6px;
+    --capF: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='6' viewBox='0 0 7 6'%3E%3Cpath d='M0,0 L7.000,0 A6.000,6.000 0 0 1 1,6.000 L0,6.000 Z' fill='black'/%3E%3C/svg%3E");
+    --capL: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='32' viewBox='0 0 27 32'%3E%3Cpath d='M0,0 L27.000,0 L27.000,1.000 A21.000,21.000 0 0 0 6.232,25.111 A6.000,6.000 0 0 1 0.298,32.000 L0,32.000 Z' fill='black'/%3E%3C/svg%3E");
+  }
+  .pg-compact .product-card .qty-stepper button { font-size: calc(18px * var(--sz-buttons, 1)); }
+  .pg-compact .product-card .qty-stepper .qty-value { font-size: calc(15px * var(--sz-buttons, 1)); }
 }
