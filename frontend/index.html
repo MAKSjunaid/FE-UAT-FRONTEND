@@ -90,6 +90,8 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<!-- Nunito, only the digits 0-9 (a few hundred bytes): the soft round numbers in the + / - quantity pill -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&text=0123456789&display=block" media="print" onload="this.media='all'; try { document.fonts.load('800 16px Nunito', '0123456789'); } catch (e) {}" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" /></noscript>
 <!-- Launch screens for the iPhone home-screen app: plain dark brown, so the very first frame is the same colour as the opening animation -->
 <link rel="apple-touch-startup-image" href="images/splash/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
@@ -111,14 +113,14 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
 <link rel="stylesheet" href="css/animations.css?v=2" />
 <link rel="stylesheet" href="css/components.css?v=10" />
 <link rel="stylesheet" href="css/storefront-header.css?v=23" />
-<link rel="stylesheet" href="css/storefront-grid.css?v=12" />
-<link rel="stylesheet" href="css/storefront-compact.css?v=6" />
+<link rel="stylesheet" href="css/storefront-grid.css?v=36" />
+<link rel="stylesheet" href="css/storefront-compact.css?v=18" />
 <link rel="stylesheet" href="css/cart.css?v=46" />
 <link rel="stylesheet" href="css/rewards.css?v=17" />
 <link rel="stylesheet" href="css/cart-fx.css?v=2" />
 <link rel="stylesheet" href="css/customer-push.css?v=7" />
 <link rel="stylesheet" href="css/site-banners.css?v=19" />
-<link rel="stylesheet" href="css/site-specials.css?v=34" />
+<link rel="stylesheet" href="css/site-specials.css?v=59" />
 <link rel="stylesheet" href="css/bottom-nav.css?v=63" />
 <link rel="stylesheet" href="css/order-cancel.css?v=11" />
 <link rel="stylesheet" href="css/delivery-map.css?v=21" />
@@ -225,10 +227,10 @@ try { if (/[?&]auto=1\b/.test(location.search)) { var steps = [["everything on",
   <script src="js/cart.js?v=2"></script>
   <script src="js/charges.js?v=26"></script>
   <script src="js/rewards.js?v=32"></script> <!-- REWARDS -->
-  <script src="js/cart-fx.js?v=3"></script>
+  <script src="js/cart-fx.js?v=4"></script>
   <script src="js/site-banners.js?v=12"></script>
-  <script src="js/site-specials.js?v=59"></script>
-  <script src="js/storefront.js?v=27"></script>
+  <script src="js/site-specials.js?v=64"></script>
+  <script src="js/storefront.js?v=32"></script>
   <script src="js/long-press.js?v=6"></script>
   <script src="js/storefront-header.js?v=6"></script>
   <script src="js/night-mode.js?v=5"></script>
