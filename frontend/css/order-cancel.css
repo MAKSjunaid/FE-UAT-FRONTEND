@@ -206,3 +206,25 @@ html.oc-open, html.oc-open body { overflow: hidden; }
 }
 .oc-keep-big:active { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .oc-keep-big { animation: none; } }
+
+/* ---- My Orders: an OPEN order drawn like a finished one ------------------------------------------------------------------
+   While it can still be cancelled: item photos + "N items" at the bottom-left and a soft red "Cancel" pill in the corner cut-out
+   (the same shape and place as the green "Order again" pill - see cart.css). When it can not (or not any more): the plain card, as before.
+   The tracking panel keeps the plain button above. */
+.ord-foot .ord-re.ord-cx {
+  min-height: 0;
+  background: #fdecea; color: var(--danger, #c0392b);
+  border: 1.5px solid #f0c9c3;
+  box-shadow: 0 2px 16px rgba(192, 57, 43, 0.2);
+}
+.ord-foot .ord-re.ord-cx:active { background: #fbe0dc; border-color: var(--danger, #c0392b); }
+html.night .ord-foot .ord-re.ord-cx { background: #281612; border-color: #3c201b; color: #ff8f84; box-shadow: 0 0 18px rgba(255, 143, 132, 0.22); }
+html.night .ord-foot .ord-re.ord-cx:active { background: #2f1915; border-color: #ff8f84; }
+
+/* The same gap above the Total line after the charges are opened as when they are closed (the items panel has 8px under it) - on every
+   order card of My Orders, with or without the corner pill. */
+.profile-order-card:not([data-track]) .profile-order-charges:not([hidden]) { margin-bottom: 8px; }
+
+/* Total (left) and its amount (right) are the same size on every order card - not only on the ones with a corner pill. */
+.profile-order-card .profile-order-total { font-size: 14px; }
+.profile-order-card .profile-order-total > span:last-child { font-size: 16px; font-weight: 800; }
