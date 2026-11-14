@@ -793,8 +793,12 @@ window.ProfileSheet = (() => {
         const t = card.querySelector(".profile-order-time");
         if (t) t.insertAdjacentHTML("afterend", endedHtml({ ...order, status }, false));
       }
-      settleReorder(card, status, code, order); // (Reorder only on a finished order: delivered or cancelled)
-      if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
+      if (card.dataset.track) {
+        settleReorder(card, status, code, order); // (Reorder only on a finished order: delivered or cancelled)
+        if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
+      } else {
+        settleCard(card, status, code, order); // (My Orders: Reorder / Cancel pill / photos beside the Total, whichever applies now)
+      }
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
     });
   }
@@ -1243,8 +1247,11 @@ window.ProfileSheet = (() => {
     orderIndex.set(order.orderCode, order);
     const rows = !track && window.Charges ? Charges.orderRows(order) : ""; // ("" = no charges on this order, or the tracking panel)
     const open = rows && openCharges.has(order.orderCode);
+    // an open order that may still be cancelled is drawn like a finished one: its item photos and "N items" at the bottom and the Cancel pill in the
+    // corner cut-out (where a finished order has "Order again"). Without Cancel it is the plain card, as before. (Not in the tracking panel.)
+    const cancelOk = !track && !canReorder(order.status) && !!window.OrderCancel && OrderCancel.can(order);
     return `
-    <div class="profile-order-card${rows ? " chg-tap" : ""}${canReorder(order.status) ? " has-reorder" : ""}${order.status === "CANCELLED" ? " ord-cancelled" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
+    <div class="profile-order-card${rows ? " chg-tap" : ""}${canReorder(order.status) || cancelOk ? " has-reorder" : ""}${cancelOk ? " has-cancel" : ""}${order.status === "CANCELLED" ? " ord-cancelled" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
       <div class="profile-order-head">
         <div>
           <div class="profile-order-code">${SiteCustomize.html("orderIdLabel")} ${Utils.escapeHtml(order.orderCode)}</div>
@@ -1264,8 +1271,8 @@ window.ProfileSheet = (() => {
       ${rows ? `<div class="profile-order-charges order-summary-list"${open ? "" : " hidden"}>${rows}</div>` : ""}
       <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}${rows ? `<button type="button" class="profile-order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${window.UpiPay ? UpiPay.forgotHtml(order) : ""}
-      ${window.OrderCancel ? OrderCancel.html(order) : ""}
-      ${canReorder(order.status) ? reorderButtonHtml(order.orderCode, order) : ""}
+      ${track && window.OrderCancel ? OrderCancel.html(order) : ""}
+      ${canReorder(order.status) ? reorderButtonHtml(order.orderCode, order) : cancelOk ? cancelFootHtml(order) : ""}
     </div>`;
   }
 
@@ -1277,7 +1284,8 @@ window.ProfileSheet = (() => {
   /** The bottom strip of a finished order: its first few item photos and "N items" on the left, the green "Order again" pill in the
    * card's bottom-right corner (set into a cut-out of the card - see cart.css). Photos not known yet show the item's first letter
    * until fillOrderThumbs() has them. */
-  function reorderButtonHtml(code, order) {
+  /** The item photos (up to 3, then "+N") and "N items": the left part of the bottom strip. */
+  function orderLeftHtml(order) {
     const lines = (order && order.items) || [];
     const units = lines.length; // (one line = one item, however many of it were ordered - the same way the cart counts)
     const th = lines
@@ -1285,7 +1293,16 @@ window.ProfileSheet = (() => {
       .map((i) => `<span class="ord-th" data-pid="${+i.productId || 0}" data-nm="${Utils.escapeHtml((i.productName || "?").trim().charAt(0).toUpperCase())}"><span class="ord-ph">${orderThumbInner(i)}</span>${+i.quantity > 1 ? `<b class="ord-q">×${+i.quantity > 99 ? "99+" : +i.quantity}</b>` : ""}</span>`)
       .join("");
     const more = lines.length > 3 ? `<span class="ord-th ord-more">+${lines.length - 3}</span>` : "";
-    const left = lines.length ? `<span class="ord-left">${th}${more}<span class="ord-count">${units} ${units === 1 ? "item" : "items"}</span></span>` : "";
+    return lines.length ? `<span class="ord-left">${th}${more}<span class="ord-count">${units} ${units === 1 ? "item" : "items"}</span></span>` : "";
+  }
+
+  /** The bottom strip of an OPEN order that may still be cancelled: photos on the left, the Cancel pill in the corner cut-out. */
+  function cancelFootHtml(order) {
+    return `<div class="ord-foot">${orderLeftHtml(order)}${window.OrderCancel ? OrderCancel.html(order, true) : ""}</div>`;
+  }
+
+  function reorderButtonHtml(code, order) {
+    const left = orderLeftHtml(order);
     return `<div class="ord-foot">${left}<button
         type="button"
         class="ord-re"
@@ -1373,7 +1390,7 @@ window.ProfileSheet = (() => {
 
   /** A small note above the bottom strip when some of the order's items are unavailable now (asked once for all the cards drawn). */
   function markUnavailable(root) {
-    const cards = [...root.querySelectorAll(".profile-order-card.has-reorder[data-code]")].filter((c) => !c.dataset.track && orderIndex.get(c.dataset.code));
+    const cards = [...root.querySelectorAll(".profile-order-card.has-reorder:not(.has-cancel)[data-code]")].filter((c) => !c.dataset.track && orderIndex.get(c.dataset.code));
     if (!cards.length) return;
     const ids = [...new Set(cards.flatMap((c) => orderIndex.get(c.dataset.code).items.map((i) => i.productId)).filter(Boolean))];
     const apply = () => {
@@ -1407,6 +1424,41 @@ window.ProfileSheet = (() => {
     }, 1700);
     return new Promise((r) => setTimeout(r, 450));
   }
+
+  /** My Orders: the bottom of an order card follows the order. Finished -> "Order again"; open and still cancellable -> the Cancel pill in the
+   * corner; open and not (any more) cancellable -> the plain card. Called after a status change and when a Cancel button's time runs out.
+   * Nothing is redrawn when the card already is in the right state. */
+  function settleCard(card, status, code, order) {
+    if (!card || card.dataset.track) return;
+    const o = order ? { ...order, status } : null;
+    const fin = canReorder(status);
+    const want = fin ? "reorder" : o && window.OrderCancel && OrderCancel.can(o) ? "cancel" : "plain";
+    const have = card.classList.contains("has-cancel") ? "cancel" : card.querySelector(".ord-foot") ? "reorder" : "plain";
+    if (want !== have) {
+      const foot = card.querySelector(".ord-foot");
+      if (foot) foot.remove();
+      card.classList.remove("has-reorder", "has-cancel", "ord-none");
+      const note = card.querySelector(".ord-note");
+      if (note) note.remove();
+      if (want === "cancel") {
+        card.classList.add("has-reorder", "has-cancel");
+        card.insertAdjacentHTML("beforeend", cancelFootHtml(o));
+        fillOrderThumbs(card);
+      }
+    }
+    if (want === "reorder") settleReorder(card, status, code, order);
+    else card.classList.remove("ord-cancelled");
+  }
+
+  // a Cancel button's time ran out (order-cancel.js): the card goes back to the plain look
+  document.addEventListener("freshcutz:ocgone", (e) => {
+    const code = e.detail && e.detail.code;
+    const order = code && orderIndex.get(code);
+    if (!order) return;
+    document.querySelectorAll(".profile-order-card[data-code]").forEach((card) => {
+      if (card.dataset.code === code && !card.dataset.track) settleCard(card, order.status, code, order);
+    });
+  });
 
   /** After a live status change: the Reorder button comes when the order turns DELIVERED or CANCELLED and goes when it is reopened. */
   function settleReorder(card, status, code, order) {

@@ -83,17 +83,21 @@ window.OrderCancel = (() => {
   // ---- the button -----------------------------------------------------------------------------------
 
   /** The button's markup for an order card ("" when it must not show). */
-  function html(order) {
+  function html(order, pill) {
     if (!can(order)) return "";
     const limited = order.cancelBy != null;
     if (limited) startTimer();
+    if (pill) { // My Orders: the small pill in the corner of the card (profile.js puts it in the bottom strip)
+      return `<button type="button" class="oc-btn ord-re ord-cx" data-oc="${esc(order.orderCode)}"${limited ? ` data-by="${order.cancelBy}"` : ""} aria-label="Cancel order">` +
+        `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Cancel</span></button>`;
+    }
     return `<button type="button" class="oc-btn" data-oc="${esc(order.orderCode)}"${limited ? ` data-by="${order.cancelBy}"` : ""}>` +
       `<span>✕&nbsp; Cancel order</span></button>`;
   }
 
   /** After a status change: the button goes when it no longer applies, and comes back when it applies again (a reopened order). */
   function settle(card, order) {
-    if (!card) return;
+    if (!card || !card.dataset.track) return; // (My Orders cards are looked after by profile.js: settleCard)
     const btn = card.querySelector(".oc-btn");
     if (!can(order)) {
       if (btn) btn.remove();
@@ -122,6 +126,7 @@ window.OrderCancel = (() => {
       if (left <= 0) {
         const code = b.dataset.oc;
         b.remove(); // time is up: the button goes
+        document.dispatchEvent(new CustomEvent("freshcutz:ocgone", { detail: { code } })); // (My Orders: the card changes to its "no Cancel" look)
         if (sheet && sheet.code === code) {
           sheet.close();
           notify("Time is up for cancelling this order", "info");
@@ -213,6 +218,7 @@ window.OrderCancel = (() => {
     if (!can(order)) {
       notify("This order can't be cancelled any more", "info");
       document.querySelectorAll(`.oc-btn[data-oc="${CSS.escape(code)}"]`).forEach((b) => b.remove());
+      document.dispatchEvent(new CustomEvent("freshcutz:ocgone", { detail: { code } }));
       return;
     }
     if (!cfgFromStream && Date.now() - cfgAt >= CFG_FRESH_MS && typeof Api !== "undefined") {
