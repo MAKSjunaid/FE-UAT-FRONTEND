@@ -684,7 +684,6 @@ window.ProfileSheet = (() => {
   }
 
   /** Draws the first part of the orders held in memory, and starts watching for the end of the list. */
-  const staggered = new WeakSet();
   function drawOrders(container, state) {
     if (!container.isConnected) return;
     if (moreObserver) {
@@ -699,11 +698,6 @@ window.ProfileSheet = (() => {
         ? BottomNav.emptyHtml("🧾", "Your orders will appear here", SiteCustomize.html("noOrdersText"))
         : `<div class="empty-state"><p>${SiteCustomize.html("noOrdersText")}</p></div>`;
     watchEnd(container, state);
-    if (list.length && !staggered.has(container)) { // the first time the list is drawn the cards slide in one after another
-      staggered.add(container);
-      container.classList.add("ord-stagger");
-      setTimeout(() => container.classList.remove("ord-stagger"), 900);
-    }
     fillOrderThumbs(container);
   }
 
