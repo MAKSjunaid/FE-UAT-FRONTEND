@@ -198,7 +198,7 @@ window.SiteElements = (() => {
         { key: "loginButtonText", label: "“Sign in” button", def: "Sign in", kind: "text" },
         { key: "logoutButtonText", label: "“Sign out” button", def: "Sign out", kind: "text" },
         { key: "updateDetailsText", label: "“Update Details” button", def: "Update Details", kind: "text" },
-        { key: "reorderButtonText", label: "“Reorder” button on past orders", def: "↺ Reorder", kind: "text" },
+        { key: "reorderButtonText", label: "“Order again” button on past orders", def: "Order again", kind: "text" },
         { key: "myAddressTitle", label: "“My Address” heading", def: "My Address", kind: "text" },
         { key: "myOrdersTitle", label: "“My Orders” heading", def: "My Orders", kind: "text" },
         { key: "noOrdersText", label: "Message when there are no past orders", def: "No orders yet.", kind: "text" },

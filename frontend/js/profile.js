@@ -698,6 +698,7 @@ window.ProfileSheet = (() => {
         ? BottomNav.emptyHtml("🧾", "Your orders will appear here", SiteCustomize.html("noOrdersText"))
         : `<div class="empty-state"><p>${SiteCustomize.html("noOrdersText")}</p></div>`;
     watchEnd(container, state);
+    fillOrderThumbs(container);
   }
 
   function watchEnd(container, state) {
@@ -792,7 +793,7 @@ window.ProfileSheet = (() => {
         const t = card.querySelector(".profile-order-time");
         if (t) t.insertAdjacentHTML("afterend", endedHtml({ ...order, status }, false));
       }
-      settleReorder(card, status, code); // (Reorder only on a finished order: delivered or cancelled)
+      settleReorder(card, status, code, order); // (Reorder only on a finished order: delivered or cancelled)
       if (window.OrderCancel && order) OrderCancel.settle(card, { ...order, status }); // (the Cancel button goes when it no longer applies)
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
     });
@@ -1239,7 +1240,7 @@ window.ProfileSheet = (() => {
     const rows = !track && window.Charges ? Charges.orderRows(order) : ""; // ("" = no charges on this order, or the tracking panel)
     const open = rows && openCharges.has(order.orderCode);
     return `
-    <div class="profile-order-card${rows ? " chg-tap" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
+    <div class="profile-order-card${rows ? " chg-tap" : ""}${canReorder(order.status) ? " has-reorder" : ""}" data-code="${Utils.escapeHtml(order.orderCode)}"${track ? ' data-track="1"' : ""}>
       <div class="profile-order-head">
         <div>
           <div class="profile-order-code">${SiteCustomize.html("orderIdLabel")} ${Utils.escapeHtml(order.orderCode)}</div>
@@ -1259,8 +1260,8 @@ window.ProfileSheet = (() => {
       ${rows ? `<div class="profile-order-charges order-summary-list"${open ? "" : " hidden"}>${rows}</div>` : ""}
       <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}${rows ? `<button type="button" class="profile-order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${window.UpiPay ? UpiPay.forgotHtml(order) : ""}
-      ${canReorder(order.status) ? reorderButtonHtml(order.orderCode) : ""}
       ${window.OrderCancel ? OrderCancel.html(order) : ""}
+      ${canReorder(order.status) ? reorderButtonHtml(order.orderCode, order) : ""}
     </div>`;
   }
 
@@ -1269,25 +1270,65 @@ window.ProfileSheet = (() => {
     return status === "DELIVERED" || status === "CANCELLED";
   }
 
-  function reorderButtonHtml(code) {
-    return `<button
+  /** The bottom strip of a finished order: its first few item photos and "N items" on the left, the green "Order again" pill in the
+   * card's bottom-right corner (set into a cut-out of the card - see cart.css). Photos not known yet show the item's first letter
+   * until fillOrderThumbs() has them. */
+  function reorderButtonHtml(code, order) {
+    const lines = (order && order.items) || [];
+    const units = lines.reduce((n, i) => n + (+i.quantity || 0), 0);
+    const th = lines
+      .slice(0, 3)
+      .map((i) => `<span class="ord-th" data-pid="${+i.productId || 0}" data-nm="${Utils.escapeHtml((i.productName || "?").trim().charAt(0).toUpperCase())}">${orderThumbInner(i)}</span>`)
+      .join("");
+    const more = lines.length > 3 ? `<span class="ord-th ord-more">+${lines.length - 3}</span>` : "";
+    const left = lines.length ? `<span class="ord-left">${th}${more}<span class="ord-count">${units} ${units === 1 ? "item" : "items"}</span></span>` : "";
+    return `<div class="ord-foot">${left}<button
         type="button"
-        class="btn btn-gold btn-sm btn-block"
-        style="margin-top:8px;"
+        class="ord-re"
         data-action="reorder"
         data-order-code="${Utils.escapeHtml(code)}"
-      >${SiteCustomize.html("reorderButtonText")}</button>`;
+      ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/></svg><span>${SiteCustomize.html("reorderButtonText")}</span></button></div>`;
+  }
+
+  /** One round photo of an order line: the product's card-size photo when the product is known, else its first letter. */
+  function orderThumbInner(item) {
+    let p = null;
+    try { p = window.Storefront && window.Storefront.getProduct(item.productId); } catch (_) { /* unknown yet */ }
+    return p && p.imageUrl
+      ? `<img src="${Utils.escapeHtml(Utils.mediumImageUrl(p.imageUrl))}" alt="" loading="lazy" decoding="async">`
+      : Utils.escapeHtml((item.productName || "?").trim().charAt(0).toUpperCase());
+  }
+
+  /** Swaps the letters for photos once the products are known. One request at most for all the orders drawn (and none when the shop
+   * already holds them), so the list costs the server nothing extra. */
+  function fillOrderThumbs(root) {
+    if (!root || !window.Storefront) return;
+    const slots = [...root.querySelectorAll(".ord-th[data-pid]:not(:has(img))")];
+    const ids = [...new Set(slots.map((el) => +el.dataset.pid).filter(Boolean))];
+    if (!ids.length) return;
+    const paint = () => {
+      slots.forEach((el) => {
+        if (!el.isConnected || el.querySelector("img")) return;
+        let p = null;
+        try { p = window.Storefront.getProduct(+el.dataset.pid); } catch (_) { /* skip */ }
+        if (p && p.imageUrl) el.innerHTML = `<img src="${Utils.escapeHtml(Utils.mediumImageUrl(p.imageUrl))}" alt="" loading="lazy" decoding="async">`;
+      });
+    };
+    paint();
+    if (!slots.some((el) => !el.querySelector("img"))) return;
+    Promise.resolve(window.Storefront.ensureProducts(ids)).then(paint).catch(() => {});
   }
 
   /** After a live status change: the Reorder button comes when the order turns DELIVERED or CANCELLED and goes when it is reopened. */
-  function settleReorder(card, status, code) {
-    const btn = card.querySelector('[data-action="reorder"]');
+  function settleReorder(card, status, code, order) {
+    const foot = card.querySelector(".ord-foot") || card.querySelector('[data-action="reorder"]');
     if (!canReorder(status)) {
-      if (btn) btn.remove();
-    } else if (!btn && !card.dataset.track) {
-      const cancel = card.querySelector(".oc-btn");
-      if (cancel) cancel.insertAdjacentHTML("beforebegin", reorderButtonHtml(code));
-      else card.insertAdjacentHTML("beforeend", reorderButtonHtml(code));
+      if (foot) foot.remove();
+      card.classList.remove("has-reorder");
+    } else if (!foot && !card.dataset.track) {
+      card.classList.add("has-reorder");
+      card.insertAdjacentHTML("beforeend", reorderButtonHtml(code, order));
+      fillOrderThumbs(card);
     }
   }
 
