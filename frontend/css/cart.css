@@ -716,8 +716,30 @@
 }
 /* the card's soft shadow is a plain box-shadow on a layer behind it (no CSS filter on the card: a filter makes phones repaint the card's text in pieces while scrolling) */
 .profile-order-card.has-reorder { isolation: isolate; }
+/* two plain rectangles carry the shadow - the part above the corner cut-out, and the part left of it. Each is clipped so that no shadow
+   is drawn on the side facing the cut-out: the button sits clean, with no outline around it. */
 .profile-order-card.has-reorder:not([data-track])::after {
-  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none; border-radius: var(--r-md); box-shadow: var(--shadow-sm);
+  content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: var(--ht); z-index: -2; pointer-events: none;
+  border-radius: var(--r-md) var(--r-md) var(--fr) 0; box-shadow: var(--shadow-sm); clip-path: inset(-12px -12px 0 -12px);
+}
+/* the shadow follows the corner's curve and fades out toward the button instead of being cut off */
+@supports (mask-clip: no-clip) {
+  .profile-order-card.has-reorder:not([data-track])::after {
+    mask-clip: no-clip; mask-repeat: no-repeat;
+    mask-image: linear-gradient(#000, #000), linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
+    mask-size: calc(100% - 24px) calc(100% + 12px), calc(100% + 24px) calc(100% + 12px);
+    mask-position: -12px -12px, -12px -12px;
+  }
+  /* the left strip starts a few px higher (behind the card) and fades in exactly as the upper shadow tails off - no dip where the two meet */
+  .profile-order-card.has-reorder:not([data-track]) .ord-foot::before {
+    top: -3px; mask-clip: no-clip; mask-repeat: no-repeat;
+    mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.3) 3px, #000 3.01px);
+    mask-size: calc(100% + 12px) calc(100% + 12px); mask-position: -12px 0;
+  }
+}
+.profile-order-card:not([data-track]) .ord-foot::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; right: calc(var(--cx) + var(--nx) + var(--wc)); z-index: -2; pointer-events: none;
+  border-radius: 0 0 var(--fr) var(--r-md); box-shadow: var(--shadow-sm); clip-path: inset(0 0 -12px -12px);
 }
 .profile-order-card.has-reorder::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -765,12 +787,12 @@ html.night .ord-th.ord-more { background: #3a3120; }
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   border: 0; border-radius: 999px; cursor: pointer;
   background: linear-gradient(135deg, #34a26a, #1d7a4a); color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.01em; line-height: 1;
-  box-shadow: 0 3px 8px rgba(29, 122, 74, 0.28);
+  box-shadow: 0 2px 16px rgba(29, 122, 74, 0.3); /* a wide, soft glow: it fades out smoothly over the card too, no hard band */
   transition: transform var(--dur-fast, 150ms) var(--ease-out, ease); -webkit-tap-highlight-color: transparent;
 }
 .ord-foot .ord-re:active { transform: scale(0.95); }
 .ord-foot .ord-re svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.ord-foot .ord-re span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ord-foot .ord-re span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; padding: 1px 0; } /* room under the letters so the tail of the g is not cut */
 .ord-foot .ord-re .ic-ok { display: none; }
 .ord-foot .ord-re .ic-ok path { stroke-dasharray: 24; stroke-dashoffset: 24; }
 .ord-foot .ord-re.is-added { animation: ordPop 380ms cubic-bezier(0.2, 0.9, 0.25, 1) both; }
@@ -779,7 +801,7 @@ html.night .ord-th.ord-more { background: #3a3120; }
 .ord-foot .ord-re.is-added .ic-ok path { animation: ordTick 320ms 80ms ease forwards; }
 @keyframes ordPop { 0% { transform: scale(0.94); } 55% { transform: scale(1.07); } 100% { transform: scale(1); } }
 @keyframes ordTick { to { stroke-dashoffset: 0; } }
-html.night .ord-foot .ord-re { box-shadow: 0 0 16px rgba(52, 162, 106, 0.45), 0 3px 8px rgba(0, 0, 0, 0.4); }
+html.night .ord-foot .ord-re { box-shadow: 0 0 18px rgba(52, 162, 106, 0.5); }
 /* a note above the strip when some items can't be reordered right now */
 .ord-note { position: relative; margin: 8px 0 0; padding: 6px 10px 6px 30px; border-radius: 10px; background: #fff4e0; color: #8a5a00; font-size: 12px; font-weight: 600; line-height: 1.35; }
 .ord-note::before { content: "!"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border-radius: 50%; background: #e59a1a; color: #fff; font-size: 10px; font-weight: 800; line-height: 14px; text-align: center; }
