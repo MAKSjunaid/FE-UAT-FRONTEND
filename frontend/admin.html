@@ -3,6 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<script>
+  /* iPhone / iPad zoom the page in when a text box is tapped and leave it zoomed: pin the zoom (the customer site does the same) */
+  (function () {
+    var ua = navigator.userAgent || "";
+    var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!ios) return;
+    var m = document.querySelector('meta[name="viewport"]');
+    if (m) m.setAttribute("content", "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover");
+  })();
+</script>
 <title>FreshCutz Admin</title>
 <meta name="robots" content="noindex, nofollow" />
 <link rel="icon" href="images/logo.jpg" />
@@ -332,9 +342,10 @@
   <script src="js/admin-auth.js?v=10"></script>
   <script src="js/admin-store.js?v=5"></script>
   <script src="js/admin-push.js?v=9"></script>
-  <script src="js/admin-products.js?v=21"></script>
+  <script src="js/admin-products.js?v=22"></script>
   <script src="js/admin-product-import.js?v=7"></script>
   <script src="js/admin-product-bulk.js?v=7"></script>
+  <script src="js/admin-product-prices.js?v=24"></script>
   <script src="js/admin-proof.js?v=8"></script>
   <script src="js/admin-orders.js?v=24"></script>
   <script src="js/admin-order-map.js?v=5"></script>
