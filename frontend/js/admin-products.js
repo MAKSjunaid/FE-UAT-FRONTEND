@@ -982,6 +982,8 @@ window.AdminProducts = (() => {
     search,
     isOpen: (name) => open.has(name),
     rowsOf: (name) => cache.get(name) || null,
+    // The Update prices sheet hands over a list it has just read, so opening that category here does not read it twice
+    prime: (name, rows) => { if (!cache.has(name) && Array.isArray(rows)) cache.set(name, rows); },
     openCategory: async (name) => { if (!open.has(name) || !cache.has(name)) { if (open.has(name)) collapse(name); await toggleCategory(name); } return cache.get(name) || []; },
     categoryTotal: (name) => ((cats || []).find((c) => c.name === name) || {}).total || 0,
     categories: categoryList,
