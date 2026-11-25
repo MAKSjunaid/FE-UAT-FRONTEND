@@ -48,6 +48,7 @@ async function handlePush(data) {
     // one tag PER ORDER: a shared tag makes a new order silently replace the
     // previous notification on the phone instead of alerting again.
     tag: (data.type || "freshcutz") + "-" + (data.orderId || Date.now()),
+    renotify: data.type === "delivery-failed", // a second report for the same order must still alert
     data,
   });
 }

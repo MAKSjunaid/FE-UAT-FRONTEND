@@ -41,6 +41,7 @@
   function loadView(viewName) {
     if (viewName === "products" && window.AdminProducts) window.AdminProducts.refresh();
     if (viewName === "orders" && window.AdminOrders) window.AdminOrders.refreshIfNeeded();
+    if (viewName === "myroute" && window.AdminNavAll) window.AdminNavAll.showMine(); // the delivery boy's own route (asked at most every 20 s)
     // Sales reloads only when stale / older than a few minutes / a new day — see
     // AdminStats.refreshIfNeeded — so flipping back and forth costs nothing.
     if (viewName === "stats" && window.AdminStats) window.AdminStats.refreshIfNeeded();
@@ -244,6 +245,8 @@
     navigator.serviceWorker.addEventListener("message", (e) => {
       // (with the live line open the order itself arrives on it: nothing to ask)
       if (loggedIn && e.data && e.data.type === "freshcutz-push" && !window.AdminLive?.isConnected()) pollTick();
+      // "Couldn't deliver" changes no order's status, so the live line does not carry it: read the Orders list again (its red tag comes with the list)
+      if (loggedIn && e.data && e.data.type === "freshcutz-push" && e.data.kind === "delivery-failed") window.AdminOrders?.refresh?.();
     });
   }
 

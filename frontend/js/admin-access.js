@@ -34,10 +34,20 @@ window.AdminAccess = (() => {
   const isOwner = () => me.role === "ADMIN" && me.owner !== false;
   const can = (key, need) => isAdmin() || level(key) >= RANK[need || "VIEW"];
 
+  // "My Route": a tab for ANY login that has a route saved for it (admin-nav-all.js says so). It needs no permission of its own.
+  let myRoute = false;
+  function setMyRoute(on) {
+    on = !!on;
+    if (on === myRoute) return;
+    myRoute = on;
+    apply();
+  }
+
   /** Whether a screen may be opened at all. */
   function canOpen(view) {
     switch (view) {
       case "orders": return can("orders");
+      case "myroute": return myRoute;
       case "products": return can("products");
       case "banners": return can("banners");
       case "stats": return can("sales");
@@ -54,7 +64,7 @@ window.AdminAccess = (() => {
   }
 
   function firstView() {
-    return ["orders", "products", "banners", "stats", "settings"].find(canOpen) || "orders";
+    return ["orders", "myroute", "products", "banners", "stats", "settings"].find(canOpen) || "orders";
   }
 
   function set(res) {
@@ -81,6 +91,7 @@ window.AdminAccess = (() => {
 
   function clear() {
     me = full();
+    myRoute = false;
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     apply();
   }
@@ -111,5 +122,5 @@ window.AdminAccess = (() => {
    * enforces it on every request anyway, so this only keeps the screen tidy). */
   const needsRecheck = () => !isAdmin() && Date.now() - (me.at || 0) > 10 * 60 * 1000;
 
-  return { set, setSoundOn, clear, can, canOpen, isAdmin, isOwner, needsRecheck, firstView, get: () => me };
+  return { set, setSoundOn, setMyRoute, clear, can, canOpen, isAdmin, isOwner, needsRecheck, firstView, get: () => me };
 })();

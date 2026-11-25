@@ -19,6 +19,7 @@ body.no-backup .cz-card:has(#czBackupMount) { display: none !important; }
 body.ro-orders #view-orders [data-action="delivered"],
 body.ro-orders #view-orders [data-action="cancelled"],
 body.ro-orders #view-orders [data-action="reopen"] { display: none !important; }
+body.ro-orders #view-orders .order-actions { display: none !important; } /* the one-button row and its ⋯ menu */
 
 /* view-only Products */
 body.ro-products #addProductFab,

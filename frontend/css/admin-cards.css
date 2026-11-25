@@ -424,6 +424,18 @@
 .pay-update[hidden] { display: none; }
 .pay-cancel { color: var(--text-muted); }
 .pay-act:disabled { opacity: 0.5; cursor: progress; }
+.pay-amt {
+  width: 86px;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: 1.5px solid #e3d9bb;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text, #2a261c);
+}
+.pay-amt[hidden] { display: none; }
 .tone-ok { --pc: var(--success, #1f7a4a); --pb: #dcf3e6; }
 .tone-bad { --pc: var(--danger, #c0392b); --pb: #f6dada; }
 .tone-warn { --pc: #8a5a00; --pb: #fdeec8; }
@@ -464,3 +476,33 @@
 /* "Cancelled by customer" + the reason they gave, under the customer details of a cancelled order */
 .order-cancel-note { display: flex; flex-direction: column; gap: 2px; margin: 0 0 var(--sp-2); padding: 8px 12px; border-radius: var(--r-sm); background: #f6dada; color: var(--danger); font-size: 13px; line-height: 1.4; }
 .order-cancel-note span { color: var(--ink); }
+
+/* ---- Order card buttons: one big "next step" button + a "⋯" menu -----------------------------------
+   Mark Packed = teal (matches the Packed badge), Mark Delivered = solid green (done, matches the delivery boy's Delivered),
+   Cancel = red, Reopen = amber. Everything beyond the next step lives in the ⋯ menu (see actionsFor in admin-orders.js). */
+.oa { position: relative; flex: 1 1 100%; display: flex; gap: 8px; }
+.oa .oa-main { flex: 1 1 auto; min-height: 46px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 800; color: #fff; cursor: pointer; }
+.oa .oa-main:disabled { opacity: .6; }
+.oa .oa-pack { background: #0e7470; }
+.oa .oa-deliver { background: #2f7d32; box-shadow: 0 4px 12px rgba(47, 125, 50, .28); }
+.oa .oa-reopen { background: #fff8e1; color: #8a6410; border: 1.5px solid #c9a13b; }
+.oa .oa-more { flex: 0 0 46px; min-height: 46px; padding: 0; border: 1.5px solid #e6dcc0; border-radius: 12px; background: #fff; color: var(--ink, #17140f); font: inherit; font-size: 20px; font-weight: 800; line-height: 1; cursor: pointer; }
+.oa .oa-more[aria-expanded="true"] { background: #f3efe3; }
+.oa-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 20; min-width: 210px; padding: 6px; background: #fff; border: 1.5px solid #e6dcc0; border-radius: 14px; box-shadow: 0 12px 32px rgba(23, 20, 15, .22); }
+.oa-menu.is-down { bottom: auto; top: calc(100% + 8px); }
+.oa-menu[hidden] { display: none; }
+.oa-menu hr { margin: 4px 6px; border: 0; border-top: 1px solid #e6dcc0; }
+.oa-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 12px; border: 0; border-radius: 10px; background: none; text-align: left; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.oa-item:active { background: #f6f1e3; }
+.oa-item.is-g { color: #2f7d32; }
+.oa-item.is-x { color: #c0392b; }
+.oa-item.is-o { color: #8a6410; }
+.order-card.oa-open { position: relative; z-index: 30; }
+html.night .oa .oa-deliver { background: #3a9a3e; }
+html.night .oa .oa-more, html.night .oa-menu { background: #1f1a12; border-color: #3a3222; color: #f3ecd8; }
+html.night .oa .oa-more[aria-expanded="true"] { background: #2a2418; }
+html.night .oa .oa-reopen { background: transparent; color: #e7c46a; border-color: #c9a13b; }
+html.night .oa-item:active { background: #2a2418; }
+html.night .oa-item.is-g { color: #6fdc9a; }
+html.night .oa-item.is-x { color: #f0928a; }
+html.night .oa-item.is-o { color: #e7c46a; }

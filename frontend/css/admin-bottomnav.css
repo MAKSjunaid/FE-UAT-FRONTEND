@@ -134,6 +134,20 @@
   .cz-savebar { bottom: calc(var(--admin-nav-h) + var(--safe-bottom) + 8px); }
   #view-customize { padding-bottom: 96px; }
 
+  /* hide-on-scroll (admin-header.js adds .is-hidden): the bar slides down off the screen and comes back on scroll up */
+  .admin-tabs.admin-bottom-nav {
+    transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow .38s ease;
+    will-change: transform;
+  }
+  .admin-tabs.admin-bottom-nav.is-hidden {
+    transform: translate3d(0, calc(100% + 12px), 0);
+    box-shadow: none;
+    pointer-events: none; /* nothing can be tapped while it is off-screen */
+  }
+  .fab, .cz-savebar { transition: bottom .38s cubic-bezier(.22, 1, .36, 1); }
+  html.nav-away .fab { bottom: calc(var(--safe-bottom) + 16px); }
+  html.nav-away .cz-savebar { bottom: calc(var(--safe-bottom) + 8px); }
+
   /* the on-screen keyboard is open (a field is being edited): get out of the way */
   html.kb-open .admin-tabs.admin-bottom-nav { display: none; }
   html.kb-open #adminApp { padding-bottom: 0; }
@@ -145,6 +159,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .admin-tabs.admin-bottom-nav,
+  .fab, .cz-savebar,
   .admin-bottom-nav .admin-tab,
   .admin-bottom-nav .nav-ico,
   .admin-bottom-nav .admin-tab::before { transition: none; }
