@@ -1,6 +1,7 @@
-/* Hide-on-scroll for the admin header (top bar + tab bar).
+/* Hide-on-scroll for the admin header (top bar + tab bar) and, on phones, the bottom menu.
  *
  *  - Scrolling DOWN hides it, so lists get the full screen.
+ *  - The bottom menu goes and comes with the header, and is also shown again at the very bottom of the page.
  *  - Scrolling UP even a little brings it back, with a slide animation
  *    (the animation itself is CSS in admin-shell.css).
  *  - Always visible near the top of the page, when a tab is switched, and
@@ -11,6 +12,9 @@
 (() => {
   const group = document.querySelector(".admin-header-group");
   if (!group) return;
+  const nav = document.getElementById("adminBottomNav"); // the phone's bottom menu (display:none on wider screens: nothing to do there)
+  const html = document.documentElement;
+  const BOTTOM_ZONE = 24;  // px from the end of the page where the bottom menu is always shown
 
   const TOP_ZONE = 70;     // px from top where the header is always shown
   const HIDE_AFTER = 14;   // px of continuous downward scroll before hiding
@@ -20,10 +24,17 @@
   let travelled = 0;       // signed distance since the direction last changed
   let ticking = false;
 
+  function setNav(hidden) {
+    if (!nav || nav.classList.contains("is-hidden") === hidden) return;
+    nav.classList.toggle("is-hidden", hidden);
+    html.classList.toggle("nav-away", hidden); // lets the round + button and the save bar settle where the menu was
+  }
+
   function setHidden(hidden) {
     if (group.classList.contains("is-hidden") !== hidden) {
       group.classList.toggle("is-hidden", hidden);
     }
+    setNav(hidden);
   }
 
   function update() {
@@ -42,13 +53,14 @@
       setHidden(false);
       return;
     }
-    if (dy === 0) return;
-
-    // keep a running total in the current direction; reset when it flips
-    travelled = Math.sign(dy) === Math.sign(travelled) ? travelled + dy : dy;
-
-    if (travelled > HIDE_AFTER) setHidden(true);
-    else if (travelled < -SHOW_AFTER) setHidden(false);
+    if (dy !== 0) {
+      // keep a running total in the current direction; reset when it flips
+      travelled = Math.sign(dy) === Math.sign(travelled) ? travelled + dy : dy;
+      if (travelled > HIDE_AFTER) setHidden(true);
+      else if (travelled < -SHOW_AFTER) setHidden(false);
+    }
+    // at the very end of the page the bottom menu is always there to reach
+    if (html.scrollHeight - (y + window.innerHeight) < BOTTOM_ZONE) setNav(false);
   }
 
   window.addEventListener(

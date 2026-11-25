@@ -787,7 +787,7 @@ window.AdminStats = (() => {
         🏠 ${Utils.escapeHtml(o.flatNo)}, ${Utils.escapeHtml(o.addressLine)}
         ${o.landmark ? `<br/>📍 ${Utils.escapeHtml(o.landmark)}` : ""}
         ${o.deliverySlot ? `<br/>🕗 Deliver: ${Utils.escapeHtml(SlotTime.display(o.deliverySlot, o.status))}` : ""}
-        ${o.paymentMode === "UPI" && window.AdminProof ? AdminProof.lineHtml(o) : o.paymentMode ? `<br/>${o.paymentMode === "UPI" ? "📲 Payment: UPI" : "💵 Payment: Cash on delivery"}` : ""}
+        ${o.paymentMode && window.AdminProof ? AdminProof.lineHtml(o) : o.paymentMode ? `<br/>${o.paymentMode === "UPI" ? "📲 Payment: UPI" : "💵 Payment: Cash on delivery"}` : ""}
         ${o.notes ? `<br/>📝 ${Utils.escapeHtml(o.notes)}` : ""}
       </div>
       <div class="order-items-list">${itemsSummary(o)}</div>`;

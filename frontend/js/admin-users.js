@@ -12,8 +12,10 @@ window.AdminUsers = (() => {
   const ITEMS = [
     { key: "orders", ico: "📦", label: "Orders", levels: ["NONE", "VIEW", "EDIT"],
       note: "View & edit = can mark Delivered / Cancelled / Reopen" },
+    { key: "ownorders", ico: "🛵", label: "Sees only assigned orders", levels: ["NONE", "VIEW"], texts: { NONE: "No", VIEW: "Yes" },
+      note: "Yes = the Orders tab shows only the orders on a route you gave them (for delivery boys). Needs “Delivery boys see only their own orders” ON in More → Delivery map" },
     { key: "payments", ico: "💳", label: "UPI payments", levels: ["VIEW", "EDIT"], def: "VIEW",
-      note: "View = sees the payment screenshot and its status · View & edit = can also change the status (Verified, Rejected …)" },
+      note: "View = sees the payment screenshot and its status · View & edit = can also change the status (Verified, Rejected …) and mark cash-on-delivery orders Received" },
     { key: "products", ico: "🍗", label: "Products", levels: ["NONE", "VIEW", "EDIT"] },
     { key: "banners", ico: "🖼️", label: "Banners", levels: ["NONE", "VIEW", "EDIT"],
       note: "View = sees banners and specials · View & edit = can add, change and reorder them" },
@@ -38,7 +40,7 @@ window.AdminUsers = (() => {
     [15, "Last 15 days"], [30, "Last 30 days"], [90, "Last 90 days"]];
 
   const PRESETS = {
-    delivery: { name: "Delivery boy", days: 7, perms: { orders: "EDIT", payments: "VIEW" } },
+    delivery: { name: "Delivery boy", days: 7, perms: { orders: "EDIT", payments: "VIEW", ownorders: "VIEW" } },
     manager: { name: "Manager", days: 0, perms: { orders: "EDIT", payments: "EDIT", products: "EDIT", banners: "EDIT", sales: "VIEW", customers: "VIEW", store: "EDIT" } },
   };
 
@@ -49,7 +51,7 @@ window.AdminUsers = (() => {
 
   const esc = (s) => Utils.escapeHtml(s == null ? "" : String(s));
 
-  const levelText = (key, lvl) => LEVEL_TEXT[lvl];
+  const levelText = (key, lvl) => { const item = ITEMS.find((i) => i.key === key); return (item && item.texts && item.texts[lvl]) || LEVEL_TEXT[lvl]; };
   const daysText = (d) => (DAY_CHOICES.find((c) => c[0] === d) || [0, d + " days"])[1];
 
   // ---- list -------------------------------------------------------------
@@ -266,7 +268,7 @@ window.AdminUsers = (() => {
   const levelOf = (item, stored) => (stored && stored !== "NONE" ? stored : item.def || "NONE");
 
   /** Whether any real access is ticked ("UPI payments" is always at least View, so it says nothing by itself). */
-  const hasAnyAccess = (perms) => Object.entries(perms).some(([k, v]) => k !== "payments" && v !== "NONE");
+  const hasAnyAccess = (perms) => Object.entries(perms).some(([k, v]) => k !== "payments" && k !== "ownorders" && v !== "NONE");
 
   function readPerms(form) {
     const perms = {};

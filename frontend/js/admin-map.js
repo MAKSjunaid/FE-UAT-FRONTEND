@@ -64,6 +64,8 @@ window.AdminMap = (() => {
             : "OFF - the customer website does not show the map, never loads it and never asks for any map data."}</p>
         </div>
 
+        ${navCardHtml()}
+
         <div class="mp-card">
           <h3 class="mp-h">Delivery areas</h3>
           <p class="mp-sub">Draw the places you deliver to. Customers never see these areas and no order is ever refused because of them. On each order in the Orders tab you'll see “Inside” or “Outside your delivery area” and can open the pin on the map.</p>
@@ -97,6 +99,7 @@ window.AdminMap = (() => {
       </div>`;
 
     root.querySelector("#mpEnabled").addEventListener("change", onToggle);
+    wireNav();
     root.querySelector("#mpEdit").addEventListener("click", openEditor);
     root.querySelector("#mpUpload").addEventListener("click", () => root.querySelector("#mpFile").click());
     root.querySelector("#mpFile").addEventListener("change", onFile);
@@ -113,6 +116,7 @@ window.AdminMap = (() => {
       data = await Api.put("/api/admin/map", { enabled: box.checked });
       fetchedAt = Date.now();
       if (window.AdminOrderMap) AdminOrderMap.invalidate();
+      tellOrders();
       Toast.show(data.enabled ? "Delivery map is ON" : "Delivery map is OFF", "success");
       paint();
     } catch (err) {
@@ -120,6 +124,98 @@ window.AdminMap = (() => {
       box.disabled = false;
       Toast.show(err.message || "Could not change the switch", "error");
     }
+  }
+
+  // ---- Navigate all (Orders tab: tick orders, open one route in Google Maps) ---------
+  const navOf = () => data.nav || { on: false, stops: 5, round: false, own: false, min: 1, max: 25 };
+
+  function navCardHtml() {
+    const n = navOf();
+    return `<div class="mp-card" id="mpNavCard">
+          <div class="mp-row">
+            <div class="mp-row-text">
+              <strong>Navigate all</strong>
+              <small>In the Orders tab, tick several orders and open them as one route in Google Maps. Orders in the same building become one stop, and the stops are put in the shortest order. You can save a route for any login (Settings → Users): a “My Route” tab appears for that person on its own, with the stops in that order and Open in Google Maps. It needs the Delivery area map above to be ON, because that is what gives each order its pin.</small>
+            </div>
+            <label class="mp-switch" aria-label="Navigate all on or off">
+              <input type="checkbox" id="mpNavOn" ${n.on ? "checked" : ""} />
+              <span></span>
+            </label>
+          </div>
+          <div class="mp-row mp-nav-row">
+            <div class="mp-row-text">
+              <strong>Stops per Google Maps trip</strong>
+              <small>Google Maps takes a limited number of stops in one trip (about 9 at the moment). A longer route is split into trips of this size.</small>
+            </div>
+            <input type="number" id="mpNavStops" class="mp-nav-n" inputmode="numeric" min="${n.min}" max="${n.max}" step="1" value="${n.stops}" aria-label="Stops per Google Maps trip" />
+          </div>
+          <div class="mp-row">
+            <div class="mp-row-text">
+              <strong>Round trip (return to start)</strong>
+              <small>Adds a “Round trip” switch on the route screen: the route starts at the place you are when you plan it, goes round all the stops and finishes at the stop nearest to you, so the person delivering ends up close to you again.</small>
+            </div>
+            <label class="mp-switch" aria-label="Round trip option on or off">
+              <input type="checkbox" id="mpNavRound" ${n.round ? "checked" : ""} />
+              <span></span>
+            </label>
+          </div>
+          <div class="mp-row">
+            <div class="mp-row-text">
+              <strong>Delivery boys see only their own orders</strong>
+              <small>When ON, a login ticked “Sees only assigned orders” in Settings → Users (the Delivery boy preset is) sees only the orders on the routes you gave them, in the Orders tab as well as My Route. Everyone else still sees all orders. It works while Navigate all is ON.</small>
+            </div>
+            <label class="mp-switch" aria-label="Delivery boys see only their own orders, on or off">
+              <input type="checkbox" id="mpNavOwn" ${n.own ? "checked" : ""} />
+              <span></span>
+            </label>
+          </div>
+          <p class="mp-note" id="mpNavNote"></p>
+          <button type="button" class="btn btn-gold btn-block" id="mpNavSave" hidden>Save</button>
+          <p class="mp-note">${n.on ? (data.enabled ? "ON - the Orders tab has “Plan a delivery route”." : "ON, but it stays hidden until the Delivery area map is switched ON.") : "OFF - the Orders tab does not show it."}</p>
+        </div>`;
+  }
+
+  function wireNav() {
+    const sw = root.querySelector("#mpNavOn");
+    const num = root.querySelector("#mpNavStops");
+    const save = root.querySelector("#mpNavSave");
+    const note = root.querySelector("#mpNavNote");
+    if (!sw || !num) return;
+    const n = navOf();
+    const value = () => Number(num.value);
+    const valid = () => Number.isInteger(value()) && value() >= n.min && value() <= n.max;
+    const sync = () => {
+      const changed = value() !== n.stops;
+      save.hidden = !changed;
+      save.disabled = !valid();
+      note.textContent = !valid() ? `Type a whole number from ${n.min} to ${n.max}.` : value() > 9 ? "Google Maps may ignore the stops beyond its own limit (about 9 now). Raise this only when Google allows more." : "";
+    };
+    num.addEventListener("input", sync);
+    sw.addEventListener("change", () => saveNav({ on: sw.checked }, sw));
+    const rd = root.querySelector("#mpNavRound");
+    if (rd) rd.addEventListener("change", () => saveNav({ round: rd.checked }, rd));
+    const own = root.querySelector("#mpNavOwn");
+    if (own) own.addEventListener("change", () => saveNav({ own: own.checked }, own));
+    save.addEventListener("click", () => { if (valid()) saveNav({ stops: value() }, save); });
+  }
+
+  async function saveNav(patch, ctl) {
+    ctl.disabled = true;
+    try {
+      data.nav = await Api.put("/api/admin/map/nav", patch);
+      fetchedAt = Date.now();
+      tellOrders();
+      Toast.show("Navigate all saved", "success");
+    } catch (err) {
+      Toast.show(err.message || "Could not save", "error");
+    }
+    paint();
+  }
+
+  /** The Orders tab hears of a change at once instead of at its next list read. */
+  function tellOrders() {
+    const n = navOf();
+    if (window.AdminNavAll) AdminNavAll.configure({ on: !!(n.on && data.enabled), stops: n.stops, round: !!n.round });
   }
 
   async function removeTiles() {

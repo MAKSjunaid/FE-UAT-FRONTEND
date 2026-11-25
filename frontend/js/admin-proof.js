@@ -36,7 +36,18 @@ window.AdminProof = (() => {
     return { has: !!raw && !deleted, deleted, at: deleted ? GONE : typeof raw === "string" ? raw : "" };
   }
   const norm = (c) => (c === "NOT_RECEIVED" ? "REJECTED" : c || "");
-  const statusOf = (c) => STATUSES.find((s) => s[0] === norm(c)) || STATUSES[0];
+  // Cash on delivery uses the same control with its own words: "" = Pending (collect it all), RECEIVED = already paid in full,
+  // PART:<rupees> = part of it already paid (the rest is collected on delivery). The select shows "PART"; the amount is typed beside it.
+  const COD_OPTIONS = [["", "Pending", "pending"], ["RECEIVED", "Received", "ok"], ["PART", "Partially received", "warn"]];
+  const isCod = (mode) => mode === "COD";
+  const partOf = (c) => (typeof c === "string" && c.startsWith("PART:") ? Number(c.slice(5)) || 0 : 0);
+  const statusOf = (c) => {
+    const v = norm(c);
+    if (v === "RECEIVED") return COD_OPTIONS[1];
+    if (v === "PART") return COD_OPTIONS[2];
+    if (v.startsWith("PART:")) return [v, `Partially received ₹${partOf(v)}`, "warn"];
+    return STATUSES.find((s) => s[0] === v) || STATUSES[0];
+  };
 
   /** What this signed-in person may do with UPI payments (Settings > Users > Payments). The server checks again on every request. */
   const canSee = () => !window.AdminAccess || AdminAccess.can("payments", "VIEW");
@@ -49,7 +60,7 @@ window.AdminProof = (() => {
 
   // ---- the payment status: a small coloured pill; whoever may change it also gets "Change" -> drop-down + Update / Cancel ----
 
-  const optionsHtml = (value) => STATUSES.map((s) => `<option value="${s[0]}"${s[0] === value ? " selected" : ""}>${esc(s[1])}</option>`).join("");
+  const optionsHtml = (value, mode) => (isCod(mode) ? COD_OPTIONS : STATUSES).map((s) => `<option value="${s[0]}"${s[0] === value ? " selected" : ""}>${esc(s[1])}</option>`).join("");
   const toneOf = (c) => `tone-${statusOf(c)[2]}`;
 
   /** What a status control shows normally: the pill (and "Change" for someone who may change it). */
@@ -58,13 +69,16 @@ window.AdminProof = (() => {
     return `<span class="pay-pill tone-${tone}">${esc(label)}</span>${canEdit() && !locked ? `<button type="button" class="pay-act pay-change" data-action="pay-change">Change</button>` : ""}`;
   }
   /** While changing: the drop-down in place of the pill, then Update (only once something different is picked) and Cancel. */
-  function editInner(committed, value) {
-    return `<span class="pay-sel ${toneOf(value)}"><select data-role="pay-select" aria-label="Payment status">${optionsHtml(value)}</select></span>` +
-      `<button type="button" class="pay-act pay-update" data-action="pay-update"${value === committed ? " hidden" : ""}>Update</button>` +
+  function editInner(committed, value, mode) {
+    const cod = isCod(mode);
+    if (cod && value.startsWith("PART:")) value = "PART"; // the amount goes in the box beside it
+    return `<span class="pay-sel ${toneOf(value)}"><select data-role="pay-select" aria-label="Payment status">${optionsHtml(value, mode)}</select></span>` +
+      (cod ? `<input type="number" class="pay-amt" data-role="pay-amt" inputmode="numeric" min="1" step="1" placeholder="Paid ₹" aria-label="Amount already paid, in rupees" value="${partOf(committed) || ""}"${value === "PART" ? "" : " hidden"} />` : "") +
+      `<button type="button" class="pay-act pay-update" data-action="pay-update" hidden>Update</button>` +
       `<button type="button" class="pay-act pay-cancel" data-action="pay-cancel">Cancel</button>`;
   }
-  function statusControl(id, check, locked) {
-    return `<span class="pay-ctl" data-id="${esc(id)}" data-check="${esc(norm(check))}"${locked ? ' data-locked="1"' : ""}>${viewInner(check, locked)}</span>`;
+  function statusControl(id, check, locked, mode) {
+    return `<span class="pay-ctl" data-id="${esc(id)}" data-check="${esc(norm(check))}"${mode ? ` data-mode="${esc(mode)}"` : ""}${locked ? ' data-locked="1"' : ""}>${viewInner(check, locked)}</span>`;
   }
 
   let measure = null;
@@ -82,8 +96,9 @@ window.AdminProof = (() => {
   function enterEdit(ctl, value) {
     if (!ctl) return;
     ctl.classList.add("is-editing");
-    ctl.innerHTML = editInner(ctl.dataset.check || "", value);
+    ctl.innerHTML = editInner(ctl.dataset.check || "", value, ctl.dataset.mode);
     fit(ctl.querySelector("select"));
+    syncUpdate(ctl); // Update shows only once the pick differs from what is saved
   }
   function leaveEdit(ctl, committed) {
     ctl.classList.remove("is-editing");
@@ -95,11 +110,13 @@ window.AdminProof = (() => {
    * payments; otherwise whether there is a screenshot (a View button, or "No screenshot") and the status. Used by the Orders
    * and Sales cards. */
   function upiSpan(order) {
+    const cod = isCod(order.paymentMode);
     const { has, deleted, at } = proofState(order.paymentProofAt);
     const closedAt = order.closedAt !== undefined ? Number(order.closedAt) || 0 : closedAtOf(order);
     const locked = isLocked(closedAt);
     const check = norm(order.paymentCheck);
-    const head = `<span class="upi-line" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-proof="${has ? "1" : ""}" data-at="${esc(at)}" data-check="${esc(check)}" data-closed="${closedAt || ""}">📲 Payment: UPI`;
+    const head = `<span class="upi-line" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-proof="${has ? "1" : ""}" data-at="${esc(at)}" data-check="${esc(check)}" data-closed="${closedAt || ""}" data-mode="${cod ? "COD" : "UPI"}">${cod ? "💵 Payment: Cash on delivery" : "📲 Payment: UPI"}`;
+    if (cod) return `${head} ${statusControl(order.id, check, locked, "COD")}</span>`; // everyone sees whether cash is still due; changing it needs UPI payments "View & edit"
     if (!canSee()) return `${head}</span>`;
     const shot = has
       ? ` <button type="button" class="proof-link" data-action="proof-view" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-at="${esc(at)}">📎 View</button>`
@@ -107,7 +124,7 @@ window.AdminProof = (() => {
     return `${head}${shot} ${statusControl(order.id, check, locked)}</span>`;
   }
   function lineHtml(order) {
-    if (!order || order.paymentMode !== "UPI" || !order.id) return "";
+    if (!order || (order.paymentMode !== "UPI" && order.paymentMode !== "COD") || !order.id) return "";
     return `<br/>${upiSpan(order)}`;
   }
 
@@ -129,6 +146,7 @@ window.AdminProof = (() => {
         totalAmount: el.dataset.amount,
         paymentProofAt: st.has ? st.at || true : st.deleted ? GONE : null,
         paymentCheck: check,
+        paymentMode: el.dataset.mode || "UPI",
         closedAt: el.dataset.closed,
       }));
       const fresh = el.nextElementSibling;
@@ -162,11 +180,23 @@ window.AdminProof = (() => {
     }
   });
 
+  /** Whether what is picked (and, for "Partially received", typed) differs from what is saved. */
+  function changed(ctl) {
+    const sel = ctl.querySelector("select");
+    if (!sel) return false;
+    const was = ctl.dataset.check || "";
+    if (sel.value === "PART") {
+      const amt = ctl.querySelector(".pay-amt");
+      const v = amt ? amt.value.trim() : "";
+      return v !== "" && `PART:${Number(v)}` !== was;
+    }
+    return sel.value !== was;
+  }
+
   /** Update shows only while the pick differs from what is saved. */
   function syncUpdate(ctl) {
-    const sel = ctl.querySelector("select");
     const up = ctl.querySelector(".pay-update");
-    if (sel && up) up.hidden = sel.value === (ctl.dataset.check || "");
+    if (up) up.hidden = !changed(ctl);
   }
 
   // Picking in the drop-down: the colour follows the pick, the width follows the words, Update appears if it is a real change.
@@ -176,6 +206,13 @@ window.AdminProof = (() => {
     const ctl = sel.closest(".pay-ctl");
     sel.closest(".pay-sel").className = `pay-sel ${toneOf(sel.value)}`;
     fit(sel);
+    const amt = ctl && ctl.querySelector(".pay-amt");
+    if (amt) { amt.hidden = sel.value !== "PART"; if (!amt.hidden) amt.focus(); }
+    if (ctl) syncUpdate(ctl);
+  });
+  document.addEventListener("input", (e) => {
+    const amt = e.target.closest && e.target.closest(".pay-amt");
+    const ctl = amt && amt.closest(".pay-ctl");
     if (ctl) syncUpdate(ctl);
   });
 
@@ -192,8 +229,15 @@ window.AdminProof = (() => {
     const sel = ctl.querySelector("select");
     if (!sel) return;
     const id = ctl.dataset.id;
-    const next = sel.value;
-    ctl.querySelectorAll("select, button").forEach((x) => (x.disabled = true));
+    let next = sel.value;
+    if (next === "PART") { // cash on delivery, part paid: the amount typed beside it
+      const amt = Number((ctl.querySelector(".pay-amt") || {}).value);
+      const total = Number((ctl.closest(".upi-line") || { dataset: {} }).dataset.amount) || 0;
+      if (!Number.isInteger(amt) || amt <= 0) { if (window.Toast) Toast.show("Enter how much was already paid, in rupees", "error"); return; }
+      if (total && amt >= total) { if (window.Toast) Toast.show("That is the whole amount: choose Received instead", "error"); return; }
+      next = `PART:${amt}`;
+    }
+    ctl.querySelectorAll("select, input, button").forEach((x) => (x.disabled = true));
     try {
       const res = await Api.patch(`/api/admin/orders/${encodeURIComponent(id)}/payment-check`, { check: next || null });
       const saved = norm(res && res.paymentCheck);
@@ -202,7 +246,7 @@ window.AdminProof = (() => {
       if (line) line.dataset.check = saved;
       window.dispatchEvent(new CustomEvent("freshcutz:payment", { detail: { id: Number(id), paymentCheck: saved || null } }));
     } catch (err) {
-      ctl.querySelectorAll("select, button").forEach((x) => (x.disabled = false));
+      ctl.querySelectorAll("select, input, button").forEach((x) => (x.disabled = false));
       if (window.Toast) Toast.show(err && err.message ? err.message : "Could not save", "error");
     }
   });

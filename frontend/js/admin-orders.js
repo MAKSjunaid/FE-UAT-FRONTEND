@@ -146,26 +146,54 @@ window.AdminOrders = (() => {
       .join("");
   }
 
+  /** The buttons of an order card: ONE big button for the next step (New: Mark Packed, Packed: Mark Delivered, finished: Reopen as New) and a "⋯" menu
+   * with the rest (Delivered straight away, Reopen, Cancel). One slim row per card; Cancel is two taps away so it cannot be hit by accident. */
   function actionsFor(order) {
+    const more = (items) => `<button type="button" class="oa-more" data-oa-more aria-label="More actions" aria-haspopup="menu" aria-expanded="false">⋯</button><div class="oa-menu" role="menu" hidden>${items}</div>`;
+    const item = (action, cls, label) => `<button type="button" class="oa-item ${cls}" role="menuitem" data-action="${action}">${label}</button>`;
     if (order.status === "NEW") {
-      return `
-        <button class="btn btn-packed btn-sm" data-action="packed">📦 Mark Packed</button>
-        <button class="btn btn-gold btn-sm" data-action="delivered">✓ Mark Delivered</button>
-        <button class="btn btn-ghost btn-sm" data-action="cancelled">Cancel Order</button>`;
+      return `<div class="oa"><button type="button" class="oa-main oa-pack" data-action="packed">📦 Mark Packed</button>${more(item("delivered", "is-g", "✓ Mark Delivered") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
     }
     if (order.status === "PACKED") {
       // Still an open order: it can go out or be cancelled, and "Reopen as New" undoes a Packed tap made by mistake
       // (no 24-hour limit — nothing was delivered or cancelled).
-      return `
-        <button class="btn btn-gold btn-sm" data-action="delivered">✓ Mark Delivered</button>
-        <button class="btn btn-ghost btn-sm" data-action="cancelled">Cancel Order</button>
-        <button class="btn btn-ghost btn-sm" data-action="reopen">↺ Reopen as New</button>`;
+      return `<div class="oa"><button type="button" class="oa-main oa-deliver" data-action="delivered">✓ Mark Delivered</button>${more(item("reopen", "is-o", "↺ Reopen as New") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
     }
     const actionedAt = order.statusUpdatedAt || order.createdAt;
     const age = Date.now() - new Date(actionedAt).getTime();
     if (age > REOPEN_WINDOW_MS) return "";
-    return `<button class="btn btn-ghost btn-sm" data-action="reopen">↺ Reopen as New</button>`;
+    return `<div class="oa"><button type="button" class="oa-main oa-reopen" data-action="reopen">↺ Reopen as New</button></div>`;
   }
+
+  // ---- the "⋯" menu on an order card ---------------------------------------------
+  function closeMenus(except) {
+    list.querySelectorAll(".oa-menu:not([hidden])").forEach((m) => {
+      if (m === except) return;
+      m.hidden = true;
+      m.classList.remove("is-down");
+      const c = m.closest(".order-card");
+      if (c) c.classList.remove("oa-open");
+      const b = m.parentNode.querySelector("[data-oa-more]");
+      if (b) b.setAttribute("aria-expanded", "false");
+    });
+  }
+  list.addEventListener("click", (e) => {
+    const more = e.target.closest("[data-oa-more]");
+    if (more) {
+      const menu = more.parentNode.querySelector(".oa-menu");
+      const open = menu.hidden;
+      closeMenus(open ? menu : null);
+      menu.hidden = !open;
+      more.setAttribute("aria-expanded", String(open));
+      const card = more.closest(".order-card");
+      if (card) card.classList.toggle("oa-open", open); // lifts this card above the next one so its menu is not covered
+      if (open) menu.classList.toggle("is-down", more.getBoundingClientRect().top < 170); // not enough room above (under the header): open downward
+      return;
+    }
+    if (e.target.closest(".oa-menu [data-action]")) closeMenus(null); // an item was chosen
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".oa")) closeMenus(null); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenus(null); });
 
   // The charges of an order sit behind a small "V" by its total: a tap on it - or anywhere on the order (not on its own buttons / links) -
   // opens / closes them; what was opened stays open while the list redraws
@@ -200,7 +228,7 @@ window.AdminOrders = (() => {
         <span class="oc-addr">🏠 ${Utils.escapeHtml(order.flatNo)}, ${Utils.escapeHtml(order.addressLine)}</span>
         ${order.landmark ? `<br/>📍 ${Utils.escapeHtml(order.landmark)}` : ""}
         ${order.deliverySlot ? `<br/>🕗 Deliver: ${Utils.escapeHtml(SlotTime.display(order.deliverySlot, order.status))}` : ""}
-        ${order.paymentMode === "UPI" && window.AdminProof ? AdminProof.lineHtml(order) : order.paymentMode ? `<br/>${order.paymentMode === "UPI" ? "📲 Payment: UPI" : "💵 Payment: Cash on delivery"}` : ""}
+        ${order.paymentMode && window.AdminProof ? AdminProof.lineHtml(order) : order.paymentMode ? `<br/>${order.paymentMode === "UPI" ? "📲 Payment: UPI" : "💵 Payment: Cash on delivery"}` : ""}
         ${order.notes ? `<br/>📝 ${Utils.escapeHtml(order.notes)}` : ""}
       </div>
       ${order.status === "CANCELLED" && order.cancelledByCustomer ? `<div class="order-cancel-note"><strong>Cancelled by customer</strong>${order.cancelReason ? `<span>${Utils.escapeHtml(order.cancelReason)}</span>` : ""}</div>` : ""}
@@ -319,7 +347,7 @@ window.AdminOrders = (() => {
     }
     try {
       const res = await Api.get(queryFor(status, term, null));
-      window.AdminOrderMap?.setOn(res.mapOn); // Delivery map on: show which orders are inside the delivery area
+      window.AdminOrderMap?.setOn(res.mapOn); window.AdminNavAll?.configure({ on: res.navOn, stops: res.navStops, round: res.navRound, tags: res.routeTags, fails: res.routeFails, own: res.ownOnly }); // Delivery map on: show which orders are inside the delivery area
       target.loadedAt = Date.now();
       target.stale = false;
       // Only trustworthy as the Orders-tab badge count while NOT
@@ -365,7 +393,7 @@ window.AdminOrders = (() => {
     setLoadMoreSpinning(true);
     try {
       const res = await Api.get(queryFor(activeStatus, searchTerm, target.cursor));
-      window.AdminOrderMap?.setOn(res.mapOn);
+      window.AdminOrderMap?.setOn(res.mapOn); window.AdminNavAll?.configure({ on: res.navOn, stops: res.navStops, round: res.navRound, tags: res.routeTags, fails: res.routeFails, own: res.ownOnly });
       remember(res.orders);
       const have = new Set(target.orders.map((o) => o.id));
       const fresh = res.orders.filter((o) => !have.has(o.id)); // (an order moved here by a live message is not added twice)
@@ -683,6 +711,19 @@ window.AdminOrders = (() => {
     const action = actionBtn.dataset.action;
     const before = known.get(id) || v.orders.find((o) => o.id === id);
     if (!before || !STATUS_FOR[action]) return;
+    // Nothing changes until the person confirms in the app's own box (a mis-tap on Delivered / Cancel / Reopen is easy to make).
+    if (window.AdminConfirm) {
+      const who = `${before.orderCode || "this order"}${before.customerName ? " · " + before.customerName : ""}`;
+      const text = {
+        packed: { title: "Mark as Packed?", message: `${who} will move to the Packed tab.`, confirmText: "Yes, mark Packed", tone: "teal", icon: "📦" },
+        delivered: { title: "Mark as Delivered?", message: `${who} will be marked as delivered.`, confirmText: "Yes, delivered", tone: "ok", icon: "✓" },
+        cancelled: { title: "Cancel this order?", message: `${who} will be cancelled.`, confirmText: "Yes, cancel order", cancelText: "Keep order", tone: "danger", icon: "⚠️" },
+        reopen: { title: "Reopen as New?", message: `${who} will go back to the New tab.`, confirmText: "Yes, reopen", tone: "gold", icon: "↺" },
+      }[action];
+      const sure = await window.AdminConfirm.ask(text);
+      if (!sure) return;
+      if (!known.get(id) && !v.orders.find((o) => o.id === id)) return; // the list changed while the box was open
+    }
     // A second tap on the same order within 2 seconds (a double-tap, a slow connection) does nothing.
     if ((lockedUntil.get(id) || 0) > Date.now()) return;
     lockedUntil.set(id, Date.now() + LOCK_MS);
