@@ -167,6 +167,15 @@ const Api = (() => {
       }
     }
 
+    // An admin who keeps using the app is never signed out: once the login in use is past half of its life, the server hands back a fresh one
+    // (header X-Admin-Token) and it replaces the old one here. Only while the stored login is still the one this request was sent with.
+    if (isAdminPath && !isLoginPath && response.ok) {
+      const fresh = response.headers.get("X-Admin-Token");
+      if (fresh && token && adminToken() === token) {
+        try { localStorage.setItem("freshcutz_admin_token", fresh); } catch (_) { /* storage blocked: the old login still works until it ends */ }
+      }
+    }
+
     if (response.status === 204) {
       return null;
     }
