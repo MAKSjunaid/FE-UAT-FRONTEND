@@ -53,21 +53,69 @@
 .pt-song { display: none; position: absolute; left: 78%; top: -2px; width: 0; height: 0; --zd: 1; pointer-events: none; }
 .pt-hen.song-l .pt-song { left: auto; right: 78%; --zd: -1; } /* (the side is fixed when the song starts: the notes do not jump over if she turns round) */
 .pt-hen.is-song .pt-song { display: block; }
-.pt-song i { position: absolute; left: 0; top: 0; width: 6px; height: 8px; opacity: 0; --nx: 6; }
+.pt-song i { position: absolute; left: 0; top: 0; width: 6px; height: 8px; opacity: 0; will-change: transform, opacity; }
 .pt-song i svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.pt-song i:nth-child(2) { width: 8.5px; height: 7.5px; --nx: 1; }
-.pt-song i:nth-child(3) { width: 5.5px; height: 7.5px; --nx: 10; }
-.pt-hen.is-song .pt-song i { animation: ptN 2.4s linear 2 both; }
+.pt-song i:nth-child(2) { width: 8.5px; height: 7.5px; }
+.pt-song i:nth-child(3) { width: 5.5px; height: 7.5px; }
+.pt-hen.is-song .pt-song i { animation-duration: 2.4s; animation-timing-function: linear; animation-iteration-count: 2; animation-fill-mode: both; }
 .pt-hen.is-song .pt-song i:nth-child(2) { animation-delay: 0.8s; }
 .pt-hen.is-song .pt-song i:nth-child(3) { animation-delay: 1.6s; }
-/* up into the sky (about 30px) along a gentle wave that drifts a little away from her */
-@keyframes ptN {
-  0%   { opacity: 0; transform: translate(0, 0) rotate(-12deg) scale(0.5); }
+/* up into the sky (about 30px) along a gentle wave that drifts a little away from her. Every note has its own plain keyframes (only transform and opacity, with the
+   numbers written out - no var() / calc()): such an animation runs on the browser's own animation thread, so the notes keep floating smoothly even while the page is busy
+   drawing the hen's dance (animations that need var() are worked out on the busy main thread, and can stand still for a moment). "l" = the notes go to her left. */
+.pt-hen.is-song .pt-song i:nth-child(1) { animation-name: ptN1; }
+.pt-hen.is-song .pt-song i:nth-child(2) { animation-name: ptN2; }
+.pt-hen.is-song .pt-song i:nth-child(3) { animation-name: ptN3; }
+.pt-hen.is-song.song-l .pt-song i:nth-child(1) { animation-name: ptN1l; }
+.pt-hen.is-song.song-l .pt-song i:nth-child(2) { animation-name: ptN2l; }
+.pt-hen.is-song.song-l .pt-song i:nth-child(3) { animation-name: ptN3l; }
+@keyframes ptN1 {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
   10%  { opacity: 1; }
-  25%  { transform: translate(calc(var(--zd) * (var(--nx) * 0.25px + 4px)), -7px) rotate(10deg) scale(0.9); }
-  50%  { transform: translate(calc(var(--zd) * (var(--nx) * 0.5px)), -15px) rotate(-10deg) scale(1); }
-  75%  { opacity: 1; transform: translate(calc(var(--zd) * (var(--nx) * 0.75px - 4px)), -23px) rotate(10deg) scale(1); }
-  100% { opacity: 0; transform: translate(calc(var(--zd) * (var(--nx) * 1px + 3px)), -31px) rotate(-10deg) scale(0.95); }
+  25%  { transform: translate(5.5px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(3.0px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(0.5px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(9px, -31px) rotate(-10deg) scale(0.95); }
+}
+@keyframes ptN1l {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(-5.5px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(-3.0px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(-0.5px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(-9px, -31px) rotate(-10deg) scale(0.95); }
+}
+@keyframes ptN2 {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(4.25px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(0.5px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(-3.25px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(4px, -31px) rotate(-10deg) scale(0.95); }
+}
+@keyframes ptN2l {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(-4.25px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(-0.5px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(3.25px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(-4px, -31px) rotate(-10deg) scale(0.95); }
+}
+@keyframes ptN3 {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(6.5px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(5.0px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(3.5px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(13px, -31px) rotate(-10deg) scale(0.95); }
+}
+@keyframes ptN3l {
+  0%   { opacity: 0; transform: translate(0px, 0px) rotate(-12deg) scale(0.5); }
+  10%  { opacity: 1; }
+  25%  { transform: translate(-6.5px, -7px) rotate(10deg) scale(0.9); }
+  50%  { transform: translate(-5.0px, -15px) rotate(-10deg) scale(1); }
+  75%  { opacity: 1; transform: translate(-3.5px, -23px) rotate(10deg) scale(1); }
+  100% { opacity: 0; transform: translate(-13px, -31px) rotate(-10deg) scale(0.95); }
 }
 
 @media (prefers-reduced-motion: reduce) { .trk-pets { display: none; } }
