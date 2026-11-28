@@ -35,9 +35,20 @@
   }
 
   let touchY = 0;
+  let touchX = 0;
   function onTouchStart(e) {
     const t = e.touches && e.touches[0];
-    if (t) touchY = t.clientY;
+    if (t) { touchY = t.clientY; touchX = t.clientX; }
+  }
+  /** Is this touch inside a sideways-scrolling strip (the category chips...) that sits within the sheet / big card? */
+  function inSideScroller(el) {
+    for (let n = el; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) {
+      if (n.scrollWidth - n.clientWidth > 1) {
+        const ox = getComputedStyle(n).overflowX;
+        if (ox === "auto" || ox === "scroll") return !!n.closest(".sheet, .sp-pop-card");
+      }
+    }
+    return false;
   }
   /** A swipe is let through only while the sheet's own scrolling part can still move that way. At its top / bottom end (or when
    * it does not scroll at all) the swipe is dropped, so the page behind never moves - not even by chaining past the end. */
@@ -46,6 +57,9 @@
     if (!t || (e.target.closest && e.target.closest("select"))) return;
     const dy = t.clientY - touchY;
     if (dy === 0) return;
+    // a mostly-sideways swipe on a sideways-scrolling strip is that strip's own scroll (the page can't scroll sideways anyway):
+    // without this a few px of finger drift up/down got the whole swipe cancelled and the chips "sometimes didn't scroll"
+    if (Math.abs(t.clientX - touchX) > Math.abs(dy) && inSideScroller(e.target)) return;
     if (!scrollableFor(e.target, dy < 0 ? 1 : -1)) e.preventDefault();
   }
   function blockWheel(e) {
@@ -435,23 +449,28 @@
       </div>`;
   }
 
-  function openSuccess(order) {
+  /** The "Order placed" page. opts (used when an order was EDITED): { title, message, extraHtml } - the same page with its own words, no rewards line /
+   * pay-by-UPI card (what is still to pay is told in extraHtml), and the order's new address and notes. Closing it opens the Track order strip, as ever. */
+  function openSuccess(order, opts) {
+    const edit = !!(opts && opts.title);
     currentView = "success";
     placedCode = order && order.orderCode ? String(order.orderCode) : "";
     const body = `
       <div class="sheet-body">
         <div class="order-success">
           <div class="success-check"><svg class="success-tick" viewBox="0 0 52 52" aria-hidden="true"><path d="M14 27l8.5 8.5L38 18"/></svg><i class="spark" style="--r:0deg"></i><i class="spark" style="--r:45deg"></i><i class="spark" style="--r:90deg"></i><i class="spark" style="--r:135deg"></i><i class="spark" style="--r:180deg"></i><i class="spark" style="--r:225deg"></i><i class="spark" style="--r:270deg"></i><i class="spark" style="--r:315deg"></i><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">✓</span></div>
-          <h2 class="anim-fade-up" style="animation-delay:120ms;">${Utils.escapeHtml(SiteCustomize.t("successTitle"))}</h2>
-          ${SiteCustomize.on("showSuccessMessage") && SiteCustomize.t("successMessage") ? `<p class="anim-fade-up" style="animation-delay:180ms;color:var(--text-muted);margin-top:6px;">${Utils.escapeHtml(SiteCustomize.t("successMessage"))}</p>` : ""}
+          <h2 class="anim-fade-up" style="animation-delay:120ms;">${Utils.escapeHtml(edit ? opts.title : SiteCustomize.t("successTitle"))}</h2>
+          ${edit ? (opts.message ? `<p class="anim-fade-up" style="animation-delay:180ms;color:var(--text-muted);margin-top:6px;">${Utils.escapeHtml(opts.message)}</p>` : "")
+            : SiteCustomize.on("showSuccessMessage") && SiteCustomize.t("successMessage") ? `<p class="anim-fade-up" style="animation-delay:180ms;color:var(--text-muted);margin-top:6px;">${Utils.escapeHtml(SiteCustomize.t("successMessage"))}</p>` : ""}
           <div class="order-id-chip anim-fade-up" style="animation-delay:240ms;">
             <span class="order-id-label">${SiteCustomize.html("orderIdLabel")}</span>
             <span class="order-id-value">${Utils.escapeHtml(order.orderCode)}</span>
           </div>
-          ${window.Rewards ? window.Rewards.savedHtml(order) : ""}
+          ${!edit && window.Rewards ? window.Rewards.savedHtml(order) : ""}
         </div>
         <div class="anim-fade-up" style="animation-delay:300ms;">${orderSummaryHtml(order)}</div>
-        ${window.UpiPay && order.paymentMode === "UPI" ? `<div class="anim-fade-up" style="animation-delay:340ms;">${UpiPay.cardHtml(order)}</div>` : ""}
+        ${edit && opts.extraHtml ? `<div class="anim-fade-up" style="animation-delay:330ms;">${opts.extraHtml}</div>` : ""}
+        ${!edit && window.UpiPay && order.paymentMode === "UPI" ? `<div class="anim-fade-up" style="animation-delay:340ms;">${UpiPay.cardHtml(order)}</div>` : ""}
         <div class="cn-slot anim-fade-up" style="animation-delay:360ms;" data-role="notify-slot"></div>
         <button class="btn btn-dark btn-block anim-fade-up" style="animation-delay:420ms;margin-top:var(--sp-3);" data-role="continue">${SiteCustomize.html("continueShoppingText")}</button>
       </div>`;
@@ -460,7 +479,7 @@
     sheet.querySelector(".sheet").classList.add("sheet-success");
     document.documentElement.style.setProperty("--toast-sheet-gap", `${sheet.querySelector(".sheet").getBoundingClientRect().height + 14}px`);
     sheet.querySelector('[data-role="continue"]').addEventListener("click", closeSheet);
-    if (window.UpiPay) UpiPay.mountCard(sheet, order);
+    if (!edit && window.UpiPay) UpiPay.mountCard(sheet, order);
     // "Notify me when it's delivered" (button, or a quiet sign-up when notifications are already allowed)
     if (window.CustomerPush) CustomerPush.mount(sheet.querySelector('[data-role="notify-slot"]'), order);
   }

@@ -141,6 +141,7 @@ window.AdminOrders = (() => {
 
   // ---- rendering -----------------------------------------------------------------
   function itemsSummary(order) {
+    if (window.AdminOrderEdit && window.AdminOrderEdit.itemsHtml) return window.AdminOrderEdit.itemsHtml(order); // (what an edit changed stays on its line, struck through)
     return order.items
       .map((i) => `<div>${i.quantity} × ${Utils.escapeHtml(i.productName)} (${Utils.escapeHtml(i.variantLabel)}) — ${Utils.formatMoney(i.lineTotal)}</div>`)
       .join("");
@@ -151,13 +152,15 @@ window.AdminOrders = (() => {
   function actionsFor(order) {
     const more = (items) => `<button type="button" class="oa-more" data-oa-more aria-label="More actions" aria-haspopup="menu" aria-expanded="false">⋯</button><div class="oa-menu" role="menu" hidden>${items}</div>`;
     const item = (action, cls, label) => `<button type="button" class="oa-item ${cls}" role="menuitem" data-action="${action}">${label}</button>`;
+    // "Edit order" (admin-order-edit.js): only while editing is switched on, this login may do it, and this status is ticked in Customize > Edit orders
+    const edit = window.AdminOrderEdit && window.AdminOrderEdit.canEdit(order) ? `<button type="button" class="oa-item is-o" role="menuitem" data-oedit>✏️ Edit order</button><hr>` : "";
     if (order.status === "NEW") {
-      return `<div class="oa"><button type="button" class="oa-main oa-pack" data-action="packed">📦 Mark Packed</button>${more(item("delivered", "is-g", "✓ Mark Delivered") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
+      return `<div class="oa"><button type="button" class="oa-main oa-pack" data-action="packed">📦 Mark Packed</button>${more(edit + item("delivered", "is-g", "✓ Mark Delivered") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
     }
     if (order.status === "PACKED") {
       // Still an open order: it can go out or be cancelled, and "Reopen as New" undoes a Packed tap made by mistake
       // (no 24-hour limit — nothing was delivered or cancelled).
-      return `<div class="oa"><button type="button" class="oa-main oa-deliver" data-action="delivered">✓ Mark Delivered</button>${more(item("reopen", "is-o", "↺ Reopen as New") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
+      return `<div class="oa"><button type="button" class="oa-main oa-deliver" data-action="delivered">✓ Mark Delivered</button>${more(edit + item("reopen", "is-o", "↺ Reopen as New") + "<hr>" + item("cancelled", "is-x", "✕ Cancel order"))}</div>`;
     }
     const actionedAt = order.statusUpdatedAt || order.createdAt;
     const age = Date.now() - new Date(actionedAt).getTime();
@@ -190,7 +193,7 @@ window.AdminOrders = (() => {
       if (open) menu.classList.toggle("is-down", more.getBoundingClientRect().top < 170); // not enough room above (under the header): open downward
       return;
     }
-    if (e.target.closest(".oa-menu [data-action]")) closeMenus(null); // an item was chosen
+    if (e.target.closest(".oa-menu [data-action], .oa-menu [data-oedit]")) closeMenus(null); // an item was chosen
   });
   document.addEventListener("click", (e) => { if (!e.target.closest(".oa")) closeMenus(null); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenus(null); });
@@ -233,6 +236,7 @@ window.AdminOrders = (() => {
       </div>
       ${order.status === "CANCELLED" && order.cancelledByCustomer ? `<div class="order-cancel-note"><strong>Cancelled by customer</strong>${order.cancelReason ? `<span>${Utils.escapeHtml(order.cancelReason)}</span>` : ""}</div>` : ""}
       <div class="order-items-list">${itemsSummary(order)}</div>
+      ${window.AdminOrderEdit ? window.AdminOrderEdit.cardHtml(order) : ""}
       ${charges}
       <div class="order-total-row"><span>Total${charges ? `<button type="button" class="order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
       ${actionsFor(order) ? `<div class="order-actions">${actionsFor(order)}</div>` : ""}
@@ -588,6 +592,83 @@ window.AdminOrders = (() => {
     }
   }
 
+  // ---- an order was edited (admin-order-edit.js: the shop's own save, or a live message: the shop on another device / the customer) ----
+  /** Puts the edited order into every held list, in the place it already has (an edit never changes its status or its time in the list). */
+  function replaceOrder(order, seq, onlyView) {
+    known.set(order.id, order);
+    const out = { changed: [], dropped: [] };
+    Object.keys(tabs).forEach((status) => {
+      const view = tabs[status];
+      if (view.snapshot === null) return;
+      if (onlyView && view !== onlyView) return;
+      if (seq != null) {
+        if (view.seq == null) {
+          dropView(status);
+          out.dropped.push(status);
+          return;
+        }
+        if (seq <= view.seq) return;
+      }
+      const i = view.orders.findIndex((o) => o.id === order.id);
+      if (i >= 0) {
+        view.orders[i] = order;
+        out.changed.push(view);
+      }
+      if (seq != null) view.seq = seq;
+    });
+    return out;
+  }
+
+  /** Draws that one card again where it is on screen (the rest of the list, its scroll position and open menus stay as they are). */
+  function redrawCard(order) {
+    const el = list.querySelector(`.order-card[data-id="${order.id}"]`);
+    if (!el) return;
+    el.outerHTML = card(order);
+    flash([order.id], "flash-arrived");
+  }
+
+  function applyEdited(order, seq) {
+    forgetSearches();
+    const out = replaceOrder(order, seq);
+    syncSearchView(order);
+    if (out.dropped.includes(activeStatus) && !searchTerm) {
+      v = tabs[activeStatus];
+      load();
+      return;
+    }
+    redrawCard(order);
+  }
+
+  window.addEventListener("freshcutz:orderedit", (e) => {
+    const d = e.detail;
+    if (!d || !d.order) return;
+    applyEdited(d.order, null);
+    if (window.AdminStats && window.AdminStats.noteRemoteChange) window.AdminStats.noteRemoteChange(); // (the Sales totals are read again when opened)
+    if (window.AdminCustomers && window.AdminCustomers.markStale) window.AdminCustomers.markStale();
+  });
+  // the Edit button depends on the settings read from the server (switch, statuses, this login's permission): draw again once they arrive or change
+  window.addEventListener("freshcutz:orderedit-state", () => {
+    if (v && v.orders && v.orders.length && !document.querySelector(".oe-sheet")) render();
+  });
+
+  // The buttons the edit feature puts on a card: "Edit order" in the ⋯ menu, "View changes", "Mark settled"
+  list.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-oedit], [data-oe]");
+    if (!t || !window.AdminOrderEdit) return;
+    const cardEl = t.closest(".order-card");
+    const id = cardEl ? Number(cardEl.dataset.id) : NaN;
+    const order = known.get(id) || v.orders.find((o) => o.id === id);
+    if (!order) return;
+    if (t.hasAttribute("data-oedit")) {
+      closeMenus(null);
+      window.AdminOrderEdit.open(order);
+    } else if (t.dataset.oe === "history") {
+      window.AdminOrderEdit.history(order);
+    } else if (t.dataset.oe === "settle") {
+      window.AdminOrderEdit.settle(order);
+    }
+  });
+
   // ---- live messages (admin-live.js, via admin-main.js) --------------------------
   const recentLive = []; // the last few live messages, so a list that finished loading while they arrived can be brought up to date
 
@@ -603,6 +684,13 @@ window.AdminOrders = (() => {
       const out = applyNewOrderToViews(msg.order, msg.seq);
       settle(out, [msg.order.id], "flash-arrived");
       return { echo };
+    }
+    if (type === "orderedit") {
+      if (!msg.order) return { echo: true };
+      const prev = known.get(msg.order.id);
+      const echo = !!prev && JSON.stringify(prev) === JSON.stringify(msg.order);
+      if (!echo) applyEdited(msg.order, msg.seq);
+      return { echo, byCustomer: msg.byCustomer === true, code: msg.order.orderCode || "" };
     }
     if (type === "status") {
       const prev = known.get(msg.id);
@@ -636,6 +724,7 @@ window.AdminOrders = (() => {
     recentLive.forEach(({ type, msg }) => {
       if (view.seq == null || msg.seq == null || msg.seq <= view.seq) return;
       if (type === "order") applyNewOrderToViews(msg.order, msg.seq, view);
+      else if (type === "orderedit") { if (msg.order) replaceOrder(msg.order, msg.seq, view); }
       else applyStatusToViews(msg, msg.seq, view);
     });
   }

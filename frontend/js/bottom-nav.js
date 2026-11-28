@@ -238,7 +238,8 @@
       trkTimer = setTimeout(() => { trk.hidden = true; }, 300); // (after it has slid away)
       return;
     }
-    const key = list.map((o) => `${o.orderCode}:${o.status}:${stageOf(o)}`).join("|");
+    // (an edited order - new items, a new total - is drawn again too, so the strip never shows the old total)
+    const key = list.map((o) => `${o.orderCode}:${o.status}:${stageOf(o)}:${o.totalAmount}:${o.edited ? 1 : 0}:${(o.items || []).map((i) => `${i.productId}${i.variant}${i.quantity}`).join(",")}:${o.payMore || 0}:${o.payLeft || ""}:${o.refunded || ""}:${o.refundDue || 0}`).join("|");
     if (key !== trkKey) {
       trkKey = key;
       const multi = list.length > 1;

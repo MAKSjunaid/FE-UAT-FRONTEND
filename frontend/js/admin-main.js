@@ -171,6 +171,11 @@
         Toast.show(`🐔 New order ${(msg.order && msg.order.orderCode) || ""}`.trim(), "success");
       }
     }
+    if (type === "orderedit" && result.byCustomer && !msg.replay) {
+      // A customer changed their own order: the shop must notice, whatever screen is open (the card on the Orders tab already shows the change).
+      window.AdminSound?.newOrder?.();
+      Toast.show(`✏️ ${result.code ? `Order ${result.code}` : "An order"} was edited by the customer`, "info", 8000);
+    }
     if (type === "status" && result.byCustomer && !msg.replay) {
       // A customer cancelled their own order: the admin must notice, whatever screen is open (the card just leaves the New list).
       window.AdminSound?.cancelled?.();

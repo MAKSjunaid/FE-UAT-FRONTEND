@@ -1,0 +1,195 @@
+/* Customer "Edit order" (js/order-edit.js): the small strip on an order card, and a few touches for the edit sheet.
+ * The sheet itself is the shop's own slide-up sheet and uses the cart, address, cancel-reason and product-card styles already on the site.
+ * Every field the customer types in stays at 16px so a phone does not zoom in on it. */
+
+/* ---- on the order card ---- */
+.oec-wrap { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
+.oec-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #fff6dd; color: #6b5516; font-size: 11.5px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.oec-pay { padding: 8px 10px; border-radius: var(--r-sm); background: #f3efe3; color: #4a4128; font-size: 13px; line-height: 1.45; }
+.oec-pay.is-more { background: #fff0c9; color: #6b5000; }
+.oec-pay.is-refund { background: #e4f1ee; color: #1d5b52; }
+/* already paid / still to pay: one small bordered box, the same text size and background as the items list above it (wraps on a narrow phone) */
+.oec-paycard { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 8px 10px; background: #faf7f0; border: 1px solid #e3d9bb; border-radius: var(--r-sm); color: var(--text-muted); font-size: 12.5px; line-height: 1.45; }
+.oec-pc-paid b { color: #2f7d32; font-weight: 700; }
+.oec-pc-due b { color: var(--gold-dark, #9c7a26); font-weight: 700; }
+.oec-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 40px; margin-top: 2px; padding: 6px 14px; flex-wrap: wrap; row-gap: 2px; text-align: center;
+  border: 1.5px solid #e3d9bb; border-radius: var(--r-sm); background: #fffaf0; color: var(--gold-dark, #9a7410);
+  font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast), border-color var(--dur-fast);
+}
+.oec-btn:active { transform: scale(0.98); background: #fff3d6; border-color: var(--gold); }
+.oec-left { font-style: normal; font-weight: 500; font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
+
+/* ---- inside the sheet ---- */
+.oec-flow { display: flex; flex-direction: column; gap: var(--sp-3, 12px); }
+.oec-flow > * { margin-top: 0; margin-bottom: 0; }
+.oec-intro { margin: 0; font-size: 13px; color: var(--text-muted, #7a7260); line-height: 1.45; }
+.oec-sec { margin-top: 4px; font-size: 14px; color: var(--ink, #17140f); }
+.oec-fine { margin: 6px 0 0; font-size: 12.5px; color: var(--text-muted, #7a7260); line-height: 1.45; }
+.oec-toperr { background: #fdf0ee; border: 1px solid rgba(192, 57, 43, .3); border-radius: var(--r-md, 12px); padding: 10px 12px; font-size: 14px; line-height: 1.4; color: var(--danger, #c0392b); }
+.oec-toperr[hidden] { display: none; }
+.oec-err { margin: 0; font-size: 13px; color: var(--danger, #c0392b); line-height: 1.45; }
+.oec-hint { margin-top: 6px; text-align: center; font-size: 12.5px; color: var(--text-muted, #7a7260); }
+.oec-hint:empty { display: none; }
+.oec-gones:empty { display: none; }
+.oec-gone { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 2px; font-size: 13px; color: var(--text-muted, #7a7260); }
+.oec-undo { min-height: 32px; padding: 0 6px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--gold-dark, #9a7410); text-decoration: underline; cursor: pointer; }
+.oec-link { min-height: 32px; padding: 0 4px; border: 0; background: none; font: inherit; font-size: 13px; color: #8a6410; text-decoration: underline; cursor: pointer; }
+.oec-vt { margin: 4px 0 2px; }
+.oec-addbtn { align-self: flex-start; }
+.oec-note { width: 100%; font-size: 16px; }
+
+.oec-sum:empty { display: none; }
+.oec-sheet-foot .btn:disabled, .sheet-footer .btn:disabled { opacity: .5; }
+.oec-sheet-gap { height: 4px; }
+
+/* "Add another item": the shop's own product cards, in a small search + chips + grid */
+.oec-add { gap: var(--sp-3, 12px); }
+.oec-more { align-self: center; }
+
+/* the address page here keeps typed text at 16px (a phone does not zoom in on it) */
+.oec-flow .addr-card .field input:not([type="hidden"]), .oec-flow .addr-card .field textarea { font-size: 16px; }
+.oec-flow > * { flex: none; }
+.oec-note { min-height: 60px; resize: none; }
+
+/* an item the shop could not deliver: struck through in the item list, and one plain line under the Total */
+.oec-na { color: var(--text-muted, #7a7260); }
+.oec-was-q { color: var(--text-muted, #7a7260); font-weight: 400; }
+.oec-nw { white-space: nowrap; } /* (the price never drops to a line of its own) */
+.oec-na s { opacity: .85; }
+.oec-na em { font-style: normal; font-size: 12px; color: #b3402a; white-space: nowrap; }
+.oec-nas:empty { display: none; }
+.oec-nas { padding: 4px 2px; font-size: 13px; line-height: 1.5; }
+.oec-less { margin: -2px 2px 6px; font-size: 12.5px; line-height: 1.4; color: var(--text-muted, #7a7260); }
+
+/* "Add another item": the chips run edge to edge (as on the shop page) and the cards sit as they do there */
+.oec-search { margin: 0; }
+.oec-catbar { position: static; margin: 0 calc(-1 * var(--sp-4, 16px)); padding: 0; background: none; box-shadow: none; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.oec-catbar[hidden] { display: none; }
+.oec-catbar .category-scroll { padding: 2px var(--sp-4, 16px); }
+.product-grid.oec-grid, .product-grid.pg-compact.oec-grid { margin: 0; padding: 0; }
+.product-grid.oec-grid > :first-child { margin-top: 0 !important; }
+.sp-pop-x { z-index: 2; }
+
+/* a compact title bar on these pages, like the address page, so they leave more room for the order */
+.sheet.sheet-oe .sheet-header { padding: 9px 14px; }
+.sheet.sheet-oe .sheet-header h2 { font-size: 16px; }
+.sheet.sheet-oe .sheet-close { width: 30px; height: 30px; font-size: 14px; }
+.sheet.sheet-oe .sheet-body { padding: 10px 12px; gap: 8px; }
+.sheet.sheet-oe .sheet-footer { padding: 8px 12px calc(8px + var(--safe-bottom, 0px)); }
+.sheet.sheet-oe .sheet-footer .btn { padding: 10px 14px; font-size: 14.5px; }
+.sheet.sheet-oe .acct-back { padding: 2px 6px; font-size: 13px; margin: 0 0 0 -4px; align-self: flex-start; }
+.oec-catbar { margin: 0 -12px; }
+.oec-catbar .category-scroll { padding: 2px 12px; }
+
+/* the item rows: apart from each other, size pills on the size line, no replay of the fade on every tap */
+.oec-items-list, [data-items] { display: flex; flex-direction: column; gap: 8px; }
+.oec-flow .cart-item { animation: none; }
+.oec-vline { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.oec-vt { display: inline-flex; gap: 5px; }
+.oec-vt button { flex: none; min-height: 0; padding: 3px 10px; font-size: 11.5px; font-weight: 600; }
+.oec-vt button.active { transform: none; }
+.oec-was { margin-right: 4px; font-weight: 400; font-size: .85em; color: var(--text-muted, #7a7260); }
+
+/* the reasons: a star marks them as needed, and the box blinks (cart.css "payAttn") when Save is tapped without one */
+.oec-star { color: var(--danger, #c0392b); }
+.oec-reasonbox { margin: 0; }
+.oec-reasonbox.pay-attn .oc-reasons { animation: payAttn 0.9s ease-out 0.25s 2; border-radius: var(--r-md, 12px); }
+.oec-reasonbox .error { margin-top: 6px; }
+.oec-reasonbox .error:empty { display: none; }
+.oec-reasonbox .oc-note { margin-top: 8px; min-height: 60px; }
+.oec-reasonbox .oc-note[hidden] { display: none; }
+.oec-sum:empty { display: none; }
+.oec-sum { margin: 0; }
+.oec-addrbtn { align-self: flex-start; }
+.oec-slotfield { display: flex; flex-direction: column; gap: 6px; }
+.oec-slotbox { overflow-wrap: anywhere; }
+.oec-slotbox .slot-picked { margin-top: 10px; }
+.oec-slotbox .slot-picked[hidden] { display: none; }
+
+/* the bill of the edit: the lines stay plain; only what changed carries a colour - "Removed" red, "Added" green, a new quantity / size / price stays the normal colour
+   (the old value is struck through) */
+.oec-flow .summary-row s { opacity: .65; }
+.oec-ch { color: inherit; }
+.oec-t-rm, .oec-t-add, .oec-newtag { font-style: normal; font-size: 11px; font-weight: 600; margin-left: 4px; }
+.oec-t-rm { color: #b3402a; }
+.oec-t-add, .oec-newtag { color: #2f7d32; }
+.oec-sum { transition: opacity .15s; }
+.oec-sum.oec-stale { opacity: .45; }
+.oec-off { opacity: .35; }
+.oec-hint { font-size: 13px; color: var(--danger, #c0392b); padding: 2px 2px 6px; }
+.oec-hint[hidden] { display: none; }
+.oec-addrcard { background: #fff; border: 1px solid rgba(0,0,0,.1); border-radius: var(--r-md, 12px); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.oec-addrhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.oec-addrhead b { font-size: 13px; color: var(--text-muted, #7a7260); font-weight: 600; }
+.oec-addredit { background: none; border: 0; padding: 4px 0 4px 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--gold-dark, #9a7410); cursor: pointer; }
+.oec-addrline { overflow-wrap: anywhere; line-height: 1.35; }
+.oec-undo-sm { min-height: 24px; padding: 0 2px; font-size: 12px; vertical-align: baseline; }
+
+/* ---- night mode (html.night, the moon button): the colours written above as fixed values, in the night palette of the site ---- */
+html.night .oec-tag { background: #2e2710; color: #f0d98a; }
+html.night .oec-pay { background: #221e14; color: #dcd2b6; }
+html.night .oec-pay.is-more { background: #3a2e0d; color: #f4d77a; }
+html.night .oec-pay.is-refund { background: #12302b; color: #93dccb; }
+html.night .oec-btn { background: #231e10; border-color: #4a3f22; color: #f0d98a; }
+html.night .oec-btn:active { background: #2f2813; border-color: var(--gold); }
+html.night .oec-sec { color: var(--text-main); }
+html.night .oec-undo, html.night .oec-link, html.night .oec-addredit { color: #f0d98a; }
+html.night .oec-na em, html.night .oec-t-rm { color: #f0928a; }
+html.night .oec-t-add, html.night .oec-newtag { color: #6fdc9a; }
+html.night .oec-err, html.night .oec-hint, html.night .oec-star { color: #ff8f84; }
+html.night .oec-addrcard { background: var(--bg-card); border-color: rgba(255, 255, 255, 0.14); color: var(--text-main); }
+html.night .oec-addrhead b { color: var(--text-muted); }
+html.night .oec-flow .summary-row s { opacity: .6; }
+html.night .oec-reasonbox .error { color: #ff8f84; }
+
+/* the "Update your order?" question: the total, and a smaller line about what is to be paid or refunded */
+.oc-p.oc-p-tight { margin-bottom: 8px; font-size: 15px; color: var(--text-main); }
+.oc-p.oc-p-tight b { font-size: 18px; }
+.oc-p.oc-p-sub { margin-bottom: 18px; font-size: 13px; line-height: 1.45; }
+.oc-p.oc-p-tight:last-of-type { margin-bottom: 18px; }
+html.night .oec-toperr { background: #2a1714; border-color: rgba(255, 143, 132, 0.35); color: #ff8f84; }
+html.night .oec-paycard { background: #2a2313; border-color: #4a3f22; color: var(--text-muted); }
+html.night .oec-pc-paid b { color: #8fd49a; }
+html.night .oec-pc-due b { color: #f0d98a; }
+
+/* "Add another item": this page never moves sideways (only the category chips scroll that way) and nothing inside can make it wider than the screen.
+ * Its body is plain blocks (not a flex column) and the cards sit in a wrapping row: no grid / flex row sizing for a phone to get wrong - the cards always
+ * take the height of their own content (a first open had them squeezed down to the photo). */
+.sheet.sheet-oe .sheet-body.oec-add { display: block; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+.oec-add > * { min-width: 0; max-width: 100%; box-sizing: border-box; margin-top: 0; margin-bottom: 12px; }
+.oec-add > .acct-back { display: block; margin-bottom: 6px; }
+.oec-add > .oec-catbar { max-width: none; width: auto; margin: 0 -12px 12px; }
+.oec-add > .oec-catbar[hidden] { display: none; }
+.oec-add > .oec-more { display: block; margin: 12px auto 4px; }
+.oec-add > .oec-more[hidden] { display: none; }
+.oec-catbar .category-scroll { max-width: 100%; touch-action: pan-x pan-y; overscroll-behavior-x: contain; }
+.product-grid.oec-grid { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; width: 100%; margin: 0 0 4px; padding: 0; }
+.product-grid.oec-grid > .product-card { flex: 0 0 calc(50% - 5px); width: calc(50% - 5px); max-width: calc(50% - 5px); height: auto; min-height: 0; margin: 0; }
+.product-grid.oec-grid:not(.pg-compact) > .product-card { flex-basis: 100%; width: 100%; max-width: 100%; }
+.product-grid.oec-grid > :not(.product-card) { flex: 0 0 100%; margin: 0; }
+.product-grid.oec-grid .product-media-frame { flex: none; }
+
+/* the "Order updated" page (the Order placed page, reused): the notes under the items list */
+.oec-sx-addr { margin-top: 8px; }
+.oec-payw { margin: 8px 0 0; }
+
+/* typing on a phone (js/kb-fit.js): room at the END of the sheet's scrolling body (an empty block, so it can never push the sheet's foot out) lets a box near the
+ * bottom be lifted above the keyboard; it appears at once and eases away. (The negative top margin cancels the body's row gap while it is empty.) */
+.sheet.sheet-oe .sheet-body::after, .sheet.sheet-addr .sheet-body::after { content: ""; display: block; flex: none; height: 0; margin-top: -8px; transition: height .25s ease; pointer-events: none; }
+.sheet.sheet-addr .sheet-body::after { margin-top: -6px; }
+.sheet.sheet-oe .sheet-body.oec-add::after { margin-top: 0; }
+.sheet.sheet-oe .sheet-body.kb-pad::after, .sheet.sheet-addr .sheet-body.kb-pad::after { height: var(--kb-pad, 46vh); margin-top: 0; transition: none; }
+/* a skirt of the sheet's own colour hangs under it, so while it slides back down the page behind never shows through the space the keyboard just left */
+.sheet.sheet-oe::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 70vh; background: var(--bg-card); pointer-events: none; }
+/* the keyboard sits right under the sheet's foot: the phone's bottom-edge safe area is not needed there */
+.sheet.sheet-oe.kb-docked .sheet-footer { padding-bottom: 8px; }
+/* ...and while typing the Update button is just the last thing in the scrolling part (js/kb-fit.js moves it there), not a bar pinned under it */
+.sheet.sheet-oe.kb-flowfoot .sheet-body > .sheet-footer { padding: 4px 0 2px; border-top: 0; background: none; }
+/* the "Back to my order" link on the Add-an-item page sits evenly between the header line and the search box */
+.sheet.sheet-oe .sheet-body.oec-add { padding-top: 8px; }
+.sheet.sheet-oe .oec-add > .acct-back { margin-bottom: 5px; }
+
+/* Add-an-item cards: a tap on a card's buttons must not leave the photo zoomed (the shop page's hover zoom would stay "stuck" on a phone after a tap) */
+.sheet.sheet-oe .product-card:hover .product-media-frame img { transform: none; }

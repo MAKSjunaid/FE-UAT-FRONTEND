@@ -12,6 +12,8 @@ window.AdminUsers = (() => {
   const ITEMS = [
     { key: "orders", ico: "📦", label: "Orders", levels: ["NONE", "VIEW", "EDIT"],
       note: "View & edit = can mark Delivered / Cancelled / Reopen" },
+    { key: "editorders", ico: "✏️", label: "Can edit orders", levels: ["NONE", "EDIT"], texts: { NONE: "No", EDIT: "Yes" },
+      note: "Yes = can change an order's items, sizes and address, or take out an item that isn't available (needs Orders “View & edit”, and “Edit orders” switched on in More → Customize)" },
     { key: "ownorders", ico: "🛵", label: "Sees only assigned orders", levels: ["NONE", "VIEW"], texts: { NONE: "No", VIEW: "Yes" },
       note: "Yes = the Orders tab shows only the orders on a route you gave them (for delivery boys). Needs “Delivery boys see only their own orders” ON in More → Delivery map" },
     { key: "payments", ico: "💳", label: "UPI payments", levels: ["VIEW", "EDIT"], def: "VIEW",
@@ -41,7 +43,7 @@ window.AdminUsers = (() => {
 
   const PRESETS = {
     delivery: { name: "Delivery boy", days: 7, perms: { orders: "EDIT", payments: "VIEW", ownorders: "VIEW" } },
-    manager: { name: "Manager", days: 0, perms: { orders: "EDIT", payments: "EDIT", products: "EDIT", banners: "EDIT", sales: "VIEW", customers: "VIEW", store: "EDIT" } },
+    manager: { name: "Manager", days: 0, perms: { orders: "EDIT", editorders: "EDIT", payments: "EDIT", products: "EDIT", banners: "EDIT", sales: "VIEW", customers: "VIEW", store: "EDIT" } },
   };
 
   let users = null;
@@ -268,7 +270,7 @@ window.AdminUsers = (() => {
   const levelOf = (item, stored) => (stored && stored !== "NONE" ? stored : item.def || "NONE");
 
   /** Whether any real access is ticked ("UPI payments" is always at least View, so it says nothing by itself). */
-  const hasAnyAccess = (perms) => Object.entries(perms).some(([k, v]) => k !== "payments" && k !== "ownorders" && v !== "NONE");
+  const hasAnyAccess = (perms) => Object.entries(perms).some(([k, v]) => k !== "payments" && k !== "ownorders" && k !== "editorders" && v !== "NONE");
 
   function readPerms(form) {
     const perms = {};
