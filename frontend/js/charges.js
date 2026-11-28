@@ -242,7 +242,7 @@ window.Charges = (() => {
   });
 
   // a dashed line, then "Items total" and the charges: they never run into the list of items above them
-  const itemsRow = (p) => `<div class="chg-sep" aria-hidden="true"></div><div class="summary-row chg-items"><span>Items total</span><span>${money(p)}</span></div>`;
+  const itemsRow = (p, note) => `<div class="chg-sep" aria-hidden="true"></div><div class="summary-row chg-items"><span>Items total${note ? `<small class="chg-note">${esc(note)}</small>` : ""}</span><span>${money(p)}</span></div>`;
 
   /** The green / blue tip under the charges: how much more for free delivery, or which charges are free on this order
    * (the cart page only gets the first: "which are free" is said on the Final Step). */
@@ -293,7 +293,7 @@ window.Charges = (() => {
     const ls = order && Array.isArray(order.charges) ? order.charges : [];
     if (!ls.length) return "";
     const items = order.itemsTotal != null ? paise(order.itemsTotal) : paise(order.totalAmount) - ls.reduce((s, l) => s + paise(l.charged), 0);
-    return itemsRow(items) + ls.map((l) => rowHtml({ key: l.key, label: l.label, note: l.note, amount: paise(l.amount), charged: paise(l.charged), free: !!l.free })).join("");
+    return itemsRow(items, window.OrderEdit ? OrderEdit.itemsNote(order) : "") + ls.map((l) => rowHtml({ key: l.key, label: l.label, note: l.note, amount: paise(l.amount), charged: paise(l.charged), free: !!l.free })).join(""); // (itemsNote: what an edit took off for items not delivered)
   }
 
   function paint(m) {

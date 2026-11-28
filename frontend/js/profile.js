@@ -317,6 +317,7 @@ window.ProfileSheet = (() => {
     // The order that was just placed is already known from the server's reply: the Track order strip shows it at once, without
     // waiting for (or depending on) a second look-up. The look-up still runs, and again a few seconds later, to catch anything else.
     if (window.OrderCancel) OrderCancel.stamp(order); // (may it be cancelled, and for how long - from the server's reply)
+    if (window.OrderEdit) OrderEdit.stamp(order); // (the same for editing)
     if (order && order.orderCode) placedHere.set(order.orderCode, { phone, order: { ...order } });
     savePhone(phone);
     if (order && order.customerName) setName(phone, order.customerName);
@@ -641,6 +642,7 @@ window.ProfileSheet = (() => {
           const c = JSON.parse(e.data);
           if (c && Array.isArray(c.orders)) {
             if (window.OrderCancel) OrderCancel.stamp(c.orders); // (the seconds left to cancel become a clock time here)
+            if (window.OrderEdit) OrderEdit.stamp(c.orders);
             onChunk(c);
           }
         } catch {
@@ -656,6 +658,7 @@ window.ProfileSheet = (() => {
   async function legacyOrders(phone) {
     const all = await Api.get(`/api/customers/orders?phone=${encodeURIComponent(phone)}`);
     if (window.OrderCancel) OrderCancel.stamp(all);
+    if (window.OrderEdit) OrderEdit.stamp(all);
     try {
       // the whole history is here, so the "Buy it again" row can work itself out from it (as it always did)
       window.dispatchEvent(new CustomEvent("freshcutz:orders", { detail: { phone, orders: all } }));
@@ -799,6 +802,10 @@ window.ProfileSheet = (() => {
       } else {
         settleCard(card, status, code, order); // (My Orders: Reorder / Cancel pill / photos beside the Total, whichever applies now)
       }
+      if (order && window.OrderEdit && OrderEdit.payHtml) { // (delivered / cancelled while the page is open: "still to pay / to be refunded" goes at once; a record of what was refunded stays)
+        const pw = card.querySelector(".oec-payw");
+        if (pw) { const h = OrderEdit.payHtml({ ...order, status }, !!card.dataset.track); if (h) pw.outerHTML = h; else pw.remove(); }
+      }
       if (window.UpiPay && order) UpiPay.settle(card, { ...order, status }); // delivered / cancelled: no more "Forgot to pay?" or screenshot upload; back to packed: they return
     });
   }
@@ -938,6 +945,7 @@ window.ProfileSheet = (() => {
       mine.order.deliveredAt = d.deliveredAt || null;
       mine.order.cancelledAt = cancelledAtOf(d);
       if (window.OrderCancel) OrderCancel.apply(mine.order, d);
+      if (window.OrderEdit) OrderEdit.apply(mine.order, d);
       announceTrack();
     }
     if (!acct || !d.orderCode) return;
@@ -951,10 +959,45 @@ window.ProfileSheet = (() => {
     held.deliveredAt = d.deliveredAt || null;
     held.cancelledAt = cancelledAtOf(d);
     if (window.OrderCancel) OrderCancel.apply(held, d); // (cancelling may still be allowed in the new status - or not any more)
+    if (window.OrderEdit) OrderEdit.apply(held, d); // (and editing)
     if (d.refresh) acct.stale = true; // (the shop refused a cancel: the next look at the orders re-reads them)
     paintStatus(d.orderCode, d.status, held);
     saveAcctSoon();
     announceTrack(); // (delivered / cancelled: the Track order strip goes away at once)
+  });
+
+  // An order was edited - by this customer (order-edit.js), or by the shop / this customer on another phone (a live message): the order held is
+  // replaced by the new one and every card of it on screen is drawn again.
+  const EDIT_OPTIONAL = ["canCancel", "cancelSecs", "cancelBy", "canEdit", "editSecs", "editBy", "edited", "removed", "refundDue", "payMore", "paidSoFar", "payLeft", "refunded", "deliveryLat", "deliveryLng", "deliveryArea", "charges", "itemsTotal", "landmark", "notes", "paymentProofAt"];
+  window.addEventListener("freshcutz:orderedit", (e) => {
+    const order = e && e.detail && e.detail.order;
+    if (!order || !order.orderCode) return;
+    if (window.OrderCancel) OrderCancel.stamp(order);
+    if (window.OrderEdit) OrderEdit.stamp(order);
+    if (order.profileSaved && acct) { acct.profile = null; saveAcctSoon(); } // (the shop changed the saved address too: it is read again the next time it is needed)
+    const code = order.orderCode;
+    const held = acct && acct.orders ? acct.orders.find((o) => o.orderCode === code) : null;
+    const mine = placedHere.get(code);
+    const shown = orderIndex.get(code);
+    const targets = [held, mine && mine.order, shown].filter((o, i, all) => o && all.indexOf(o) === i);
+    targets.forEach((t) => {
+      EDIT_OPTIONAL.forEach((k) => { if (!(k in order)) delete t[k]; });
+      Object.assign(t, order);
+    });
+    if (!held && acct && acct.loaded && !acct.hasMore) acct.stale = true; // (an order this page has never seen: read again next time)
+    const target = targets[0] || order;
+    orderIndex.set(code, target);
+    document.querySelectorAll(".profile-order-card").forEach((card) => {
+      if (card.dataset.code !== code) return;
+      const tpl = document.createElement("template");
+      tpl.innerHTML = orderCardHtml(target, !!card.dataset.track).trim();
+      const fresh = tpl.content.firstElementChild;
+      if (!fresh) return;
+      card.replaceWith(fresh);
+      fillOrderThumbs(fresh);
+    });
+    if (held) saveAcctSoon();
+    announceTrack();
   });
 
   // ---- the order on its way: feeds the "Track order" strip above the bottom menu (bottom-nav.js) ----------------------------------
@@ -1026,6 +1069,7 @@ window.ProfileSheet = (() => {
     }
     if (getSavedPhone() !== phone || !Array.isArray(open)) return;
     if (window.OrderCancel) OrderCancel.stamp(open);
+    if (window.OrderEdit) OrderEdit.stamp(open);
     const keep = new Set();
     open.forEach((o) => {
       const mine = state.orders.find((x) => x.orderCode === o.orderCode);
@@ -1210,12 +1254,18 @@ window.ProfileSheet = (() => {
   // one line of the order's address block: the little picture on the left, the text beside it - a long text that wraps lines up under its own first line, not under the picture
   const addrRow = (icon, html) => `<div class="poa-row"><span class="poa-ic" aria-hidden="true">${icon}</span><span class="poa-tx">${html}</span></div>`;
   function orderItemsHtml(order) {
+    const changed = window.OrderEdit && OrderEdit.changedMap ? OrderEdit.changedMap(order) : null; // (a quantity changed in an edit: the old one stays, struck through)
+    const swaps = window.OrderEdit && OrderEdit.swapMap ? OrderEdit.swapMap(order) : null;
     return order.items
-      .map(
-        (i) =>
-          `<div>${i.quantity} × ${Utils.escapeHtml(i.productName)} (${Utils.escapeHtml(i.variantLabel)}) — ${Utils.formatMoney(i.lineTotal)}</div>`
-      )
-      .join("");
+      .map((i, idx) => {
+        const sw = swaps && swaps.get(idx); // (another size of it was there: the old size, quantity and price stay on this same line, struck through)
+        const was = (changed && changed.get(`${i.productId}|${i.variant || "variant1"}`)) || sw;
+        const q = was && was.qty !== i.quantity ? `<s class="oec-was-q">${was.qty}</s> ${i.quantity}` : i.quantity;
+        const lbl = sw && sw.label !== i.variantLabel ? `<s class="oec-was-q">${Utils.escapeHtml(sw.label)}</s> ${Utils.escapeHtml(i.variantLabel)}` : Utils.escapeHtml(i.variantLabel);
+        const amt = was ? `<s class="oec-was-q">${Utils.formatMoney(was.lineTotal)}</s> ${Utils.formatMoney(i.lineTotal)}` : Utils.formatMoney(i.lineTotal);
+        return `<div>${q} × ${Utils.escapeHtml(i.productName)} (${lbl}) — ${amt}</div>`;
+      })
+      .join("") + (window.OrderEdit ? OrderEdit.struckHtml(order) : ""); // (items the shop could not deliver: struck through, from OrderEdit)
   }
 
   // My Orders: the charges of an order sit behind a small "V" by its total (tap to open / close); the tracking panel does not show them
@@ -1255,7 +1305,7 @@ window.ProfileSheet = (() => {
       <div class="profile-order-head">
         <div>
           <div class="profile-order-code">${SiteCustomize.html("orderIdLabel")} ${Utils.escapeHtml(order.orderCode)}</div>
-          <div class="profile-order-time">${track ? "" : "Placed: "}${Utils.formatDateTime(order.createdAt)}</div>
+          <div class="profile-order-time">${track ? "" : "Placed: "}${Utils.formatDateTime(order.createdAt)}${window.OrderEdit ? OrderEdit.editedHtml(order) : ""}</div>
           ${endedHtml(order, track)}
         </div>
         <span class="badge ${badgeClass(order.status, order.orderCode)}">${Utils.escapeHtml(track ? trackText(order.status, order.orderCode) : statusLabel(order.status, order.orderCode))}</span>
@@ -1268,8 +1318,11 @@ window.ProfileSheet = (() => {
         ${order.notes ? addrRow("📝", Utils.escapeHtml(order.notes)) : ""}
       </div>
       <div class="profile-order-items">${orderItemsHtml(order)}</div>
+      ${window.OrderEdit ? OrderEdit.cardHtml(order, track) : ""}
       ${rows ? `<div class="profile-order-charges order-summary-list"${open ? "" : " hidden"}>${rows}</div>` : ""}
       <div class="profile-order-total"><span>${SiteCustomize.html("totalLabel")}${rows ? `<button type="button" class="profile-order-more${open ? " open" : ""}" data-chg-more aria-expanded="${!!open}" aria-label="Show the charges"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ""}</span><span>${Utils.formatMoney(order.totalAmount)}</span></div>
+      ${window.OrderEdit && OrderEdit.payHtml ? OrderEdit.payHtml(order, track) : ""}
+      ${!rows && window.OrderEdit ? OrderEdit.lessHtml(order) : ""}
       ${window.UpiPay ? UpiPay.forgotHtml(order) : ""}
       ${track && window.OrderCancel ? OrderCancel.html(order) : ""}
       ${canReorder(order.status) ? reorderButtonHtml(order.orderCode, order) : cancelOk ? cancelFootHtml(order) : ""}

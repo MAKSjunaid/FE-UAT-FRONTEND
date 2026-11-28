@@ -64,8 +64,16 @@ window.AdminProof = (() => {
   const toneOf = (c) => `tone-${statusOf(c)[2]}`;
 
   /** What a status control shows normally: the pill (and "Change" for someone who may change it). */
-  function viewInner(check, locked) {
-    const [, label, tone] = statusOf(check);
+  function viewInner(check, locked, total) {
+    let [, label, tone] = statusOf(check);
+    // cash part-received, but the order now costs less (it was edited down): say so - "Partially received" would be wrong
+    const part = partOf(check);
+    const tot = Number(total);
+    if (part > 0 && tot > 0 && part >= tot) {
+      const money = (n) => `₹${Math.round(n * 100) / 100}`;
+      label = part > tot ? `Overpaid ${money(part - tot)} · received ${money(part)}` : `Received in full ${money(part)}`;
+      tone = part > tot ? "warn" : "ok";
+    }
     return `<span class="pay-pill tone-${tone}">${esc(label)}</span>${canEdit() && !locked ? `<button type="button" class="pay-act pay-change" data-action="pay-change">Change</button>` : ""}`;
   }
   /** While changing: the drop-down in place of the pill, then Update (only once something different is picked) and Cancel. */
@@ -77,8 +85,8 @@ window.AdminProof = (() => {
       `<button type="button" class="pay-act pay-update" data-action="pay-update" hidden>Update</button>` +
       `<button type="button" class="pay-act pay-cancel" data-action="pay-cancel">Cancel</button>`;
   }
-  function statusControl(id, check, locked, mode) {
-    return `<span class="pay-ctl" data-id="${esc(id)}" data-check="${esc(norm(check))}"${mode ? ` data-mode="${esc(mode)}"` : ""}${locked ? ' data-locked="1"' : ""}>${viewInner(check, locked)}</span>`;
+  function statusControl(id, check, locked, mode, total) {
+    return `<span class="pay-ctl" data-id="${esc(id)}" data-check="${esc(norm(check))}"${mode ? ` data-mode="${esc(mode)}"` : ""}${locked ? ' data-locked="1"' : ""}${total != null ? ` data-total="${esc(total)}"` : ""}>${viewInner(check, locked, total)}</span>`;
   }
 
   let measure = null;
@@ -103,7 +111,7 @@ window.AdminProof = (() => {
   function leaveEdit(ctl, committed) {
     ctl.classList.remove("is-editing");
     ctl.dataset.check = committed || "";
-    ctl.innerHTML = viewInner(committed, ctl.dataset.locked);
+    ctl.innerHTML = viewInner(committed, ctl.dataset.locked, ctl.dataset.total);
   }
 
   /** The whole payment line of a UPI order card, by what this person may see: nothing but "UPI" without being able to see
@@ -115,8 +123,8 @@ window.AdminProof = (() => {
     const closedAt = order.closedAt !== undefined ? Number(order.closedAt) || 0 : closedAtOf(order);
     const locked = isLocked(closedAt);
     const check = norm(order.paymentCheck);
-    const head = `<span class="upi-line" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-proof="${has ? "1" : ""}" data-at="${esc(at)}" data-check="${esc(check)}" data-closed="${closedAt || ""}" data-mode="${cod ? "COD" : "UPI"}">${cod ? "💵 Payment: Cash on delivery" : "📲 Payment: UPI"}`;
-    if (cod) return `${head} ${statusControl(order.id, check, locked, "COD")}</span>`; // everyone sees whether cash is still due; changing it needs UPI payments "View & edit"
+    const head = `<span class="upi-line" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-proof="${has ? "1" : ""}" data-at="${esc(at)}" data-check="${esc(check)}" data-closed="${closedAt || ""}" data-mode="${cod ? "COD" : "UPI"}"${Number(order.payDelta) < 0 ? ` data-refund="${esc(-Number(order.payDelta))}"` : ""}>${cod ? "💵 Payment: Cash on delivery" : "📲 Payment: UPI"}`;
+    if (cod) return `${head} ${statusControl(order.id, check, locked, "COD", order.totalAmount)}</span>`; // everyone sees whether cash is still due; changing it needs UPI payments "View & edit"
     if (!canSee()) return `${head}</span>`;
     const shot = has
       ? ` <button type="button" class="proof-link" data-action="proof-view" data-id="${esc(order.id)}" data-code="${esc(order.orderCode)}" data-amount="${esc(order.totalAmount)}" data-at="${esc(at)}">📎 View</button>`
@@ -237,9 +245,34 @@ window.AdminProof = (() => {
       if (total && amt >= total) { if (window.Toast) Toast.show("That is the whole amount: choose Received instead", "error"); return; }
       next = `PART:${amt}`;
     }
+    // cash marked Received / Partially received while a refund of an edit is still waiting: the cash the shop holds then includes it, so ask
+    // whether the refund has been given back (the customer's "already paid" amount depends on it)
+    let alsoSettle = false;
+    const lineEl = ctl.closest(".upi-line");
+    const refund = lineEl ? Number(lineEl.dataset.refund) : 0;
+    if (refund > 0 && (next === "RECEIVED" || next.startsWith("PART:")) && window.AdminConfirm) {
+      alsoSettle = await window.AdminConfirm.ask({
+        title: `A ${Utils.formatMoney(refund)} refund is still pending`,
+        message: `${lineEl.dataset.code}: marking the payment ${next === "RECEIVED" ? "Received" : "Partially received"} does not clear the refund. If you have already given the ${Utils.formatMoney(refund)} back, mark it settled too.`,
+        confirmText: "Yes, mark settled",
+        cancelText: "No, leave it",
+        tone: "ok",
+        icon: "↩",
+      });
+    }
     ctl.querySelectorAll("select, input, button").forEach((x) => (x.disabled = true));
     try {
       const res = await Api.patch(`/api/admin/orders/${encodeURIComponent(id)}/payment-check`, { check: next || null });
+      if (alsoSettle) {
+        try {
+          const updated = await Api.patch(`/api/admin/orders/${encodeURIComponent(id)}/edit-settled`);
+          window.dispatchEvent(new CustomEvent("freshcutz:orderedit", { detail: { order: updated, local: true } }));
+          if (lineEl) delete lineEl.dataset.refund;
+          if (window.Toast) Toast.show("Refund marked as settled", "success");
+        } catch (err) {
+          if (window.Toast) Toast.show(err && err.message ? err.message : "The status was saved, but the refund could not be marked settled", "error");
+        }
+      }
       const saved = norm(res && res.paymentCheck);
       leaveEdit(ctl, saved);
       const line = ctl.closest(".upi-line");

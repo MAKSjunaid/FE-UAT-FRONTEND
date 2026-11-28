@@ -98,14 +98,15 @@ window.Rewards = (() => {
   // an offer that is switched on but starts later: the server tells when the soonest one starts, and an open page looks again then
   // (otherwise it would only show up on the next visit - nothing else changes on the server at that moment)
   let startTimer = 0;
+  let firedStart = 0; // the start time already looked at once: if the server keeps naming the same moment, it is not asked about it over and over
   function armStart(next) {
     clearTimeout(startTimer);
     startTimer = 0;
     const at = Number(next);
-    if (!at) return;
+    if (!at || at === firedStart) return;
     const wait = at - (Date.now() + (skew || 0));
     if (wait > 12 * 3600 * 1000) return; // far away: the next visit / refresh sets it again
-    startTimer = setTimeout(() => { startTimer = 0; refresh(true); }, Math.max(1000, wait) + 5500 + Math.random() * 2500); // (the public list is kept by the browser for 5 s: asked just after that)
+    startTimer = setTimeout(() => { startTimer = 0; firedStart = at; refresh(true); }, Math.max(1000, wait) + 5500 + Math.random() * 2500); // (the public list is kept by the browser for 5 s: asked just after that)
   }
 
   function loadPub(force) {
@@ -781,6 +782,7 @@ window.Rewards = (() => {
   function stopTick() { if (ticker) { clearInterval(ticker); ticker = 0; } }
 
   /** Once a second: only the numbers of the countdowns change (nothing is redrawn); a hold or an offer that ended is read again. */
+  const endSeen = new Set();
   function tickOnce() {
     if (document.hidden) return;
     if (++slideTick % 5 === 0) autoSlide();
@@ -795,7 +797,11 @@ window.Rewards = (() => {
       root.querySelectorAll("[data-rw-hold],[data-rw-end]").forEach((el) => {
         const t = +(el.dataset.rwHold || el.dataset.rwEnd);
         const s = secsLeft(t);
-        if (s <= 0) expired = true;
+        if (s <= 0 && !endSeen.has(t)) { // (once per deadline: an offer the server still lists after its end is not asked about every few seconds)
+          if (endSeen.size > 50) endSeen.clear();
+          endSeen.add(t);
+          expired = true;
+        }
         if (quiet) return;
         const txt = clock(s);
         if (el.textContent !== txt) el.textContent = txt;

@@ -35,7 +35,7 @@ window.AdminLive = (() => {
     } catch {
       return;
     }
-    if (handlers.onMessage && (name === "order" || name === "status" || name === "payment" || name === "reset")) handlers.onMessage(name, payload);
+    if (handlers.onMessage && (name === "order" || name === "status" || name === "payment" || name === "orderedit" || name === "reset")) handlers.onMessage(name, payload);
   }
 
   function retry(gen) {

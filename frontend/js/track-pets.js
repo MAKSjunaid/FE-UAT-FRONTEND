@@ -259,6 +259,7 @@
       const sg = x.act === "idle" && x.sing ? 1 : 0, dg = sg - x.sg; // (singing: the head lifts up smoothly, and eases back down)
       if (Math.abs(dg) > 0.02) { x.sg += dg * a; x.moving = true; } else x.sg = sg;
       if (x.sgc !== !!sg) { x.sgc = !!sg; x.el.classList.toggle("is-sing", !!sg); }
+      if (x.song) { if (!x.songAt) x.songAt = now; else if (now - x.songAt > 7500) { x.song = false; x.songAt = 0; } } else x.songAt = 0; // (as for the first hen: never left standing)
       const sn = x.song ? (x.songL ? 2 : 1) : 0; // (the notes stay on the side she sang towards, even if she turns round while they float away)
       if (x.snc !== sn) { x.snc = sn; x.el.classList.toggle("is-song", sn > 0); x.el.classList.toggle("song-l", sn === 2); }
       x.pm = false; // (the costume pieces ease on slowly, like the first hen's)
@@ -685,6 +686,8 @@
     if (w.henOp !== ops) { w.henOp = ops; w.hen.style.opacity = ops; }
     const flip = h.dir < 0 ? "scaleX(-1)" : "";
     if (w.flip !== flip) { w.henSvg.style.transform = flip; w.flip = flip; }
+    // (the notes' animation never reported its end - the page was hidden, say: the song is over anyway after 7.5 s, so notes are never left standing beside her)
+    if (h.song) { if (!w.songAt) w.songAt = now; else if (now - w.songAt > 7500) { h.song = false; w.songAt = 0; } } else w.songAt = 0;
     let cls = "pt-hen";
     if (h.act === "sleep") cls += " is-sleep" + (h.sleepAge > 0.6 && h.sleepAge < 4.4 ? " is-zzz" : "");
     if (h.act === "idle" && h.sing) cls += " is-sing";

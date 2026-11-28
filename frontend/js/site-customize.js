@@ -744,6 +744,14 @@
     rewards: () => tell("freshcutz:rewards", {}),
     // the admin changed the rules for cancelling orders: the page re-reads its orders (see profile.js)
     cancelrule: () => tell("freshcutz:cancelrule", {}),
+    // an order of this customer was edited (by the shop, or by the customer on another phone): the order as it is now (see profile.js)
+    orderedit: (e) => {
+      try {
+        tell("freshcutz:orderedit", { order: JSON.parse(e.data) });
+      } catch {
+        /* malformed push - the account page asks for its orders when it is next opened */
+      }
+    },
     // the charges this page holds are the current ones (sent when the live connection opens, see LiveController)
     chsame: () => tell("freshcutz:chsame", {}),
     // the admin changed the delivery / other charges: the page that holds them takes the new ones at once (see charges.js)
